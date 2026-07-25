@@ -2,9 +2,8 @@ package main
 
 import (
 	"embed"
-	_ "embed"
-	"fmt"
 	"log"
+	"os"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
@@ -22,14 +21,22 @@ func init() {
 	// Register a custom event whose associated data type is string.
 	// This is not required, but the binding generator will pick up registered events
 	// and provide a strongly typed JS/TS API for them.
-	application.RegisterEvent[string]("time")
 	application.RegisterEvent[[]string]("files-dropped")
+	application.RegisterEvent[string]("croc:code")
+	application.RegisterEvent[string]("croc:sent")
+	application.RegisterEvent[string]("croc:received")
+	application.RegisterEvent[string]("croc:error")
 }
 
 // main function serves as the application's entry point. It initializes the application, creates a window,
 // and starts a goroutine that emits a time-based event every second. It subsequently runs the application and
 // logs any error that might occur.
 func main() {
+	// Worker mode: this binary re-execs itself to run croc transfers as
+	// killable child processes (see CrocService). No GUI in that case.
+	if len(os.Args) > 1 && os.Args[1] == "croc-worker" {
+		os.Exit(runCrocWorker(os.Args[2:]))
+	}
 
 	// Create a new Wails application by providing the necessary options.
 	// Variables 'Name' and 'Description' are for application metadata.
@@ -41,6 +48,7 @@ func main() {
 		Description: "A minimal app for sending and receiving files",
 		Services: []application.Service{
 			application.NewService(&FileService{}),
+			application.NewService(&CrocService{}),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
@@ -69,20 +77,8 @@ func main() {
 
 	// Events
 	win.OnWindowEvent(events.Common.WindowFilesDropped, func(event *application.WindowEvent) {
-		fmt.Println("files droped")
-		files := event.Context().DroppedFiles()
-		app.Event.Emit("files-dropped", files)
+		app.Event.Emit("files-dropped", event.Context().DroppedFiles())
 	})
-
-	// // Create a goroutine that emits an event containing the current time every second.
-	// // The frontend can listen to this event and update the UI accordingly.
-	// go func() {
-	// 	for {
-	// 		now := time.Now().Format(time.RFC1123)
-	// 		app.Event.Emit("time", now)
-	// 		time.Sleep(time.Second)
-	// 	}
-	// }()
 
 	// Run the application. This blocks until the application has been exited.
 	err := app.Run()
