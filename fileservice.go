@@ -1,6 +1,12 @@
 package main
 
-import "github.com/wailsapp/wails/v3/pkg/application"
+import (
+	"fmt"
+	"os/exec"
+	"runtime"
+
+	"github.com/wailsapp/wails/v3/pkg/application"
+)
 
 type FileService struct{}
 
@@ -12,4 +18,20 @@ func (f *FileService) SelectFiles() ([]string, error) {
 		CanChooseFiles(true).
 		CanChooseDirectories(false).
 		PromptForMultipleSelection()
+}
+
+// OpenPath opens a file or folder with the OS default handler
+// (Finder/Explorer/xdg-open).
+func (f *FileService) OpenPath(path string) error {
+	if path == "" {
+		return fmt.Errorf("no path given")
+	}
+	switch runtime.GOOS {
+	case "darwin":
+		return exec.Command("open", path).Start()
+	case "windows":
+		return exec.Command("explorer", path).Start()
+	default:
+		return exec.Command("xdg-open", path).Start()
+	}
 }

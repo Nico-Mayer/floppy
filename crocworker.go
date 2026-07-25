@@ -60,9 +60,6 @@ func crocWorkerSend(paths []string) error {
 	options.IsSender = true
 	options.SharedSecret = utils.GetRandomName()
 
-	// The parent process (CrocService) reads the code phrase from stdout.
-	fmt.Println(crocCodePrefix + options.SharedSecret)
-
 	client, err := croc.New(options)
 	if err != nil {
 		return err
@@ -71,6 +68,11 @@ func crocWorkerSend(paths []string) error {
 	if err != nil {
 		return err
 	}
+
+	// Everything validated — only now hand the code phrase to the parent
+	// process (CrocService), which treats it as "waiting for receiver".
+	fmt.Println(crocCodePrefix + options.SharedSecret)
+
 	return client.Send(filesInfo, emptyFolders, totalFolders)
 }
 
