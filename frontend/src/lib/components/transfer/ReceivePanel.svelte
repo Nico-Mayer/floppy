@@ -60,21 +60,25 @@
         <TransferProgress accent="receive" {progress} label="Receiving…" />
         <CancelButton onclick={oncancel} />
     {:else}
-        <div class="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-4">
+        <div
+            class="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-4"
+        >
             <div class="flex flex-col items-center gap-1 text-center">
                 <IconDownload class="size-8 text-receive" />
-                <p class="text-xs text-muted-foreground">Enter the sender's code</p>
+                <p class="text-xs text-muted-foreground">
+                    Enter the sender's code
+                </p>
             </div>
-            <div class="flex gap-2">
+            <div class="flex flex-col gap-2">
                 <Input
-                    class="font-mono"
+                    class="text-center font-mono"
                     placeholder="1234-word-word-word"
                     bind:value={code}
                     onkeydown={(e) =>
                         e.key === "Enter" && code.trim() && onstart()}
                 />
                 <Button
-                    class="bg-receive text-white hover:bg-receive/90"
+                    class="w-full bg-receive text-white hover:bg-receive/90"
                     onclick={onstart}
                     disabled={!code.trim()}
                 >

@@ -125,15 +125,15 @@
             <button
                 type="button"
                 onclick={copyCode}
-                class="group flex items-center gap-3 rounded-2xl border border-send/30 bg-send/10 px-5 py-3 font-mono text-lg tracking-wide transition-colors hover:cursor-pointer hover:bg-send/20"
+                class="group flex max-w-full items-center gap-3 rounded-2xl border border-send/30 bg-send/10 px-5 py-3 font-mono text-lg tracking-wide break-all transition-colors hover:cursor-pointer hover:bg-send/20"
                 title="Click to copy"
             >
                 {code}
                 {#if copied}
-                    <IconCheck class="size-5 text-send" />
+                    <IconCheck class="size-5 shrink-0 text-send" />
                 {:else}
                     <IconCopy
-                        class="size-5 text-muted-foreground group-hover:text-foreground"
+                        class="size-5 shrink-0 text-muted-foreground group-hover:text-foreground"
                     />
                 {/if}
             </button>

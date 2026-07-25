@@ -139,7 +139,19 @@
 <div class="flex h-svh flex-col [--header-height:calc(--spacing(13))]">
     <TitleBar />
 
-    <main class="flex min-h-0 flex-1 flex-col p-6" data-file-drop-target>
+    <main
+        class="flex min-h-0 flex-1 flex-col gap-3 p-4 sm:p-6"
+        data-file-drop-target
+    >
+        <div class="flex items-baseline gap-2 px-1">
+            <h1 class="font-heading text-lg font-semibold tracking-tight">
+                bound
+            </h1>
+            <p class="text-xs text-muted-foreground">
+                peer-to-peer file transfer
+            </p>
+        </div>
+
         <Tabs.Root
             bind:value={tab}
             class="flex min-h-0 w-full flex-1 flex-col gap-3"
@@ -147,7 +159,7 @@
             <Tabs.List class="w-full">
                 <Tabs.Trigger
                     value="send"
-                    class="gap-1.5 data-[state=active]:text-send"
+                    class="gap-1.5 data-active:text-send"
                 >
                     {#if sendBusy}
                         <IconLoader2 class="animate-spin" />
@@ -158,7 +170,7 @@
                 </Tabs.Trigger>
                 <Tabs.Trigger
                     value="receive"
-                    class="gap-1.5 data-[state=active]:text-receive"
+                    class="gap-1.5 data-active:text-receive"
                 >
                     {#if receiveBusy}
                         <IconLoader2 class="animate-spin" />

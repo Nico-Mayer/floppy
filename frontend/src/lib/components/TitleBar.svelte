@@ -24,7 +24,6 @@
         {#if isMac}
             <div class="w-20"></div>
         {/if}
-        <span class="text-sm font-medium select-none">Project Bibor</span>
         <div class="flex-1"></div>
         <div class="flex items-center gap-1" style="--wails-draggable:no-drag">
             <Button
