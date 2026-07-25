@@ -1,6 +1,7 @@
 [tools]
 go = "latest"
 "go:github.com/wailsapp/wails/v3/cmd/wails3" = "3.0.0-alpha2.117"
+node = "26.5.0"
 
 [env]
 # Set by `wails3 dev` for its child tasks; default for standalone runs.
