@@ -3,6 +3,9 @@ go = "latest"
 "go:github.com/wailsapp/wails/v3/cmd/wails3" = "3.0.0-alpha2.117"
 node = "26.5.0"
 
+[shell_alias]
+mr = "mise run"
+
 [env]
 # Set by `wails3 dev` for its child tasks; default for standalone runs.
 WAILS_VITE_PORT = "{{ get_env(name='WAILS_VITE_PORT', default='9245') }}"
@@ -39,7 +42,10 @@ run = ["npm install", "npm run build"]
 hide = true
 dir = "frontend"
 run = ["npm install", 'npm run dev -- --port "$WAILS_VITE_PORT" --strictPort']
-run_windows = ["npm install", "npm run dev -- --port %WAILS_VITE_PORT% --strictPort"]
+run_windows = [
+  "npm install",
+  "npm run dev -- --port %WAILS_VITE_PORT% --strictPort"
+]
 
 [tasks."run:dev"]
 hide = true

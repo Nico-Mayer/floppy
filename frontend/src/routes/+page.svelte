@@ -1,12 +1,15 @@
 <script lang="ts">
 	import { CancelReceive, CancelSend, Receive, Send } from '$bindings/bibor/crocservice'
 	import { OpenPath, SelectFiles } from '$bindings/bibor/fileservice'
+	import { BorderBeam } from '$lib/components/magic/border-beam'
+	import { GridPattern } from '$lib/components/magic/grid-pattern'
+	import { ShimmerButton } from '$lib/components/magic/shimmer-button'
 	import { Button } from '$lib/components/ui/button'
 	import * as Card from '$lib/components/ui/card'
 	import { Input } from '$lib/components/ui/input'
 	import { Progress } from '$lib/components/ui/progress'
 	import * as Tabs from '$lib/components/ui/tabs'
-	import { Events } from '@wailsio/runtime'
+	import { Clipboard, Events } from '@wailsio/runtime'
 	import {
 		CheckCircleIcon,
 		CheckIcon,
@@ -122,10 +125,19 @@
 		sendStatus = 'idle'
 	}
 
+	let copyResetTimer: ReturnType<typeof setTimeout>
+
 	async function copyCode() {
-		await navigator.clipboard.writeText(code)
+		try {
+			// Native clipboard via the Go side — reliable in every webview,
+			// unlike navigator.clipboard (secure-context/permission quirks).
+			await Clipboard.SetText(code)
+		} catch {
+			await navigator.clipboard.writeText(code)
+		}
 		codeCopied = true
-		setTimeout(() => (codeCopied = false), 1500)
+		clearTimeout(copyResetTimer)
+		copyResetTimer = setTimeout(() => (codeCopied = false), 2000)
 	}
 
 	async function startReceive() {
@@ -187,8 +199,19 @@
 		{/if}
 
 		<Tabs.Content value="send" class="min-h-0 flex-1">
-			<Card.Root class="h-full">
-				<Card.Content class="flex h-full min-h-0 flex-col gap-3">
+			<Card.Root class="relative h-full overflow-hidden">
+				<GridPattern
+					class="fill-send/8 stroke-send/15 [mask-image:radial-gradient(600px_circle_at_center,white,transparent)]"
+				/>
+				{#if sendBusy}
+					<BorderBeam
+						size={80}
+						duration={5}
+						colorFrom="var(--color-send)"
+						colorTo="var(--color-send)"
+					/>
+				{/if}
+				<Card.Content class="relative flex h-full min-h-0 flex-col gap-3">
 					{#if sendStatus === 'idle'}
 						{#if files.length === 0}
 							<button
@@ -227,10 +250,16 @@
 									<PlusIcon />
 									Add
 								</Button>
-								<Button class="flex-1" onclick={startSend}>
+								<ShimmerButton
+									class="text-primary-foreground h-9 flex-1 gap-2 px-4 py-2 text-sm font-medium"
+									borderRadius="var(--radius)"
+									background="var(--color-primary)"
+									shimmerColor="var(--color-primary-foreground)"
+									onclick={startSend}
+								>
 									<PaperPlaneTiltIcon />
 									Send {fileSummary()}
-								</Button>
+								</ShimmerButton>
 							</div>
 						{/if}
 					{:else if sendStatus === 'starting'}
@@ -250,7 +279,7 @@
 							>
 								{code}
 								{#if codeCopied}
-									<CheckIcon class="size-4 text-emerald-500" />
+									<CheckIcon class="text-send size-4" />
 								{:else}
 									<CopyIcon class="text-muted-foreground size-4 opacity-50 group-hover:opacity-100" />
 								{/if}
@@ -277,7 +306,7 @@
 						</Button>
 					{:else if sendStatus === 'done'}
 						<div class="flex flex-1 flex-col items-center justify-center gap-3">
-							<CheckCircleIcon class="size-10 text-emerald-500" weight="fill" />
+							<CheckCircleIcon class="text-send size-10" weight="fill" />
 							<p class="text-sm">Sent {fileSummary()}</p>
 						</div>
 						<Button variant="outline" size="sm" onclick={resetSend}>Send more</Button>
@@ -287,11 +316,22 @@
 		</Tabs.Content>
 
 		<Tabs.Content value="receive" class="min-h-0 flex-1">
-			<Card.Root class="h-full">
-				<Card.Content class="flex h-full min-h-0 flex-col gap-3">
+			<Card.Root class="relative h-full overflow-hidden">
+				<GridPattern
+					class="fill-receive/8 stroke-receive/15 [mask-image:radial-gradient(600px_circle_at_center,white,transparent)]"
+				/>
+				{#if receiveBusy}
+					<BorderBeam
+						size={80}
+						duration={5}
+						colorFrom="var(--color-receive)"
+						colorTo="var(--color-receive)"
+					/>
+				{/if}
+				<Card.Content class="relative flex h-full min-h-0 flex-col gap-3">
 					{#if receiveStatus === 'done'}
 						<div class="flex flex-1 flex-col items-center justify-center gap-3">
-							<CheckCircleIcon class="size-10 text-emerald-500" weight="fill" />
+							<CheckCircleIcon class="text-receive size-10" weight="fill" />
 							<p class="text-sm">Received</p>
 							<p class="text-muted-foreground max-w-full truncate text-xs" title={receivedTo}>
 								Saved to {receivedTo}

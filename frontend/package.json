@@ -17,12 +17,15 @@
 	"devDependencies": {
 		"@eslint/compat": "^2.1.0",
 		"@eslint/js": "^10.0.1",
+		"@fontsource-variable/geist": "^5.3.0",
 		"@fontsource-variable/inter": "^5.3.0",
+		"@fontsource-variable/jetbrains-mono": "^5.3.0",
 		"@fontsource-variable/outfit": "^5.3.0",
 		"@internationalized/date": "^3.12.2",
 		"@sveltejs/adapter-static": "^3.0.10",
 		"@sveltejs/kit": "^2.70.1",
 		"@sveltejs/vite-plugin-svelte": "^7.2.0",
+		"@tabler/icons-svelte": "^3.45.0",
 		"@tailwindcss/vite": "^4.3.3",
 		"@types/node": "^25.9.5",
 		"bits-ui": "^2.18.1",
@@ -50,6 +53,7 @@
 	},
 	"dependencies": {
 		"@wailsio/runtime": "^3.0.0-alpha.97",
-		"mode-watcher": "^1.1.0"
+		"mode-watcher": "^1.1.0",
+		"motion-sv": "^0.1.13"
 	}
 }

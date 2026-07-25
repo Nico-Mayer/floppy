@@ -13,8 +13,8 @@
 	},
 	"typescript": true,
 	"registry": "https://shadcn-svelte.com/registry",
-	"style": "lyra",
-	"iconLibrary": "phosphor",
+	"style": "maia",
+	"iconLibrary": "tabler",
 	"menuColor": "default",
 	"menuAccent": "subtle"
 }
