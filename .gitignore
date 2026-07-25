@@ -1,20 +1,11 @@
 .task
 bin
-**/dist
-**/bindings
-**/node_modules
+frontend/dist
+frontend/node_modules
+frontend/bindings
+frontend/.svelte-kit
 build/linux/appimage/build
 build/windows/nsis/MicrosoftEdgeWebview2Setup.exe
-
-node_modules
-
-# Output
-.output
-.vercel
-.netlify
-.wrangler
-.svelte-kit
-frontend/build
 
 # OS
 .DS_Store
