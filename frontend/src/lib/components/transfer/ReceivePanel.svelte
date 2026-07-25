@@ -3,11 +3,12 @@
     import { Button } from "$lib/components/ui/button";
     import { Input } from "$lib/components/ui/input";
     import {
-        IconCircleCheckFilled,
+        IconCheck,
         IconDownload,
         IconFolderOpen,
     } from "@tabler/icons-svelte";
     import CancelButton from "./CancelButton.svelte";
+    import Mascot from "./Mascot.svelte";
     import TransferCard from "./TransferCard.svelte";
     import TransferProgress from "./TransferProgress.svelte";
     import type { ReceiveStatus } from "./types";
@@ -29,26 +30,43 @@
         oncancel: () => void;
         onreset: () => void;
     } = $props();
+
+    let headline = $derived(
+        status === "receiving"
+            ? "receiving"
+            : status === "done"
+              ? "complete"
+              : "enter code",
+    );
+    let badge = $derived(
+        status === "receiving"
+            ? progress !== null
+                ? `${progress}%`
+                : "…"
+            : status === "done"
+              ? "complete"
+              : "idle",
+    );
 </script>
 
-<TransferCard accent="receive" busy={status === "receiving"}>
+<TransferCard accent="receive" title="Receive" {headline} {badge}>
     {#if status === "done"}
-        <div class="flex flex-1 flex-col items-center justify-center gap-3">
-            <IconCircleCheckFilled class="size-10 text-receive" />
-            <p class="text-sm">Received</p>
+        <div class="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+            <div
+                class="animate-pop flex size-12 items-center justify-center rounded-full border"
+            >
+                <IconCheck class="text-receive-foreground size-6" />
+            </div>
+            <p class="text-base font-bold tracking-tight">Transfer complete</p>
             <p
-                class="max-w-full truncate text-xs text-muted-foreground"
+                class="max-w-full truncate font-mono text-xs text-muted-foreground"
                 title={savedTo}
             >
-                Saved to {savedTo}
+                {savedTo}
             </p>
         </div>
         <div class="flex flex-col gap-2">
-            <Button
-                size="sm"
-                class="bg-receive text-white hover:bg-receive/90"
-                onclick={() => OpenPath(savedTo)}
-            >
+            <Button onclick={() => OpenPath(savedTo)}>
                 <IconFolderOpen />
                 Open folder
             </Button>
@@ -61,15 +79,14 @@
         <CancelButton onclick={oncancel} />
     {:else}
         <div
-            class="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-4"
+            class="mx-auto flex w-full max-w-sm flex-1 flex-col items-center justify-center gap-3 text-center"
         >
-            <div class="flex flex-col items-center gap-1 text-center">
-                <IconDownload class="size-8 text-receive" />
-                <p class="text-xs text-muted-foreground">
-                    Enter the sender's code
-                </p>
-            </div>
-            <div class="flex flex-col gap-2">
+            <Mascot accent="receive" />
+            <p class="text-lg font-bold tracking-tight">Enter transfer code</p>
+            <p class="max-w-64 text-xs text-muted-foreground">
+                Paste the four-word code the sender gave you.
+            </p>
+            <div class="mt-1 flex w-full flex-col gap-2">
                 <Input
                     class="text-center font-mono"
                     placeholder="1234-word-word-word"
@@ -77,14 +94,13 @@
                     onkeydown={(e) =>
                         e.key === "Enter" && code.trim() && onstart()}
                 />
-                <Button
-                    class="w-full bg-receive text-white hover:bg-receive/90"
-                    onclick={onstart}
-                    disabled={!code.trim()}
-                >
+                <Button onclick={onstart} disabled={!code.trim()}>
                     <IconDownload />
-                    Receive
+                    Receive files
                 </Button>
+                <p class="font-mono text-xs text-muted-foreground">
+                    saves to ~/Downloads
+                </p>
             </div>
         </div>
     {/if}

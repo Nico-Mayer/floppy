@@ -36,6 +36,8 @@
     let error = $state("");
 
     let sendBusy = $derived(sendStatus !== "idle" && sendStatus !== "done");
+    // Cast needed: TS narrows the state to its "idle" initializer here and
+    // rejects the comparison; reassignments only happen inside event handlers.
     let receiveBusy = $derived(
         (receiveStatus as ReceiveStatus) === "receiving",
     );
@@ -143,23 +145,24 @@
         class="flex min-h-0 flex-1 flex-col gap-3 p-4 sm:p-6"
         data-file-drop-target
     >
-        <div class="flex items-baseline gap-2 px-1">
-            <h1 class="font-heading text-lg font-semibold tracking-tight">
-                bound
-            </h1>
-            <p class="text-xs text-muted-foreground">
-                peer-to-peer file transfer
+        <div class="mx-auto flex w-full max-w-2xl items-center gap-2.5 px-1">
+            <div class="bg-send size-3.5 rounded-[4px]"></div>
+            <h1 class="font-heading text-lg font-bold tracking-tight">Bound</h1>
+            <p
+                class="truncate font-mono text-[11px] tracking-wider uppercase text-muted-foreground"
+            >
+                no account · no cloud · direct device to device
             </p>
         </div>
 
         <Tabs.Root
             bind:value={tab}
-            class="flex min-h-0 w-full flex-1 flex-col gap-3"
+            class="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-3"
         >
             <Tabs.List class="w-full">
                 <Tabs.Trigger
                     value="send"
-                    class="gap-1.5 data-active:text-send"
+                    class="gap-1.5 data-active:text-send-foreground"
                 >
                     {#if sendBusy}
                         <IconLoader2 class="animate-spin" />
@@ -170,7 +173,7 @@
                 </Tabs.Trigger>
                 <Tabs.Trigger
                     value="receive"
-                    class="gap-1.5 data-active:text-receive"
+                    class="gap-1.5 data-active:text-receive-foreground"
                 >
                     {#if receiveBusy}
                         <IconLoader2 class="animate-spin" />

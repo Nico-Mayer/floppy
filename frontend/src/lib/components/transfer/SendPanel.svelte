@@ -1,19 +1,17 @@
 <script lang="ts">
-    import { ShimmerButton } from "$lib/components/magic/shimmer-button";
     import { Button } from "$lib/components/ui/button";
     import {
         IconCheck,
-        IconCircleCheckFilled,
         IconCopy,
-        IconFile,
         IconLoader2,
         IconPlus,
         IconSend,
-        IconUpload,
-        IconX,
     } from "@tabler/icons-svelte";
     import { Clipboard } from "@wailsio/runtime";
     import CancelButton from "./CancelButton.svelte";
+    import FileRow from "./FileRow.svelte";
+    import { basename } from "./files";
+    import Mascot from "./Mascot.svelte";
     import TransferCard from "./TransferCard.svelte";
     import TransferProgress from "./TransferProgress.svelte";
     import type { SendStatus } from "./types";
@@ -38,15 +36,35 @@
         onreset: () => void;
     } = $props();
 
-    let busy = $derived(status !== "idle" && status !== "done");
     let summary = $derived(
         files.length === 1 ? basename(files[0]) : `${files.length} files`,
     );
+    let headline = $derived(
+        status === "idle"
+            ? files.length
+                ? "review"
+                : "select files"
+            : status === "starting"
+              ? "connecting"
+              : status === "waiting"
+                ? "awaiting peer"
+                : status === "sending"
+                  ? "transferring"
+                  : "complete",
+    );
+    let badge = $derived(
+        status === "idle"
+            ? `${files.length} selected`
+            : status === "starting"
+              ? "…"
+              : status === "waiting"
+                ? "ready"
+                : status === "sending"
+                  ? `${progress}%`
+                  : "sent",
+    );
 
-    function basename(path: string): string {
-        return path.split(/[\\/]/).pop() ?? path;
-    }
-
+    let dragOver = $state(false);
     let copied = $state(false);
     let copyResetTimer: ReturnType<typeof setTimeout>;
 
@@ -64,41 +82,41 @@
     }
 </script>
 
-<TransferCard accent="send" {busy}>
+<TransferCard accent="send" title="Send" {headline} {badge}>
     {#if status === "idle"}
         {#if files.length === 0}
             <button
                 type="button"
                 onclick={onpick}
-                class="flex flex-1 flex-col place-items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-send/25 p-6 text-center text-muted-foreground transition-all hover:cursor-pointer hover:border-send/50 hover:bg-send/5"
+                ondragover={(e) => {
+                    e.preventDefault();
+                    dragOver = true;
+                }}
+                ondragleave={() => (dragOver = false)}
+                ondrop={() => (dragOver = false)}
+                class="flex flex-1 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed p-6 text-center transition-colors hover:cursor-pointer {dragOver
+                    ? 'border-send bg-send/5'
+                    : 'border-input bg-muted/40 hover:border-send'}"
             >
-                <IconUpload class="size-8 text-send" />
-                <span class="text-sm">Choose files or drop them here</span>
+                <Mascot accent="send" />
+                <span class="text-lg font-bold tracking-tight">
+                    Drag files here
+                </span>
+                <span class="max-w-72 text-xs text-muted-foreground">
+                    Drop them anywhere in this pane, or <span
+                        class="text-foreground underline underline-offset-2"
+                        >browse your files</span
+                    >. Transfers are peer-to-peer — nothing is uploaded to a
+                    server.
+                </span>
             </button>
         {:else}
-            <ul class="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
+            <ul class="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto">
                 {#each files as path (path)}
-                    <li
-                        class="group flex items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-muted/50"
-                    >
-                        <IconFile class="size-4 shrink-0 text-send" />
-                        <div class="flex min-w-0 flex-1 flex-col">
-                            <span class="truncate text-sm">{basename(path)}</span>
-                            <span
-                                class="truncate font-mono text-xs text-muted-foreground"
-                                >{path}</span
-                            >
-                        </div>
-                        <Button
-                            class="opacity-40 transition-opacity group-hover:opacity-100"
-                            variant="ghost"
-                            size="icon-xs"
-                            onclick={() => (files = files.filter((f) => f !== path))}
-                            aria-label="Remove"
-                        >
-                            <IconX />
-                        </Button>
-                    </li>
+                    <FileRow
+                        {path}
+                        onremove={() => (files = files.filter((f) => f !== path))}
+                    />
                 {/each}
             </ul>
             <div class="flex gap-2">
@@ -106,51 +124,63 @@
                     <IconPlus />
                     Add
                 </Button>
-                <ShimmerButton
-                    class="h-9 flex-1 gap-2 px-4 py-2 text-sm font-medium text-white"
-                    borderRadius="var(--radius-4xl)"
-                    background="var(--color-send)"
-                    shimmerColor="#ffffff"
-                    onclick={onstart}
-                >
+                <Button class="flex-1" onclick={onstart}>
                     <IconSend />
                     Send {summary}
-                </ShimmerButton>
+                </Button>
             </div>
         {/if}
     {:else if status === "starting"}
-        <TransferProgress accent="send" label="Preparing…" />
+        <TransferProgress accent="send" label="Connecting to peer…" />
     {:else if status === "waiting"}
         <div class="flex flex-1 flex-col items-center justify-center gap-4">
+            <p class="animate-pop text-lg font-bold tracking-tight">
+                Ready to share
+            </p>
             <button
                 type="button"
                 onclick={copyCode}
-                class="group flex max-w-full items-center gap-3 rounded-2xl border border-send/30 bg-send/10 px-5 py-3 font-mono text-lg tracking-wide break-all transition-colors hover:cursor-pointer hover:bg-send/20"
+                class="border-l-send flex max-w-full items-center gap-3 rounded-xl border border-l-[3px] bg-card px-4 py-3 text-left transition-colors hover:cursor-pointer hover:bg-muted/50"
                 title="Click to copy"
             >
-                {code}
+                <span class="min-w-0 font-mono text-[15px] font-medium break-all">
+                    {code}
+                </span>
                 {#if copied}
-                    <IconCheck class="size-5 shrink-0 text-send" />
+                    <IconCheck class="text-send-foreground size-4 shrink-0" />
                 {:else}
-                    <IconCopy
-                        class="size-5 shrink-0 text-muted-foreground group-hover:text-foreground"
-                    />
+                    <IconCopy class="size-4 shrink-0 text-muted-foreground" />
                 {/if}
             </button>
-            <div class="flex items-center gap-2 text-xs text-muted-foreground">
-                <IconLoader2 class="shrink-0 animate-spin text-send" />
-                Waiting for receiver…
+            <p class="max-w-64 text-center text-xs text-muted-foreground">
+                Share the code. It expires when you quit the app.
+            </p>
+            <div
+                class="flex items-center gap-2 font-mono text-[11px] tracking-wider uppercase text-muted-foreground"
+            >
+                <IconLoader2 class="size-3.5 shrink-0 animate-spin" />
+                awaiting peer
             </div>
         </div>
         <CancelButton onclick={oncancel} />
     {:else if status === "sending"}
-        <TransferProgress accent="send" {progress} label="Sending {summary}" />
+        <TransferProgress
+            accent="send"
+            {progress}
+            label="Encrypted · direct peer · {summary}"
+        />
         <CancelButton onclick={oncancel} />
     {:else}
         <div class="flex flex-1 flex-col items-center justify-center gap-3">
-            <IconCircleCheckFilled class="size-10 text-send" />
-            <p class="text-sm">Sent {summary}</p>
+            <div
+                class="animate-pop flex size-12 items-center justify-center rounded-full border"
+            >
+                <IconCheck class="text-send-foreground size-6" />
+            </div>
+            <p class="text-base font-bold tracking-tight">Sent {summary}</p>
         </div>
-        <Button variant="outline" size="sm" onclick={onreset}>Send more</Button>
+        <Button variant="outline" size="sm" onclick={onreset}>
+            New transfer
+        </Button>
     {/if}
 </TransferCard>

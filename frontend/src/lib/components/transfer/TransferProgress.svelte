@@ -16,19 +16,21 @@
 
 <div class="flex flex-1 flex-col items-center justify-center gap-4">
     {#if progress !== null}
-        <p class="text-3xl font-semibold tabular-nums">{progress}%</p>
+        <p class="text-4xl font-bold tracking-tight tabular-nums">
+            {progress}<span class="text-xl">%</span>
+        </p>
         <Progress
             value={progress}
-            class="h-2 w-2/3 {accent === 'send'
+            class="w-2/3 {accent === 'send'
                 ? '[&>[data-slot=progress-indicator]]:bg-send'
                 : '[&>[data-slot=progress-indicator]]:bg-receive'}"
         />
     {:else}
         <IconLoader2
             class="size-8 animate-spin {accent === 'send'
-                ? 'text-send'
-                : 'text-receive'}"
+                ? 'text-send-foreground'
+                : 'text-receive-foreground'}"
         />
     {/if}
-    <p class="text-xs text-muted-foreground">{label}</p>
+    <p class="font-mono text-xs text-muted-foreground">{label}</p>
 </div>
