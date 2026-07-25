@@ -1,15 +1,15 @@
 {
 	"fixed": {
-		"file_version": "0.0.1"
+		"file_version": "0.1.0"
 	},
 	"info": {
 		"0000": {
-			"ProductVersion": "0.0.1",
-			"CompanyName": "Nico Mayer",
-			"FileDescription": "A minimal app for sending and receiving files",
-			"LegalCopyright": "(c) 2026, Nico Mayer",
-			"ProductName": "Project Bibor",
-			"Comments": "Project Bibor"
+			"ProductVersion": "0.1.0",
+			"CompanyName": "My Company",
+			"FileDescription": "A project-bibor application",
+			"LegalCopyright": "© 2026, My Company",
+			"ProductName": "My Product",
+			"Comments": "This is a comment"
 		}
 	}
 }

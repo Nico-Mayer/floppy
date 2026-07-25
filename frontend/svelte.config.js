@@ -1,23 +1,7 @@
-import adapter from '@sveltejs/adapter-static'
+import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 
-/** @type {import('@sveltejs/kit').Config} */
-const config = {
-	compilerOptions: {
-		// Force runes mode for the project, except for libraries. Can be removed in svelte 6.
-		runes: ({ filename }) => (filename.split(/[/\\]/).includes('node_modules') ? undefined : true)
-	},
-	kit: {
-		adapter: adapter({
-			pages: 'dist',
-			assets: 'dist',
-			fallback: undefined,
-			precompress: false,
-			strict: true
-		}),
-		alias: {
-			$bindings: 'bindings'
-		}
-	}
-}
-
-export default config
+export default {
+  // Consult https://svelte.dev/docs#compile-time-svelte-preprocess
+  // for more information about preprocessors
+  preprocess: vitePreprocess(),
+};

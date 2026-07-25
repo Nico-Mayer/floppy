@@ -1,13 +1,13 @@
 [Desktop Entry]
 Version=1.0
-Name=Project Bibor
-Comment=A minimal app for sending and receiving files
+Name=My Product
+Comment=A project-bibor application
 # The Exec line includes %u to pass the URL to the application
-Exec=/usr/local/bin/bibor %u
+Exec=/usr/local/bin/project-bibor %u
 Terminal=false
 Type=Application
-Icon=bibor
+Icon=project-bibor
 Categories=Utility;
-StartupWMClass=bibor
+StartupWMClass=project-bibor
 
  

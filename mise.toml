@@ -1,63 +1,14 @@
 [tools]
-go = "latest"
+go = "1.26.5"
 "go:github.com/wailsapp/wails/v3/cmd/wails3" = "3.0.0-alpha2.117"
 node = "26.5.0"
-pnpm = "11.17.0"
 
 [shell_alias]
 mr = "mise run"
 
-[env]
-# Set by `wails3 dev` for its child tasks; default for standalone runs.
-WAILS_VITE_PORT = "{{ get_env(name='WAILS_VITE_PORT', default='9245') }}"
-# Used by the wails Taskfiles (build/) to pick the frontend package manager.
-PACKAGE_MANAGER = "pnpm"
-
-# mise is the developer interface + toolchain pinning; the actual build
-# machinery lives in the wails-owned Taskfiles (Taskfile.yml + build/),
-# executed by the task runner embedded in the wails3 CLI. Don't port that
-# logic here — `wails3 update build-assets` regenerates it on wails updates.
-
 [tasks.dev]
-description = "Run the application in development mode"
 run = "wails3 dev"
 
-[tasks.build]
-description = "Build the application for the host OS (GOOS=... to cross-build)"
-run = "wails3 build"
-
-[tasks.package]
-description = "Package a production build (.app / installer, per platform)"
-run = "wails3 package"
-
-[tasks.run]
-description = "Build and run the application"
-run = "wails3 task run"
-
-[tasks."generate:bindings"]
-description = "Generate TypeScript bindings for the Go services"
-run = "wails3 generate bindings -clean=true -ts"
-
-[tasks."build:server"]
-description = "Build the application in server mode (no GUI, HTTP server only)"
-run = "wails3 task build:server"
-
-[tasks."run:server"]
-description = "Build and run the application in server mode"
-run = "wails3 task run:server"
-
-[tasks."build:docker"]
-description = "Build a Docker image for server mode deployment"
-run = "wails3 task build:docker"
-
-[tasks."run:docker"]
-description = "Build and run the Docker image"
-run = "wails3 task run:docker"
-
-[tasks."setup:docker"]
-description = "Build the Docker image used for cross-compilation (~800MB download)"
-run = "wails3 task setup:docker"
-
-[tasks."update:build-assets"]
-description = "Regenerate platform build assets from build/config.yml"
-run = "wails3 task common:update:build-assets"
+[tasks."kill-port"]
+run = "lsof -ti tcp:9245 | xargs kill -9"
+run_windows = "Stop-Process -Id (Get-NetTCPConnection -LocalPort 9245 -State Listen).OwningProcess -Force"

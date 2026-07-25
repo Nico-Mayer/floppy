@@ -1,3 +1,0 @@
-minimumReleaseAgeExclude:
-  - eslint@10.8.0
-  - svelte@5.56.8

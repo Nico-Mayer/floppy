@@ -3,26 +3,26 @@
 #
 # The lines below are called `modelines`. See `:help modeline`
 
-name: "bibor"
+name: "project-bibor"
 arch: ${GOARCH}
 platform: "linux"
-version: "0.0.1"
+version: "0.1.0"
 section: "default"
 priority: "extra"
 maintainer: ${GIT_COMMITTER_NAME} <${GIT_COMMITTER_EMAIL}>
-description: "A minimal app for sending and receiving files"
-vendor: "Nico Mayer"
+description: "A project-bibor application"
+vendor: "My Company"
 homepage: "https://wails.io"
 license: "MIT"
 release: "1"
 
 contents:
-  - src: "./bin/bibor"
-    dst: "/usr/local/bin/bibor"
+  - src: "./bin/project-bibor"
+    dst: "/usr/local/bin/project-bibor"
   - src: "./build/appicon.png"
-    dst: "/usr/share/icons/hicolor/128x128/apps/bibor.png"
-  - src: "./build/linux/bibor.desktop"
-    dst: "/usr/share/applications/bibor.desktop"
+    dst: "/usr/share/icons/hicolor/128x128/apps/project-bibor.png"
+  - src: "./build/linux/project-bibor.desktop"
+    dst: "/usr/share/applications/project-bibor.desktop"
 
 # Default dependencies for the GTK4 + WebKitGTK 6.0 stack (Ubuntu 24.04+ / Debian 13+)
 depends:
