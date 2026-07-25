@@ -54,8 +54,12 @@
 				sendStatus = 'waiting'
 			}),
 			Events.On('croc:send:progress', (ev: { data: string }) => {
-				sendProgress = Number(ev.data)
-				sendStatus = 'sending'
+				// Progress only makes sense once the code phrase exists — never
+				// let a stray progress line hide the code screen.
+				if (sendStatus === 'waiting' || sendStatus === 'sending') {
+					sendProgress = Number(ev.data)
+					sendStatus = 'sending'
+				}
 			}),
 			Events.On('croc:recv:progress', (ev: { data: string }) => {
 				receiveProgress = Number(ev.data)
@@ -232,7 +236,8 @@
 					{:else if sendStatus === 'starting'}
 						<div class="text-muted-foreground flex flex-1 flex-col items-center justify-center gap-3">
 							<CircleNotchIcon class="size-8 animate-spin" />
-							<p class="text-sm">Starting…</p>
+							<p class="text-sm">Preparing…</p>
+							<p class="text-muted-foreground text-xs">Large files take a moment to hash</p>
 						</div>
 					{:else if sendStatus === 'waiting'}
 						<div class="flex flex-1 flex-col items-center justify-center gap-4">

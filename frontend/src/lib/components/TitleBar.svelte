@@ -2,17 +2,26 @@
 	import { SHOW_SIDEBAR } from '$lib/flags'
 	import { Button } from '$lib/components/ui/button/index.js'
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js'
+	import { Window } from '@wailsio/runtime'
 	import { toggleMode } from 'mode-watcher'
-	import { MoonIcon, SidebarSimpleIcon, SunIcon } from 'phosphor-svelte'
+	import { MinusIcon, MoonIcon, SidebarSimpleIcon, SquareIcon, SunIcon, XIcon } from 'phosphor-svelte'
+
 	const sidebar = Sidebar.useSidebar()
+
+	// On Windows the window is frameless (see main.go) and we render our own
+	// window controls; on macOS the native traffic lights need a spacer.
+	const isWindows = navigator.userAgent.includes('Windows')
+	const isMac = navigator.userAgent.includes('Mac')
 </script>
 
 <header
 	class="bg-background sticky top-0 z-50 flex w-full items-center border-b"
 	style="--wails-draggable:drag"
 >
-	<div class="flex h-(--header-height) w-full items-center gap-2 px-4">
-		<div class="w-20"></div>
+	<div class="flex h-(--header-height) w-full items-center gap-2 pr-2 pl-4">
+		{#if isMac}
+			<div class="w-20"></div>
+		{/if}
 		{#if SHOW_SIDEBAR}
 			<Button class="size-8" variant="ghost" size="icon" onclick={sidebar.toggle}>
 				{#if sidebar.open}
@@ -24,7 +33,7 @@
 		{/if}
 		<span class="text-sm font-medium select-none">Project Bibor</span>
 		<div class="flex-1"></div>
-		<div style="--wails-draggable:no-drag">
+		<div class="flex items-center gap-1" style="--wails-draggable:no-drag">
 			<Button
 				class="size-8"
 				variant="ghost"
@@ -35,6 +44,35 @@
 				<SunIcon class="block dark:hidden" />
 				<MoonIcon class="hidden dark:block" />
 			</Button>
+			{#if isWindows}
+				<Button
+					class="size-8"
+					variant="ghost"
+					size="icon"
+					onclick={() => Window.Minimise()}
+					aria-label="Minimize"
+				>
+					<MinusIcon />
+				</Button>
+				<Button
+					class="size-8"
+					variant="ghost"
+					size="icon"
+					onclick={() => Window.ToggleMaximise()}
+					aria-label="Maximize"
+				>
+					<SquareIcon />
+				</Button>
+				<Button
+					class="size-8 hover:bg-destructive hover:text-white"
+					variant="ghost"
+					size="icon"
+					onclick={() => Window.Close()}
+					aria-label="Close"
+				>
+					<XIcon />
+				</Button>
+			{/if}
 		</div>
 	</div>
 </header>

@@ -75,7 +75,9 @@ func watchStderr(r io.Reader, progressEvent string) <-chan string {
 				continue
 			}
 			if m := percentRe.FindStringSubmatch(line); m != nil {
-				if m[1] != lastPercent {
+				// croc also draws "Hashing <file>" bars while preparing large
+				// files — that's not transfer progress, don't forward it.
+				if !strings.Contains(line, "Hashing") && m[1] != lastPercent {
 					lastPercent = m[1]
 					emit(progressEvent, m[1])
 				}

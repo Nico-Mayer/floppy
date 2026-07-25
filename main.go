@@ -4,6 +4,7 @@ import (
 	"embed"
 	"log"
 	"os"
+	"runtime"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
@@ -68,6 +69,10 @@ func main() {
 	win := app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title:          "Project Bibor",
 		EnableFileDrop: true,
+		// On Windows the native frame is dropped and the frontend TitleBar
+		// renders its own window controls, matching the macOS hidden-inset
+		// look. macOS keeps its native traffic lights.
+		Frameless: runtime.GOOS == "windows",
 		Mac: application.MacWindow{
 			InvisibleTitleBarHeight: 50,
 			Backdrop:                application.MacBackdropTranslucent,
