@@ -14,7 +14,7 @@ node_modules
 .netlify
 .wrangler
 .svelte-kit
-/build
+frontend/build
 
 # OS
 .DS_Store

@@ -1,0 +1,38 @@
+# Wails project config, required by `wails3 dev` (mise run dev).
+version: '3'
+
+info:
+  companyName: "Nico Mayer"
+  productName: "Project Bibor"
+  productIdentifier: "com.nicomayer.bibor"
+  description: "A minimal app for sending and receiving files"
+  copyright: "(c) 2026, Nico Mayer"
+  comments: "Project Bibor"
+  version: "0.0.1"
+
+# Dev mode configuration
+dev_mode:
+  root_path: .
+  log_level: warn
+  debounce: 1000
+  ignore:
+    dir:
+      - .git
+      - node_modules
+      - frontend
+      - bin
+    file:
+      - .DS_Store
+      - .gitignore
+      - .gitkeep
+      - "*_test.go"
+    watched_extension:
+      - "*.go"
+    git_ignore: true
+  executes:
+    - cmd: mise run build
+      type: blocking
+    - cmd: mise run frontend:dev
+      type: background
+    - cmd: mise run run:dev
+      type: primary

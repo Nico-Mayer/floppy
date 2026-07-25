@@ -2,91 +2,45 @@
 go = "latest"
 "go:github.com/wailsapp/wails/v3/cmd/wails3" = "3.0.0-alpha2.117"
 
-[tasks."frontend:install"]
-description = "Install frontend dependencies"
-dir = "frontend"
-run = "npm install"
+[env]
+# Set by `wails3 dev` for its child tasks; default for standalone runs.
+WAILS_VITE_PORT = "{{ get_env(name='WAILS_VITE_PORT', default='9245') }}"
+
+[tasks.dev]
+description = "Run the application in development mode"
+run = "wails3 dev -config ./build/config.yml -port 9245"
+
+[tasks.build]
+description = "Build the application"
+depends = ["frontend:build"]
+run = "go build -o bin/bibor ."
+run_windows = "go build -o bin/bibor.exe ."
+
+[tasks.run]
+description = "Build and run the application"
+depends = ["build"]
+run = "./bin/bibor"
+run_windows = 'bin\bibor.exe'
 
 [tasks."generate:bindings"]
 description = "Generate TypeScript bindings for the Go services"
 run = "wails3 generate bindings -clean=true -ts"
 
 [tasks."frontend:build"]
-description = "Build the frontend for production"
-depends = ["frontend:install", "generate:bindings"]
+description = "Install deps and build the frontend"
+depends = ["generate:bindings"]
 dir = "frontend"
-run = "npm run build"
+run = ["npm install", "npm run build"]
 
-[tasks."frontend:build:dev"]
-description = "Build the frontend in development mode"
-depends = ["frontend:install", "generate:bindings"]
-dir = "frontend"
-run = "npm run build:dev"
+# Helpers below are invoked by `wails3 dev` (wired up in build/config.yml).
 
 [tasks."frontend:dev"]
-description = "Run the vite dev server (used by `mise run dev`)"
-depends = ["frontend:install"]
+hide = true
 dir = "frontend"
-run = 'npm run dev -- --port "${WAILS_VITE_PORT:-9245}" --strictPort'
-
-[tasks.build]
-description = "Build the application"
-depends = ["frontend:build"]
-run = 'go build -tags production -trimpath -buildvcs=false -ldflags="-w -s" -o bin/bibor .'
-
-[tasks."build:dev"]
-description = "Build the application without optimizations (used by `mise run dev`)"
-depends = ["frontend:build:dev"]
-run = 'go build -buildvcs=false -gcflags=all="-l" -o bin/bibor .'
-
-[tasks.run]
-description = "Build and run the application"
-depends = ["build"]
-run = "./bin/bibor"
+run = ["npm install", 'npm run dev -- --port "$WAILS_VITE_PORT" --strictPort']
+run_windows = ["npm install", "npm run dev -- --port %WAILS_VITE_PORT% --strictPort"]
 
 [tasks."run:dev"]
-description = "Run the already-built binary (used by `mise run dev`)"
+hide = true
 run = "./bin/bibor"
-
-[tasks.dev]
-description = "Run the application in development mode"
-run = "wails3 dev -config ./build/config.yml -port 9245"
-
-[tasks.package]
-description = "Package a production build as a macOS .app bundle"
-depends = ["build"]
-run = [
-  "rm -rf bin/bibor.app",
-  "mkdir -p bin/bibor.app/Contents/MacOS bin/bibor.app/Contents/Resources",
-  "cp build/darwin/Info.plist bin/bibor.app/Contents/Info.plist",
-  "cp build/darwin/icons.icns bin/bibor.app/Contents/Resources/icons.icns",
-  "cp bin/bibor bin/bibor.app/Contents/MacOS/bibor",
-]
-
-[tasks."build:server"]
-description = "Build the application in server mode (no GUI, HTTP server only)"
-depends = ["frontend:build"]
-run = 'go build -tags server,production -trimpath -buildvcs=false -ldflags="-w -s" -o bin/bibor-server .'
-
-[tasks."run:server"]
-description = "Build and run the application in server mode"
-depends = ["build:server"]
-run = "./bin/bibor-server"
-
-[tasks."setup:docker"]
-description = "Build the Docker image used for cross-compilation (~800MB download)"
-run = "docker build -t wails-cross -f build/docker/Dockerfile.cross build/docker/"
-
-[tasks."build:docker"]
-description = "Build a Docker image for server mode deployment"
-depends = ["frontend:build"]
-run = "docker build --build-arg CGO_ENABLED=0 -t bibor:latest -f build/docker/Dockerfile.server ."
-
-[tasks."run:docker"]
-description = "Build and run the Docker image"
-depends = ["build:docker"]
-run = "docker run --rm -p 8080:8080 bibor:latest"
-
-[tasks."update:build-assets"]
-description = "Regenerate platform build assets from build/config.yml"
-run = 'wails3 update build-assets -name bibor -binaryname bibor -config build/config.yml -dir build'
+run_windows = 'bin\bibor.exe'
