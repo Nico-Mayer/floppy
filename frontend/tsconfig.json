@@ -14,7 +14,8 @@
     "allowJs": true,
     "checkJs": true,
     "isolatedModules": true,
-    "baseUrl": ".",
+    // No baseUrl: it is deprecated in TS 7, and paths already resolve
+    // relative to this file without it.
     "paths": {
       "$lib": ["./src/lib"],
       "$lib/*": ["./src/lib/*"],

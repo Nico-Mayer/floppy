@@ -17,6 +17,8 @@
 
     let headline = $derived.by(() => {
         switch (receive.status) {
+            case "connecting":
+                return "connecting";
             case "receiving":
                 return "receiving";
             case "done":
@@ -27,6 +29,8 @@
     });
     let badge = $derived.by(() => {
         switch (receive.status) {
+            case "connecting":
+                return "…";
             case "receiving":
                 return receive.progress === null ? "…" : `${receive.progress}%`;
             case "done":
@@ -64,6 +68,18 @@
                 Receive more
             </Button>
         </div>
+    {:else if receive.status === "connecting"}
+        <TransferProgress accent="receive" label="Looking for the sender…" />
+        {#if receive.tooSlow}
+            <!-- croc never times out on a bad code, so the only clue the user
+                 gets that they mistyped is this one. -->
+            <p class="text-center text-xs text-muted-foreground">
+                Still nothing. Check that
+                <span class="font-mono text-foreground">{receive.code}</span>
+                matches the sender's code, and that they are still waiting.
+            </p>
+        {/if}
+        <CancelButton onclick={() => receive.cancel()} />
     {:else if receive.status === "receiving"}
         <TransferProgress
             accent="receive"
@@ -88,6 +104,7 @@
                     class="text-center font-mono"
                     placeholder="1234-word-word-word"
                     bind:value={receive.code}
+                    maxlength={32}
                     onkeydown={(e) =>
                         e.key === "Enter" &&
                         receive.code.trim() &&
@@ -101,7 +118,7 @@
                     Receive files
                 </Button>
                 <p class="font-mono text-xs text-muted-foreground">
-                    saves to ~/Downloads
+                    saves to ~/Downloads/{receive.code}
                 </p>
             </div>
         </div>

@@ -67,28 +67,54 @@ class SendTransfer {
     }
 }
 
+/**
+ * How long a receive may sit unconnected before the UI suggests the code might
+ * be wrong. croc waits for its peer forever, so nothing else ever says so.
+ */
+const MISTYPED_CODE_HINT_DELAY = 15_000;
+
 class ReceiveTransfer {
     status = $state<ReceiveStatus>("idle");
     code = $state("");
     savedTo = $state("");
     progress = $state<number | null>(null);
     stats = $state<TransferStats | null>(null);
+    /** Set once the connect attempt has taken suspiciously long. */
+    tooSlow = $state(false);
+    #hintTimer: ReturnType<typeof setTimeout> | undefined;
 
     get busy() {
-        return this.status === "receiving";
+        return this.status === "connecting" || this.status === "receiving";
     }
 
     async start() {
         app.error = "";
         this.progress = null;
         this.stats = null;
-        this.status = "receiving";
+        this.tooSlow = false;
+        this.status = "connecting";
+        this.#hintTimer = setTimeout(
+            () => (this.tooSlow = true),
+            MISTYPED_CODE_HINT_DELAY,
+        );
         try {
             await Receive(this.code);
         } catch (e) {
             app.error = String(e);
-            this.status = "idle";
+            this.stop();
         }
+    }
+
+    /** The peer answered: bytes are moving, so the code was right. */
+    connected() {
+        this.#clearHint();
+        this.status = "receiving";
+    }
+
+    /** Give up on this attempt but keep the code around to be corrected. */
+    stop() {
+        this.#clearHint();
+        this.status = "idle";
     }
 
     async cancel() {
@@ -97,11 +123,18 @@ class ReceiveTransfer {
     }
 
     reset() {
+        this.#clearHint();
         this.code = "";
         this.savedTo = "";
         this.progress = null;
         this.stats = null;
         this.status = "idle";
+    }
+
+    #clearHint() {
+        clearTimeout(this.#hintTimer);
+        this.#hintTimer = undefined;
+        this.tooSlow = false;
     }
 }
 
@@ -134,6 +167,9 @@ class TransferApp {
                 }
             }),
             Events.On("croc:recv:progress", (ev: { data: TransferStats }) => {
+                // A receiver has no byte counts until the peer answers, so the
+                // first progress event doubles as the "connected" signal.
+                this.receive.connected();
                 this.receive.stats = ev.data;
                 this.receive.progress = ev.data.percent;
             }),
@@ -141,13 +177,14 @@ class TransferApp {
                 this.send.status = "done";
             }),
             Events.On("croc:received", (ev: { data: string }) => {
+                this.receive.connected();
                 this.receive.savedTo = ev.data;
                 this.receive.status = "done";
             }),
             Events.On("croc:error", (ev: { data: string }) => {
                 this.error = ev.data;
                 if (this.send.status !== "done") this.send.status = "idle";
-                if (this.receive.status !== "done") this.receive.status = "idle";
+                if (this.receive.status !== "done") this.receive.stop();
             }),
         ];
         return () => unsubs.forEach((unsub) => unsub());
