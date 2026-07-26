@@ -5,17 +5,17 @@
  * TransferStats is the payload of croc:send:progress and croc:recv:progress.
  */
 export interface TransferStats {
-    "percent": number;
-    "sent": number;
-    "total": number;
+	percent: number
+	sent: number
+	total: number
 
-    /**
-     * Bps is the smoothed transfer rate; 0 until a rate can be measured.
-     */
-    "bps": number;
+	/**
+	 * Bps is the smoothed transfer rate; 0 until a rate can be measured.
+	 */
+	bps: number
 
-    /**
-     * ETA is the estimated number of seconds left, -1 while unknown.
-     */
-    "eta": number;
+	/**
+	 * ETA is the estimated number of seconds left, -1 while unknown.
+	 */
+	eta: number
 }

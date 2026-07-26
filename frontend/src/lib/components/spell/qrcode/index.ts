@@ -1,2 +1,2 @@
-import QRCode from "./qrcode.svelte";
-export { QRCode };
+import QRCode from './qrcode.svelte'
+export { QRCode }

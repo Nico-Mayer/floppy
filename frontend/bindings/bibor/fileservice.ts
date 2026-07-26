@@ -3,14 +3,14 @@
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wailsio/runtime";
+import { Call as $Call, CancellablePromise as $CancellablePromise } from '@wailsio/runtime'
 
 /**
  * OpenPath opens a file or folder with the OS default handler
  * (Finder/Explorer/xdg-open).
  */
 export function OpenPath(path: string): $CancellablePromise<void> {
-    return $Call.ByID(1363948864, path);
+	return $Call.ByID(1363948864, path)
 }
 
 /**
@@ -18,5 +18,5 @@ export function OpenPath(path: string): $CancellablePromise<void> {
  * of the selected files.
  */
 export function SelectFiles(): $CancellablePromise<string[] | null> {
-    return $Call.ByID(3388695362);
+	return $Call.ByID(3388695362)
 }

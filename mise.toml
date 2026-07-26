@@ -16,3 +16,21 @@ run_windows = "Stop-Process -Id (Get-NetTCPConnection -LocalPort 9245 -State Lis
 
 [tasks.test]
 run = "gotestsum ./..."
+
+[tasks."frontend:fmt"]
+run = """
+cd frontend
+npm run format
+"""
+
+[tasks."frontend:lint"]
+run = """
+cd frontend
+npm run lint
+"""
+
+[tasks."frontend:check"]
+run = """
+cd frontend
+npm run check
+"""
