@@ -159,22 +159,20 @@ func TestReceiveFromPeer(t *testing.T) {
 	}
 	t.Logf("using code %q", code)
 
-	// Receiving writes into the CWD (see ServiceStartup); point it at a
-	// scratch dir for the test.
-	dest := t.TempDir()
+	// Receive chdirs into its per-code folder itself; just restore the CWD
+	// afterwards so later tests are unaffected.
+	destRoot := t.TempDir()
 	cwd, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chdir(dest); err != nil {
-		t.Fatal(err)
-	}
 	defer os.Chdir(cwd)
 
-	svc := &CrocService{dest: dest}
+	svc := &CrocService{destRoot: destRoot}
 	if err := svc.Receive(code); err != nil {
 		t.Fatalf("Receive: %v", err)
 	}
+	dest := filepath.Join(destRoot, code)
 	if got := rec.waitFor(t, "croc:received", 120*time.Second); got != dest {
 		t.Errorf("croc:received payload = %q, want %q", got, dest)
 	}
@@ -201,7 +199,7 @@ func TestSendToPeer(t *testing.T) {
 	src, payload := makePayload(t)
 	dest := t.TempDir()
 
-	svc := &CrocService{dest: dest}
+	svc := &CrocService{destRoot: dest}
 	if err := svc.Send([]string{src}); err != nil {
 		t.Fatalf("Send: %v", err)
 	}
@@ -223,12 +221,19 @@ func TestSendToPeer(t *testing.T) {
 }
 
 // TestCancelReceive verifies cancelling a pending receive neither errors nor
-// completes — the cancelled flag suppresses both.
+// completes, and that the per-code folder is removed when nothing arrived.
 func TestCancelReceive(t *testing.T) {
 	rec := recordEvents(t)
+	destRoot := t.TempDir()
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(cwd)
 
-	svc := &CrocService{dest: t.TempDir()}
-	if err := svc.Receive("0000-never-matches-anything"); err != nil {
+	code := "0000-never-matches-anything"
+	svc := &CrocService{destRoot: destRoot}
+	if err := svc.Receive(code); err != nil {
 		t.Fatalf("Receive: %v", err)
 	}
 	time.Sleep(200 * time.Millisecond)
@@ -243,6 +248,9 @@ func TestCancelReceive(t *testing.T) {
 	}
 	if rec.count("croc:received") > 0 {
 		t.Error("cancelled receive emitted completion")
+	}
+	if _, err := os.Stat(filepath.Join(destRoot, code)); !os.IsNotExist(err) {
+		t.Errorf("empty per-code folder not cleaned up (stat err=%v)", err)
 	}
 }
 
@@ -289,7 +297,7 @@ func TestSendResumedTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	svc := &CrocService{dest: dest}
+	svc := &CrocService{destRoot: dest}
 	if err := svc.Send([]string{src}); err != nil {
 		t.Fatalf("Send: %v", err)
 	}

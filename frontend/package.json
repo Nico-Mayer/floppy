@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "@wailsio/runtime": "latest",
-    "mode-watcher": "^1.1.0"
+    "mode-watcher": "^1.1.0",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "@fontsource-variable/geist": "^5.3.0",

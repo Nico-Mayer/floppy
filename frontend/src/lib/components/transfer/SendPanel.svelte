@@ -9,6 +9,7 @@
         IconSend,
     } from "@tabler/icons-svelte";
     import { Clipboard } from "@wailsio/runtime";
+    import Qrcode from "../spell/qrcode/qrcode.svelte";
     import CancelButton from "./CancelButton.svelte";
     import FileRow from "./FileRow.svelte";
     import { basename } from "./files";
@@ -122,26 +123,45 @@
             <p class="animate-pop text-lg font-bold tracking-tight">
                 Ready to share
             </p>
-            <button
-                type="button"
-                onclick={copyCode}
-                class="flex max-w-full items-center gap-3 rounded-xl border bg-card px-4 py-3 text-left transition-colors hover:cursor-pointer hover:bg-muted/50"
-                title="Click to copy"
+
+            <div
+                class="flex w-full max-w-md flex-col items-center gap-4 sm:flex-row sm:justify-center"
             >
-                <span
-                    class="min-w-0 font-mono text-[15px] font-medium break-all"
+                <Qrcode
+                    size={120}
+                    value="https://sv-animations.vercel.app/spell/qrcode"
+                ></Qrcode>
+                <div
+                    class="flex w-full min-w-0 flex-col items-center gap-2 sm:items-start"
                 >
-                    {send.code}
-                </span>
-                {#if copied}
-                    <IconCheck class="text-send-foreground size-4 shrink-0" />
-                {:else}
-                    <IconCopy class="size-4 shrink-0 text-muted-foreground" />
-                {/if}
-            </button>
-            <p class="max-w-64 text-center text-xs text-muted-foreground">
-                Share the code. It expires when you quit the app.
-            </p>
+                    <button
+                        type="button"
+                        onclick={copyCode}
+                        class="flex w-full items-center gap-3 rounded-xl border bg-card px-4 py-3 text-left transition-colors hover:cursor-pointer hover:bg-muted/50"
+                        title="Click to copy"
+                    >
+                        <span
+                            class="min-w-0 font-mono text-[15px] font-medium break-all"
+                        >
+                            {send.code}
+                        </span>
+                        {#if copied}
+                            <IconCheck
+                                class="text-send-foreground size-4 shrink-0"
+                            />
+                        {:else}
+                            <IconCopy
+                                class="size-4 shrink-0 text-muted-foreground"
+                            />
+                        {/if}
+                    </button>
+                    <p
+                        class="text-center text-xs text-muted-foreground sm:text-left"
+                    >
+                        Share by QR or code. It expires when you quit the app.
+                    </p>
+                </div>
+            </div>
             <div
                 class="flex items-center gap-2 font-mono text-[11px] tracking-wider uppercase text-muted-foreground"
             >

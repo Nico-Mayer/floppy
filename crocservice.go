@@ -25,7 +25,7 @@ import (
 // croc:recv:progress, croc:sent, croc:received, croc:error.
 type CrocService struct {
 	mu            sync.Mutex
-	dest          string
+	destRoot      string
 	sendCancel    context.CancelFunc
 	recvCancel    context.CancelFunc
 	sendCancelled bool
@@ -52,19 +52,20 @@ func defaultCrocOptions() croc.Options {
 	}
 }
 
-// ServiceStartup pins the process working directory to the receive
-// destination: the croc library always saves into the CWD, and nothing else
-// in the app depends on it.
+// ServiceStartup resolves the receive destination root and parks the process
+// working directory there. The croc library always saves into the CWD;
+// Receive re-points it at a per-code subfolder, and nothing else in the app
+// may depend on it.
 func (s *CrocService) ServiceStartup(ctx context.Context, options application.ServiceOptions) error {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return err
 	}
-	s.dest = filepath.Join(home, "Downloads")
-	if err := os.MkdirAll(s.dest, 0o755); err != nil {
+	s.destRoot = filepath.Join(home, "Downloads")
+	if err := os.MkdirAll(s.destRoot, 0o755); err != nil {
 		return err
 	}
-	return os.Chdir(s.dest)
+	return os.Chdir(s.destRoot)
 }
 
 const progressPollInterval = 200 * time.Millisecond
@@ -222,7 +223,7 @@ func (s *CrocService) Receive(code string) error {
 	if s.recvCancel != nil {
 		return fmt.Errorf("a receive is already in progress")
 	}
-	if s.dest == "" {
+	if s.destRoot == "" {
 		return fmt.Errorf("receive destination not initialised")
 	}
 
@@ -237,9 +238,23 @@ func (s *CrocService) Receive(code string) error {
 		return err
 	}
 
+	// Each receive gets its own folder named after the code phrase: repeats
+	// of the same code resume into the same folder, different transfers never
+	// collide, and croc's saves-into-CWD behaviour is scoped per transfer.
+	dest := filepath.Join(s.destRoot, code)
+	if err := os.MkdirAll(dest, 0o755); err != nil {
+		cancel()
+		return err
+	}
+	if err := os.Chdir(dest); err != nil {
+		// Without the chdir croc would silently save into whatever the
+		// previous receive's folder was.
+		cancel()
+		return err
+	}
+
 	s.recvCancel = cancel
 	s.recvCancelled = false
-	dest := s.dest
 	slog.Info("croc receive: starting", "dest", dest)
 
 	watchProgress(ctx, client, "croc:recv:progress")
@@ -256,9 +271,11 @@ func (s *CrocService) Receive(code string) error {
 		switch {
 		case cancelled:
 			slog.Info("croc receive: cancelled")
+			removeIfEmpty(dest)
 		case err != nil:
 			slog.Error("croc receive: failed", "err", err)
 			emit("croc:error", "receive failed: "+err.Error())
+			removeIfEmpty(dest)
 		default:
 			slog.Info("croc receive: completed", "dest", dest)
 			emit("croc:received", dest)
@@ -266,6 +283,16 @@ func (s *CrocService) Receive(code string) error {
 	}()
 
 	return nil
+}
+
+// removeIfEmpty clears the per-code folder a receive created when nothing was
+// saved into it — cancelled or failed attempts otherwise litter Downloads
+// with empty folders. Partial files stay (croc resumes from them when the
+// same code is retried).
+func removeIfEmpty(dir string) {
+	// os.Remove refuses to delete non-empty directories, which is exactly
+	// the semantics needed here.
+	_ = os.Remove(dir)
 }
 
 // CancelSend aborts a running send transfer.
