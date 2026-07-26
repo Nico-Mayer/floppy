@@ -7,3 +7,7 @@ export {
     CrocService,
     FileService
 };
+
+export type {
+    TransferStats
+} from "./models.js";

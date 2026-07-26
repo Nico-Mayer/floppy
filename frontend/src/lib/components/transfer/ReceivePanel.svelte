@@ -9,7 +9,7 @@
         IconFolderOpen,
     } from "@tabler/icons-svelte";
     import CancelButton from "./CancelButton.svelte";
-    import Mascot from "./Mascot.svelte";
+    import Mascot2 from "./Mascot2.svelte";
     import TransferCard from "./TransferCard.svelte";
     import TransferProgress from "./TransferProgress.svelte";
 
@@ -68,6 +68,7 @@
         <TransferProgress
             accent="receive"
             progress={receive.progress}
+            stats={receive.stats}
             label="Receiving…"
         />
         <CancelButton onclick={() => receive.cancel()} />
@@ -75,7 +76,9 @@
         <div
             class="mx-auto flex w-full max-w-sm flex-1 flex-col items-center justify-center gap-3 text-center"
         >
-            <Mascot accent="receive" />
+            <!-- <Mascot accent="receive" /> -->
+
+            <Mascot2 class="size-20"></Mascot2>
             <p class="text-lg font-bold tracking-tight">Enter transfer code</p>
             <p class="max-w-64 text-xs text-muted-foreground">
                 Paste the four-word code the sender gave you.

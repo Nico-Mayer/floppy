@@ -194,6 +194,7 @@
         <TransferProgress
             accent="send"
             progress={send.progress}
+            stats={send.stats}
             label="Encrypted · direct peer · {summary}"
         />
         <CancelButton onclick={() => send.cancel()} />

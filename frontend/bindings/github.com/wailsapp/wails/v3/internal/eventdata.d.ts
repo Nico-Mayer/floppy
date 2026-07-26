@@ -5,14 +5,18 @@
 // @ts-ignore: Unused imports
 import type { Events } from "@wailsio/runtime";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import type * as main$0 from "../../../../../bibor/models.js";
+
 declare module "@wailsio/runtime" {
     namespace Events {
         interface CustomEvents {
             "croc:code": string;
             "croc:error": string;
             "croc:received": string;
-            "croc:recv:progress": string;
-            "croc:send:progress": string;
+            "croc:recv:progress": main$0.TransferStats;
+            "croc:send:progress": main$0.TransferStats;
             "croc:sent": string;
             "files-dropped": string[] | null;
         }

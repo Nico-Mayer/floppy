@@ -23,8 +23,8 @@ func init() {
 	// and provide a strongly typed JS/TS API for them.
 	application.RegisterEvent[[]string]("files-dropped")
 	application.RegisterEvent[string]("croc:code")
-	application.RegisterEvent[string]("croc:send:progress")
-	application.RegisterEvent[string]("croc:recv:progress")
+	application.RegisterEvent[TransferStats]("croc:send:progress")
+	application.RegisterEvent[TransferStats]("croc:recv:progress")
 	application.RegisterEvent[string]("croc:sent")
 	application.RegisterEvent[string]("croc:received")
 	application.RegisterEvent[string]("croc:error")

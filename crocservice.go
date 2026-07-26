@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -33,8 +32,19 @@ type CrocService struct {
 }
 
 // emit is a variable so tests can capture events without a running app.
-var emit = func(name, data string) {
+var emit = func(name string, data any) {
 	application.Get().Event.Emit(name, data)
+}
+
+// TransferStats is the payload of croc:send:progress and croc:recv:progress.
+type TransferStats struct {
+	Percent int   `json:"percent"`
+	Sent    int64 `json:"sent"`
+	Total   int64 `json:"total"`
+	// Bps is the smoothed transfer rate; 0 until a rate can be measured.
+	Bps int64 `json:"bps"`
+	// ETA is the estimated number of seconds left, -1 while unknown.
+	ETA int `json:"eta"`
 }
 
 func defaultCrocOptions() croc.Options {
@@ -68,9 +78,17 @@ func (s *CrocService) ServiceStartup(ctx context.Context, options application.Se
 	return os.Chdir(s.destRoot)
 }
 
-const progressPollInterval = 200 * time.Millisecond
+const (
+	progressPollInterval = 200 * time.Millisecond
+	// Weight of the newest rate sample in the running average. Low enough
+	// that a stalled or bursty poll doesn't make the readout jump around.
+	rateSmoothing = 0.25
+	// Emit at least this often once a transfer is running: the percentage
+	// stands still for minutes on a large file, but speed and ETA must not.
+	statsInterval = time.Second
+)
 
-// watchProgress polls the client's transfer counters and emits percentages
+// watchProgress polls the client's transfer counters and emits TransferStats
 // until ctx is cancelled. croc has no progress callback API; the polled
 // fields are written by the transfer goroutines without synchronization, so
 // reads may be slightly stale — fine for a progress bar. Its maps are
@@ -79,26 +97,82 @@ func watchProgress(ctx context.Context, client *croc.Client, event string) {
 	go func() {
 		ticker := time.NewTicker(progressPollInterval)
 		defer ticker.Stop()
-		last := ""
+		var (
+			bps         float64
+			haveRate    bool
+			lastSent    int64
+			lastSample  time.Time
+			lastEmit    time.Time
+			lastPercent = -1
+		)
 		for {
 			select {
 			case <-ctx.Done():
 				return
-			case <-ticker.C:
-				percent, ok := transferPercent(client)
+			case now := <-ticker.C:
+				sent, total, ok := transferBytes(client)
 				if !ok {
 					continue
 				}
-				if p := strconv.Itoa(percent); p != last {
-					last = p
-					emit(event, p)
+				// The first sample only establishes a baseline: on a resumed
+				// transfer `sent` starts at whatever the receiver already has,
+				// and dividing that by one poll interval would invent a
+				// gigabyte-per-second rate.
+				if !lastSample.IsZero() {
+					if dt := now.Sub(lastSample).Seconds(); dt > 0 {
+						// Clamped: croc resets its byte counter per file, so a
+						// file boundary can briefly look like negative progress.
+						sample := max(float64(sent-lastSent)/dt, 0)
+						if haveRate {
+							bps += rateSmoothing * (sample - bps)
+						} else {
+							bps, haveRate = sample, true
+						}
+					}
 				}
+				lastSent, lastSample = sent, now
+
+				percent := int(min(sent*100/total, 100))
+				if percent == lastPercent && now.Sub(lastEmit) < statsInterval {
+					continue
+				}
+				lastPercent, lastEmit = percent, now
+				emit(event, TransferStats{
+					Percent: percent,
+					Sent:    sent,
+					Total:   total,
+					Bps:     int64(bps),
+					ETA:     etaSeconds(total-sent, bps),
+				})
 			}
 		}
 	}()
 }
 
-// transferPercent derives overall progress: the sizes of the files already
+// emitComplete reports a full progress bar. The poller stops with the
+// transfer, so its last sample lands a few percent short of the end — without
+// this the bar visibly freezes below 100% before the completion screen.
+func emitComplete(c *croc.Client, event string) {
+	_, total, ok := transferBytes(c)
+	if !ok {
+		return
+	}
+	emit(event, TransferStats{Percent: 100, Sent: total, Total: total, ETA: -1})
+}
+
+// etaSeconds estimates how long the remaining bytes will take at the given
+// rate, returning -1 while the rate is too small to extrapolate from.
+func etaSeconds(remaining int64, bps float64) int {
+	if remaining <= 0 {
+		return 0
+	}
+	if bps < 1 {
+		return -1
+	}
+	return int(float64(remaining) / bps)
+}
+
+// transferBytes derives overall progress: the sizes of the files already
 // done (croc transfers them in order) plus the byte counter of the current
 // one, which croc resets per file. For a sender it reports false until the
 // transfer step has actually started (Step4 is only set on the sending side),
@@ -106,23 +180,21 @@ func watchProgress(ctx context.Context, client *croc.Client, event string) {
 // relies on the first progress event to switch from "waiting" to "sending".
 // A receiver has no file list until the handshake, so the length check below
 // already keeps it quiet before the transfer.
-func transferPercent(c *croc.Client) (int, bool) {
+func transferBytes(c *croc.Client) (done, total int64, ok bool) {
 	if c.Options.IsSender && !c.Step4FileTransferred {
-		return 0, false
+		return 0, 0, false
 	}
 	files := c.FilesToTransfer
 	if len(files) == 0 {
-		return 0, false
+		return 0, 0, false
 	}
-	var total int64
 	for _, f := range files {
 		total += f.Size
 	}
 	if total <= 0 {
-		return 0, false
+		return 0, 0, false
 	}
 	idx := c.FilesToTransferCurrentNum
-	var done int64
 	for i := 0; i < idx && i < len(files); i++ {
 		done += files[i].Size
 	}
@@ -140,7 +212,7 @@ func transferPercent(c *croc.Client) (int, bool) {
 			done += sent
 		}
 	}
-	return min(int(done*100/total), 100), true
+	return min(done, total), total, true
 }
 
 // Send starts a send transfer for the given paths and returns immediately.
@@ -200,6 +272,7 @@ func (s *CrocService) Send(paths []string) error {
 			emit("croc:error", "send failed: "+err.Error())
 		default:
 			slog.Info("croc send: completed")
+			emitComplete(client, "croc:send:progress")
 			emit("croc:sent", "")
 		}
 	}()
@@ -278,6 +351,7 @@ func (s *CrocService) Receive(code string) error {
 			removeIfEmpty(dest)
 		default:
 			slog.Info("croc receive: completed", "dest", dest)
+			emitComplete(client, "croc:recv:progress")
 			emit("croc:received", dest)
 		}
 	}()

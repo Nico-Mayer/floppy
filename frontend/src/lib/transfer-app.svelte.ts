@@ -5,6 +5,7 @@ import {
     Send,
 } from "$bindings/bibor/crocservice";
 import { SelectFiles } from "$bindings/bibor/fileservice";
+import type { TransferStats } from "$bindings/bibor/models";
 import { Events } from "@wailsio/runtime";
 import type {
     ReceiveStatus,
@@ -18,6 +19,7 @@ class SendTransfer {
     files = $state<string[]>([]);
     code = $state("");
     progress = $state(0);
+    stats = $state<TransferStats | null>(null);
 
     get busy() {
         return this.status !== "idle" && this.status !== "done";
@@ -41,6 +43,7 @@ class SendTransfer {
     async start() {
         app.error = "";
         this.progress = 0;
+        this.stats = null;
         this.status = "starting";
         try {
             await Send(this.files);
@@ -59,6 +62,7 @@ class SendTransfer {
         this.files = [];
         this.code = "";
         this.progress = 0;
+        this.stats = null;
         this.status = "idle";
     }
 }
@@ -68,6 +72,7 @@ class ReceiveTransfer {
     code = $state("");
     savedTo = $state("");
     progress = $state<number | null>(null);
+    stats = $state<TransferStats | null>(null);
 
     get busy() {
         return this.status === "receiving";
@@ -76,6 +81,7 @@ class ReceiveTransfer {
     async start() {
         app.error = "";
         this.progress = null;
+        this.stats = null;
         this.status = "receiving";
         try {
             await Receive(this.code);
@@ -94,6 +100,7 @@ class ReceiveTransfer {
         this.code = "";
         this.savedTo = "";
         this.progress = null;
+        this.stats = null;
         this.status = "idle";
     }
 }
@@ -114,19 +121,21 @@ class TransferApp {
                 this.send.code = ev.data;
                 this.send.status = "waiting";
             }),
-            Events.On("croc:send:progress", (ev: { data: string }) => {
+            Events.On("croc:send:progress", (ev: { data: TransferStats }) => {
                 // Progress only makes sense once the code phrase exists — never
                 // let a stray progress line hide the code screen.
                 if (
                     this.send.status === "waiting" ||
                     this.send.status === "sending"
                 ) {
-                    this.send.progress = Number(ev.data);
+                    this.send.stats = ev.data;
+                    this.send.progress = ev.data.percent;
                     this.send.status = "sending";
                 }
             }),
-            Events.On("croc:recv:progress", (ev: { data: string }) => {
-                this.receive.progress = Number(ev.data);
+            Events.On("croc:recv:progress", (ev: { data: TransferStats }) => {
+                this.receive.stats = ev.data;
+                this.receive.progress = ev.data.percent;
             }),
             Events.On("croc:sent", () => {
                 this.send.status = "done";

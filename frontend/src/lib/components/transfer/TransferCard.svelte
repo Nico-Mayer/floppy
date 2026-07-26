@@ -22,7 +22,7 @@
     <Card.Header>
         <Card.Title class="flex items-center gap-2">
             <span
-                class="h-3.5 w-1 rounded-full {accent === 'send'
+                class="size-3 rounded-full {accent === 'send'
                     ? 'bg-send'
                     : 'bg-receive'}"
             ></span>

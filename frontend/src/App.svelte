@@ -5,7 +5,12 @@
     import SendPanel from "$lib/components/transfer/SendPanel.svelte";
     import * as Tabs from "$lib/components/ui/tabs";
     import { app, type Mode } from "$lib/transfer-app.svelte";
-    import { IconDownload, IconLoader2, IconSend } from "@tabler/icons-svelte";
+    import {
+        IconDeviceFloppy,
+        IconDownload,
+        IconLoader2,
+        IconSend,
+    } from "@tabler/icons-svelte";
     import { ModeWatcher } from "mode-watcher";
     import { onMount } from "svelte";
     import "./app.css";
@@ -31,13 +36,13 @@
         <div
             class="mx-auto flex w-full max-w-2xl sm:max-w-3xl md:max-w-4xl lg:max-w-7xl items-center gap-2.5 px-1"
         >
-            <div
-                class="size-3.5 rounded-lg transition-colors {app.mode ===
-                'send'
-                    ? 'bg-send'
-                    : 'bg-receive'}"
-            ></div>
-            <h1 class="font-heading text-lg font-bold tracking-tight">Bound</h1>
+            <IconDeviceFloppy
+                size={32}
+                class={app.mode === "send" ? "stroke-send" : "stroke-receive"}
+            />
+            <h1 class="font-heading text-lg font-bold tracking-tight">
+                Floppy
+            </h1>
             <p
                 class="truncate font-mono text-[9px] tracking-wider uppercase text-muted-foreground"
             >

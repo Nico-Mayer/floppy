@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -20,15 +21,15 @@ import (
 // package-level emit hook.
 type eventRecorder struct {
 	mu     sync.Mutex
-	events map[string][]string
+	events map[string][]any
 	wake   chan struct{}
 }
 
 func recordEvents(t *testing.T) *eventRecorder {
 	t.Helper()
-	r := &eventRecorder{events: map[string][]string{}, wake: make(chan struct{}, 64)}
+	r := &eventRecorder{events: map[string][]any{}, wake: make(chan struct{}, 64)}
 	orig := emit
-	emit = func(name, data string) {
+	emit = func(name string, data any) {
 		r.mu.Lock()
 		r.events[name] = append(r.events[name], data)
 		r.mu.Unlock()
@@ -47,9 +48,25 @@ func (r *eventRecorder) count(name string) int {
 	return len(r.events[name])
 }
 
+// stats returns every TransferStats payload recorded for a progress event.
+func (r *eventRecorder) stats(t *testing.T, name string) []TransferStats {
+	t.Helper()
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	out := make([]TransferStats, 0, len(r.events[name]))
+	for _, payload := range r.events[name] {
+		s, ok := payload.(TransferStats)
+		if !ok {
+			t.Fatalf("%s payload is not TransferStats: %T", name, payload)
+		}
+		out = append(out, s)
+	}
+	return out
+}
+
 // waitFor blocks until an event of the given name arrives and returns its
 // latest payload; a croc:error arriving first fails the test.
-func (r *eventRecorder) waitFor(t *testing.T, name string, timeout time.Duration) string {
+func (r *eventRecorder) waitFor(t *testing.T, name string, timeout time.Duration) any {
 	t.Helper()
 	deadline := time.After(timeout)
 	for {
@@ -70,6 +87,16 @@ func (r *eventRecorder) waitFor(t *testing.T, name string, timeout time.Duration
 			t.Fatalf("timed out waiting for %s", name)
 		}
 	}
+}
+
+// waitForString is waitFor for the events whose payload is a plain string.
+func (r *eventRecorder) waitForString(t *testing.T, name string, timeout time.Duration) string {
+	t.Helper()
+	payload, ok := r.waitFor(t, name, timeout).(string)
+	if !ok {
+		t.Fatalf("%s payload is not a string", name)
+	}
+	return payload
 }
 
 var (
@@ -173,7 +200,7 @@ func TestReceiveFromPeer(t *testing.T) {
 		t.Fatalf("Receive: %v", err)
 	}
 	dest := filepath.Join(destRoot, code)
-	if got := rec.waitFor(t, "croc:received", 120*time.Second); got != dest {
+	if got := rec.waitForString(t, "croc:received", 120*time.Second); got != dest {
 		t.Errorf("croc:received payload = %q, want %q", got, dest)
 	}
 
@@ -184,8 +211,18 @@ func TestReceiveFromPeer(t *testing.T) {
 	if !bytes.Equal(got, payload) {
 		t.Fatalf("received file differs: got %d bytes, want %d", len(got), len(payload))
 	}
-	if rec.count("croc:recv:progress") == 0 {
-		t.Error("no croc:recv:progress events emitted")
+	stats := rec.stats(t, "croc:recv:progress")
+	if len(stats) == 0 {
+		t.Fatal("no croc:recv:progress events emitted")
+	}
+	size := int64(len(payload))
+	if last := stats[len(stats)-1]; last.Percent != 100 || last.Sent != size || last.Total != size {
+		t.Errorf("final stats = %+v, want %d/%d bytes at 100%%", last, size, size)
+	}
+	// The transfer is throttled to 500 kB/s, so the poller has several seconds
+	// of samples to measure a rate from.
+	if !slices.ContainsFunc(stats, func(s TransferStats) bool { return s.Bps > 0 }) {
+		t.Errorf("no progress event carried a transfer rate: %+v", stats)
 	}
 }
 
@@ -203,7 +240,7 @@ func TestSendToPeer(t *testing.T) {
 	if err := svc.Send([]string{src}); err != nil {
 		t.Fatalf("Send: %v", err)
 	}
-	code := rec.waitFor(t, "croc:code", 10*time.Second)
+	code := rec.waitForString(t, "croc:code", 10*time.Second)
 
 	croctool(t, nil, "recv", code, dest)
 
@@ -238,9 +275,25 @@ func TestCancelReceive(t *testing.T) {
 	}
 	time.Sleep(200 * time.Millisecond)
 	svc.CancelReceive()
-	time.Sleep(500 * time.Millisecond)
 
-	if n := rec.count("croc:error"); n > 0 {
+	// The folder is removed once the receive goroutine returns, and croc takes
+	// a second or two to unwind its relay connection after the context is
+	// cancelled — so wait for the cleanup rather than assuming a duration.
+	dest := filepath.Join(destRoot, code)
+	deadline := time.Now().Add(30 * time.Second)
+	for {
+		if _, err := os.Stat(dest); os.IsNotExist(err) {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("empty per-code folder %s not cleaned up", dest)
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	// The goroutine has run its completion switch by now, so any event it
+	// would wrongly emit has already been recorded.
+	if rec.count("croc:error") > 0 {
 		rec.mu.Lock()
 		msg := rec.events["croc:error"][0]
 		rec.mu.Unlock()
@@ -249,35 +302,49 @@ func TestCancelReceive(t *testing.T) {
 	if rec.count("croc:received") > 0 {
 		t.Error("cancelled receive emitted completion")
 	}
-	if _, err := os.Stat(filepath.Join(destRoot, code)); !os.IsNotExist(err) {
-		t.Errorf("empty per-code folder not cleaned up (stat err=%v)", err)
-	}
 }
 
-// TestTransferPercentResumeCredit checks the resume accounting: croc only
+// TestTransferBytesResumeCredit checks the resume accounting: croc only
 // counts freshly moved bytes in TotalSent, so chunks the receiver already has
 // must be credited (mirrors croc's own setBar math).
-func TestTransferPercentResumeCredit(t *testing.T) {
+func TestTransferBytesResumeCredit(t *testing.T) {
 	chunk := int64(models.TCP_BUFFER_SIZE / 2)
+	total := 100 * chunk
 	c := &croc.Client{}
 	c.Options.IsSender = true
 	c.Step4FileTransferred = true
-	c.FilesToTransfer = []croc.FileInfo{{Size: 100 * chunk}}
+	c.FilesToTransfer = []croc.FileInfo{{Size: total}}
 	// Receiver is missing only 10 of 100 chunks.
 	c.CurrentFileChunks = make([]int64, 10)
 
-	if got, ok := transferPercent(c); !ok || got != 90 {
-		t.Errorf("resume start: got %d%% ok=%v, want 90%% true", got, ok)
+	check := func(stage string, wantDone int64) {
+		t.Helper()
+		done, gotTotal, ok := transferBytes(c)
+		if !ok || done != wantDone || gotTotal != total {
+			t.Errorf("%s: got %d/%d ok=%v, want %d/%d true", stage, done, gotTotal, ok, wantDone, total)
+		}
 	}
+
+	check("resume start", 90*chunk)
 	c.TotalSent = 5 * chunk
-	if got, ok := transferPercent(c); !ok || got != 95 {
-		t.Errorf("resume mid: got %d%% ok=%v, want 95%% true", got, ok)
-	}
+	check("resume mid", 95*chunk)
 	// Fresh transfer: no chunk list yet, no credit.
 	c.CurrentFileChunks = nil
 	c.TotalSent = 50 * chunk
-	if got, ok := transferPercent(c); !ok || got != 50 {
-		t.Errorf("fresh mid: got %d%% ok=%v, want 50%% true", got, ok)
+	check("fresh mid", 50*chunk)
+}
+
+// TestEtaSeconds covers the two states the UI treats specially: "no estimate
+// yet" (-1) and "finished" (0).
+func TestEtaSeconds(t *testing.T) {
+	if got := etaSeconds(1000, 0); got != -1 {
+		t.Errorf("no rate: got %d, want -1", got)
+	}
+	if got := etaSeconds(0, 5000); got != 0 {
+		t.Errorf("nothing left: got %d, want 0", got)
+	}
+	if got := etaSeconds(10_000, 1000); got != 10 {
+		t.Errorf("steady rate: got %d, want 10", got)
 	}
 }
 
@@ -301,7 +368,7 @@ func TestSendResumedTransfer(t *testing.T) {
 	if err := svc.Send([]string{src}); err != nil {
 		t.Fatalf("Send: %v", err)
 	}
-	code := rec.waitFor(t, "croc:code", 10*time.Second)
+	code := rec.waitForString(t, "croc:code", 10*time.Second)
 
 	croctool(t, nil, "recv", code, dest)
 
