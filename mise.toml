@@ -7,7 +7,6 @@ node = "26.5.0"
 mr = "mise run"
 
 [tasks.dev]
-depends = ["kill-port"]
 run = "wails3 dev"
 
 [tasks."kill-port"]
