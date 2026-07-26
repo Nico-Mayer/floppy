@@ -85,7 +85,7 @@
                 ondrop={() => (dragOver = false)}
                 class="flex flex-1 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed p-6 text-center transition-colors duration-500 hover:cursor-pointer {dragOver
                     ? 'border-send bg-send/5'
-                    : 'border-input bg-muted/40 hover:border-send'}"
+                    : 'border-input bg-muted/40 hover:border-send/40'}"
             >
                 <Mascot accent="send" />
                 <span class="text-lg font-bold tracking-tight">

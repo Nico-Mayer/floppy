@@ -5,12 +5,7 @@
     let { onclick }: { onclick: () => void } = $props();
 </script>
 
-<Button
-    variant="outline"
-    size="sm"
-    class="hover:border-destructive hover:bg-transparent hover:text-destructive"
-    {onclick}
->
+<Button variant="destructive" size="sm" {onclick}>
     <IconX />
     Cancel
 </Button>
