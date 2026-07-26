@@ -29,6 +29,11 @@
     --send-foreground: #c23b00;
     --receive: #2757ff;
     --receive-foreground: #1f45d6;
+    /* A QR code is a scannable artifact, not chrome: it stays ink-on-white in
+       both themes (many scanners fail on inverted, light-on-dark codes), so
+       these two are deliberately absent from the .dark block. */
+    --qr-foreground: #0e1013;
+    --qr-background: #ffffff;
 }
 
 .dark {
@@ -88,6 +93,8 @@
     --color-send-foreground: var(--send-foreground);
     --color-receive: var(--receive);
     --color-receive-foreground: var(--receive-foreground);
+    --color-qr: var(--qr-foreground);
+    --color-qr-background: var(--qr-background);
     /* Ink is the on-accent color in both themes — accents are always bright. */
     --color-ink: #101010;
     --animate-bob: bob 5s ease-in-out infinite;

@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { QRCode } from "$lib/components/spell/qrcode";
     import { Button } from "$lib/components/ui/button";
     import { app } from "$lib/transfer-app.svelte";
     import {
@@ -9,7 +10,6 @@
         IconSend,
     } from "@tabler/icons-svelte";
     import { Clipboard } from "@wailsio/runtime";
-    import Qrcode from "../spell/qrcode/qrcode.svelte";
     import CancelButton from "./CancelButton.svelte";
     import FileRow from "./FileRow.svelte";
     import { basename } from "./files";
@@ -119,25 +119,44 @@
     {:else if send.status === "starting"}
         <TransferProgress accent="send" label="Connecting to peer…" />
     {:else if send.status === "waiting"}
-        <div class="flex flex-1 flex-col items-center justify-center gap-4">
-            <p class="animate-pop text-lg font-bold tracking-tight">
-                Ready to share
-            </p>
+        <div class="flex flex-1 flex-col items-center justify-center gap-7">
+            <div class="flex flex-col items-center gap-1.5 text-center">
+                <p class="animate-pop text-lg font-bold tracking-tight">
+                    Ready to share
+                </p>
+                <p class="max-w-64 text-xs text-muted-foreground">
+                    Scan the code with the other device, or pass the phrase
+                    along yourself.
+                </p>
+            </div>
 
+            <!-- Scanning is a phone-held-up gesture, so narrow layouts lead
+                 with a large QR; on desktop it recedes beside the phrase. -->
             <div
-                class="flex w-full max-w-md flex-col items-center gap-4 sm:flex-row sm:justify-center"
+                class="flex w-full max-w-md flex-col items-center gap-5 sm:max-w-lg sm:flex-row sm:gap-6"
             >
-                <Qrcode
-                    size={120}
-                    value="https://sv-animations.vercel.app/spell/qrcode"
-                ></Qrcode>
+                <!-- The padding is the QR quiet zone; both it and the code
+                     share --qr-background so the seam is invisible. bgColor
+                     must be opaque — the finder patterns paint their inner
+                     ring with it, and a transparent one turns them into
+                     solid blobs. -->
                 <div
-                    class="flex w-full min-w-0 flex-col items-center gap-2 sm:items-start"
+                    class="shrink-0 rounded-2xl border bg-qr-background p-4 sm:p-3"
+                >
+                    <QRCode
+                        value={send.code}
+                        fgColor="var(--qr-foreground)"
+                        bgColor="var(--qr-background)"
+                        class="size-44 sm:size-32"
+                    />
+                </div>
+                <div
+                    class="flex w-full min-w-0 flex-col items-center gap-2.5 sm:items-start"
                 >
                     <button
                         type="button"
                         onclick={copyCode}
-                        class="flex w-full items-center gap-3 rounded-xl border bg-card px-4 py-3 text-left transition-colors hover:cursor-pointer hover:bg-muted/50"
+                        class="flex w-full items-center justify-between rounded-xl border bg-card px-4 py-3.5 text-left transition-colors hover:cursor-pointer hover:bg-muted/50"
                         title="Click to copy"
                     >
                         <span
@@ -158,10 +177,11 @@
                     <p
                         class="text-center text-xs text-muted-foreground sm:text-left"
                     >
-                        Share by QR or code. It expires when you quit the app.
+                        Expires when you quit the app.
                     </p>
                 </div>
             </div>
+
             <div
                 class="flex items-center gap-2 font-mono text-[11px] tracking-wider uppercase text-muted-foreground"
             >
