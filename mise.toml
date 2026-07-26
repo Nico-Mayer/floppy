@@ -1,6 +1,7 @@
 [tools]
 go = "1.26.5"
 "go:github.com/wailsapp/wails/v3/cmd/wails3" = "3.0.0-alpha2.117"
+gotestsum = "1.13.0"
 node = "26.5.0"
 
 [shell_alias]
@@ -12,3 +13,6 @@ run = "wails3 dev"
 [tasks."kill-port"]
 run = "lsof -ti tcp:9245 | xargs kill -9"
 run_windows = "Stop-Process -Id (Get-NetTCPConnection -LocalPort 9245 -State Listen).OwningProcess -Force"
+
+[tasks.test]
+run = "gotestsum ./..."

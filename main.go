@@ -3,7 +3,6 @@ package main
 import (
 	"embed"
 	"log"
-	"os"
 	"runtime"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -35,12 +34,6 @@ func init() {
 // and starts a goroutine that emits a time-based event every second. It subsequently runs the application and
 // logs any error that might occur.
 func main() {
-	// Worker mode: this binary re-execs itself to run croc transfers as
-	// killable child processes (see CrocService). No GUI in that case.
-	if len(os.Args) > 1 && os.Args[1] == "croc-worker" {
-		os.Exit(runCrocWorker(os.Args[2:]))
-	}
-
 	// Create a new Wails application by providing the necessary options.
 	// Variables 'Name' and 'Description' are for application metadata.
 	// 'Assets' configures the asset server with the 'FS' variable pointing to the frontend files.
