@@ -3,6 +3,7 @@
 	import ErrorBanner from '$lib/components/transfer/ErrorBanner.svelte'
 	import ReceivePanel from '$lib/components/transfer/ReceivePanel.svelte'
 	import SendPanel from '$lib/components/transfer/SendPanel.svelte'
+	import * as Kbd from '$lib/components/ui/kbd/index.js'
 	import * as Tabs from '$lib/components/ui/tabs'
 	import { app, type Mode } from '$lib/transfer-app.svelte'
 	import { IconDeviceFloppy, IconDownload, IconLoader2, IconSend } from '@tabler/icons-svelte'
@@ -17,7 +18,23 @@
 	if (import.meta.env.DEV) {
 		;(window as unknown as Record<string, unknown>).__app = app
 	}
+
+	function handleKeys(e: KeyboardEvent) {
+		const meta = e.metaKey || e.ctrlKey
+		if (!meta) return
+
+		switch (e.key) {
+			case '1':
+				app.mode = 'send'
+				break
+			case '2':
+				app.mode = 'receive'
+				break
+		}
+	}
 </script>
+
+<svelte:window onkeydown={handleKeys} />
 
 <ModeWatcher />
 
@@ -41,21 +58,33 @@
 			class="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-3 sm:max-w-3xl md:max-w-4xl lg:max-w-7xl"
 		>
 			<Tabs.List class="w-full">
-				<Tabs.Trigger value="send" class="gap-1.5">
-					{#if app.send.busy}
-						<IconLoader2 class="animate-spin" />
-					{:else}
-						<IconSend />
-					{/if}
-					Send
+				<Tabs.Trigger class="relative" value="send">
+					<div class="flex items-center gap-1.5">
+						{#if app.send.busy}
+							<IconLoader2 class="animate-spin" />
+						{:else}
+							<IconSend />
+						{/if}
+						Send
+					</div>
+
+					<Kbd.Group class="absolute right-1">
+						<Kbd.Root>⌘1</Kbd.Root>
+					</Kbd.Group>
 				</Tabs.Trigger>
-				<Tabs.Trigger value="receive" class="gap-1.5">
-					{#if app.receive.busy}
-						<IconLoader2 class="animate-spin" />
-					{:else}
-						<IconDownload />
-					{/if}
-					Receive
+				<Tabs.Trigger value="receive" class="relative">
+					<div class="flex items-center gap-1.5">
+						{#if app.receive.busy}
+							<IconLoader2 class="animate-spin" />
+						{:else}
+							<IconDownload />
+						{/if}
+						Receive
+					</div>
+
+					<Kbd.Group class="absolute right-1">
+						<Kbd.Root>⌘2</Kbd.Root>
+					</Kbd.Group>
 				</Tabs.Trigger>
 			</Tabs.List>
 

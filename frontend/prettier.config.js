@@ -1,3 +1,7 @@
+import { fileURLToPath } from 'node:url';
+
+const plugin = (name) => fileURLToPath(import.meta.resolve(name));
+
 /** @type {import("prettier").Config} */
 const config = {
 	useTabs: true,
@@ -5,9 +9,9 @@ const config = {
 	trailingComma: 'none',
 	printWidth: 110,
 	semi: false,
-	plugins: ['prettier-plugin-svelte', 'prettier-plugin-tailwindcss'],
+	plugins: [plugin('prettier-plugin-svelte'), plugin('prettier-plugin-tailwindcss')],
 	overrides: [{ files: '*.svelte', options: { parser: 'svelte' } }],
-	tailwindStylesheet: './src/app.css'
-}
+	tailwindStylesheet: fileURLToPath(import.meta.resolve('./src/app.css'))
+};
 
-export default config
+export default config;
