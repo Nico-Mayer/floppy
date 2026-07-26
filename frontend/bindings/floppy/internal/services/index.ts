@@ -9,6 +9,9 @@ export {
 };
 
 export type {
+    CodeEvent,
+    DoneEvent,
+    ErrorEvent,
     FileEntry,
-    TransferStats
+    ProgressEvent
 } from "./models.js";

@@ -12,12 +12,12 @@ import type * as services$0 from "../../../../../floppy/internal/services/models
 declare module "@wailsio/runtime" {
     namespace Events {
         interface CustomEvents {
-            "croc:code": string;
-            "croc:error": string;
-            "croc:received": string;
-            "croc:recv:progress": services$0.TransferStats;
-            "croc:send:progress": services$0.TransferStats;
-            "croc:sent": string;
+            "croc:code": services$0.CodeEvent;
+            "croc:error": services$0.ErrorEvent;
+            "croc:received": services$0.DoneEvent;
+            "croc:recv:progress": services$0.ProgressEvent;
+            "croc:send:progress": services$0.ProgressEvent;
+            "croc:sent": services$0.DoneEvent;
             "files-dropped": string[] | null;
         }
     }

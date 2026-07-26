@@ -1,4 +1,4 @@
-import type { TransferStats } from '$bindings/floppy/internal/services/models'
+import type { ProgressEvent } from '$bindings/floppy/internal/services/models'
 
 /** Decimal byte sizes, matching what croc itself reports. */
 export function formatBytes(bytes: number): string {
@@ -22,7 +22,7 @@ export function formatRate(bytesPerSecond: number): string {
  * more than one file. Empty until croc reports a manifest, which for a
  * receiver is the first thing it learns about the transfer at all.
  */
-export function currentFile(stats: TransferStats | null): string {
+export function currentFile(stats: ProgressEvent | null): string {
 	if (!stats?.file) return ''
 	if (stats.fileCount < 2) return stats.file
 	return `${stats.file} · ${stats.fileIndex} of ${stats.fileCount}`

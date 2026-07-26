@@ -84,12 +84,25 @@ func (f *FileService) OpenPath(path string) error {
 	if path == "" {
 		return fmt.Errorf("no path given")
 	}
+	// The path is frontend-supplied; refuse anything that does not exist
+	// rather than handing arbitrary strings to an OS launcher.
+	if _, err := os.Stat(path); err != nil {
+		return fmt.Errorf("cannot open: %w", err)
+	}
+	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "darwin":
-		return exec.Command("open", path).Start()
+		cmd = exec.Command("open", path)
 	case "windows":
-		return exec.Command("explorer", path).Start()
+		cmd = exec.Command("explorer", path)
 	default:
-		return exec.Command("xdg-open", path).Start()
+		cmd = exec.Command("xdg-open", path)
 	}
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	// Reap the launcher: Start without Wait would leave one zombie process
+	// per click until the app exits.
+	go func() { _ = cmd.Wait() }()
+	return nil
 }

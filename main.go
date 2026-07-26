@@ -20,16 +20,10 @@ import (
 var assets embed.FS
 
 func init() {
-	// Register a custom event whose associated data type is string.
-	// This is not required, but the binding generator will pick up registered events
-	// and provide a strongly typed JS/TS API for them.
-	application.RegisterEvent[[]string]("files-dropped")
-	application.RegisterEvent[string]("croc:code")
-	application.RegisterEvent[services.TransferStats]("croc:send:progress")
-	application.RegisterEvent[services.TransferStats]("croc:recv:progress")
-	application.RegisterEvent[string]("croc:sent")
-	application.RegisterEvent[string]("croc:received")
-	application.RegisterEvent[string]("croc:error")
+	// Event registration is not required, but the binding generator picks up
+	// registered events and provides a strongly typed JS/TS API for them.
+	// The croc:* events live with the service that emits them.
+	services.RegisterEvents()
 }
 
 // main function serves as the application's entry point. It initializes the application, creates a window,
@@ -79,7 +73,7 @@ func main() {
 
 	// Events
 	win.OnWindowEvent(events.Common.WindowFilesDropped, func(event *application.WindowEvent) {
-		app.Event.Emit("files-dropped", event.Context().DroppedFiles())
+		app.Event.Emit(services.EventFilesDropped, event.Context().DroppedFiles())
 	})
 
 	// Run the application. This blocks until the application has been exited.

@@ -1,7 +1,8 @@
 import { CancelReceive, CancelSend, Receive, Send } from '$bindings/floppy/internal/services/crocservice'
 import { Describe, SelectFiles } from '$bindings/floppy/internal/services/fileservice'
-import type { FileEntry, TransferStats } from '$bindings/floppy/internal/services/models'
+import type { FileEntry, ProgressEvent } from '$bindings/floppy/internal/services/models'
 import { Events } from '@wailsio/runtime'
+import { describeError, type AppError } from './components/transfer/errors'
 import type { ReceiveStatus, SendStatus } from './components/transfer/types'
 
 export type Mode = 'send' | 'receive'
@@ -11,7 +12,7 @@ class SendTransfer {
 	files = $state<FileEntry[]>([])
 	code = $state('')
 	progress = $state(0)
-	stats = $state<TransferStats | null>(null)
+	stats = $state<ProgressEvent | null>(null)
 
 	get busy() {
 		return this.status !== 'idle' && this.status !== 'done'
@@ -40,22 +41,22 @@ class SendTransfer {
 	}
 
 	async start() {
-		app.error = ''
+		app.error = null
 		this.progress = 0
 		this.stats = null
 		this.status = 'starting'
 		try {
 			await Send(this.files.map((file) => file.path))
 		} catch (e) {
-			app.error = String(e)
+			app.error = describeError(String(e), 'send')
 			this.status = 'idle'
 		}
 	}
 
 	async cancel() {
-		// Cancel only returns once croc has released the slot, which takes a
-		// couple of seconds — hold the UI there rather than snapping back to
-		// idle and letting the next attempt fail as "already running".
+		// CancelSend resolves as soon as croc has been told to stop, not once
+		// it has finished unwinding — so the button never appears to hang.
+		// Any leftover unwinding is absorbed by the next Send on the Go side.
 		this.status = 'cancelling'
 		try {
 			await CancelSend()
@@ -90,7 +91,7 @@ class ReceiveTransfer {
 	code = $state('')
 	savedTo = $state('')
 	progress = $state<number | null>(null)
-	stats = $state<TransferStats | null>(null)
+	stats = $state<ProgressEvent | null>(null)
 	/** Set once the connect attempt has taken suspiciously long. */
 	tooSlow = $state(false)
 	#hintTimer: ReturnType<typeof setTimeout> | undefined
@@ -100,7 +101,7 @@ class ReceiveTransfer {
 	}
 
 	async start() {
-		app.error = ''
+		app.error = null
 		this.progress = null
 		this.stats = null
 		this.tooSlow = false
@@ -109,7 +110,7 @@ class ReceiveTransfer {
 		try {
 			await Receive(this.code)
 		} catch (e) {
-			app.error = String(e)
+			app.error = describeError(String(e), 'receive')
 			this.stop()
 		}
 	}
@@ -171,23 +172,27 @@ class ReceiveTransfer {
 
 class TransferApp {
 	mode = $state<Mode>('send')
-	error = $state('')
+	error = $state<AppError | null>(null)
 	send = new SendTransfer()
 	receive = new ReceiveTransfer()
 
-	/** Subscribe to croc events; returns the cleanup for onMount. */
+	/**
+	 * Subscribe to croc events; returns the cleanup for onMount. Handler
+	 * payloads are inferred from the generated CustomEvents map — every croc
+	 * event carries the transfer `id` and `kind` alongside its own fields.
+	 */
 	listen() {
 		const unsubs = [
-			Events.On('files-dropped', async (ev: { data: string[] | null }) => {
+			Events.On('files-dropped', async (ev) => {
 				// Drops arrive as bare paths; the Go side turns them into entries
 				// with sizes, the same shape the picker returns.
 				this.send.add((await Describe(ev.data ?? [])) ?? [])
 			}),
-			Events.On('croc:code', (ev: { data: string }) => {
-				this.send.code = ev.data
+			Events.On('croc:code', (ev) => {
+				this.send.code = ev.data.code
 				this.send.status = 'waiting'
 			}),
-			Events.On('croc:send:progress', (ev: { data: TransferStats }) => {
+			Events.On('croc:send:progress', (ev) => {
 				// Progress only makes sense once the code phrase exists — never
 				// let a stray progress line hide the code screen.
 				if (this.send.status === 'waiting' || this.send.status === 'sending') {
@@ -196,7 +201,7 @@ class TransferApp {
 					this.send.status = 'sending'
 				}
 			}),
-			Events.On('croc:recv:progress', (ev: { data: TransferStats }) => {
+			Events.On('croc:recv:progress', (ev) => {
 				// Ignore progress once the transfer is over: a poll tick can
 				// still be in flight when croc:received lands, and acting on it
 				// would pull the panel back off its completion screen.
@@ -210,13 +215,21 @@ class TransferApp {
 			Events.On('croc:sent', () => {
 				this.send.status = 'done'
 			}),
-			Events.On('croc:received', (ev: { data: string }) => {
-				this.receive.complete(ev.data)
+			Events.On('croc:received', (ev) => {
+				this.receive.complete(ev.data.dest ?? '')
 			}),
-			Events.On('croc:error', (ev: { data: string }) => {
-				this.error = ev.data
-				if (this.send.status !== 'done') this.send.status = 'idle'
-				if (this.receive.status !== 'done') this.receive.stop()
+			Events.On('croc:error', (ev) => {
+				// The backend reports which side failed and a machine-readable
+				// code; the raw message is croc's and needs translating.
+				this.error = describeError(ev.data.message, ev.data.kind)
+				// Only the side that actually failed resets: a send and a
+				// receive can run at once, and one failing must not wipe the
+				// other's panel.
+				if (ev.data.kind === 'send') {
+					if (this.send.status !== 'done') this.send.status = 'idle'
+				} else if (this.receive.status !== 'done') {
+					this.receive.stop()
+				}
 			})
 		]
 		return () => unsubs.forEach((unsub) => unsub())

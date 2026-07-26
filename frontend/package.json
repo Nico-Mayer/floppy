@@ -15,6 +15,7 @@
 	"dependencies": {
 		"@wailsio/runtime": "latest",
 		"mode-watcher": "^1.1.0",
+		"motion-sv": "^0.1.13",
 		"qrcode": "^1.5.4"
 	},
 	"devDependencies": {

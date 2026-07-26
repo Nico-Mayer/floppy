@@ -1,13 +1,17 @@
 <script lang="ts">
+	import BorderBeam from '$lib/components/magic/border-beam/border-beam.svelte'
 	import { QRCode } from '$lib/components/spell/qrcode'
 	import { Button } from '$lib/components/ui/button'
 	import * as Empty from '$lib/components/ui/empty'
 	import * as InputGroup from '$lib/components/ui/input-group'
 	import * as Item from '$lib/components/ui/item'
 	import { Spinner } from '$lib/components/ui/spinner'
+	import { fast, motionOK, normal } from '$lib/motion'
 	import { app } from '$lib/transfer-app.svelte'
 	import { IconCheck, IconCopy, IconPlus, IconSend, IconX } from '@tabler/icons-svelte'
 	import { Clipboard } from '@wailsio/runtime'
+	import { flip } from 'svelte/animate'
+	import { fade, scale } from 'svelte/transition'
 	import FileRow from './FileRow.svelte'
 	import { currentFile, formatBytes } from './format'
 	import Mascot from './Mascot.svelte'
@@ -78,8 +82,10 @@
 				role="button"
 				tabindex={0}
 				class={[
-					'cursor-pointer border transition-colors duration-500',
-					dragOver ? 'border-send bg-send/5' : 'bg-muted/40 hover:border-send/40'
+					'cursor-pointer border transition-all duration-200',
+					dragOver
+						? 'scale-[1.01] border-send bg-send/5'
+						: 'bg-muted/40 hover:border-send/40 hover:bg-muted/60'
 				]}
 				onclick={() => send.pick()}
 				onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && send.pick()}
@@ -105,7 +111,9 @@
 		{:else}
 			<Item.Group class="min-h-0 flex-1 overflow-y-auto">
 				{#each send.files as file (file.path)}
-					<FileRow {file} onremove={() => send.removeFile(file.path)} />
+					<div animate:flip={{ duration: fast() }}>
+						<FileRow {file} onremove={() => send.removeFile(file.path)} />
+					</div>
 				{/each}
 			</Item.Group>
 			{#if send.totalSize > LARGE_TRANSFER}
@@ -129,7 +137,10 @@
 	{:else if send.status === 'starting'}
 		<TransferProgress label="Connecting to peer…" />
 	{:else if send.status === 'waiting'}
-		<div class="flex flex-1 flex-col items-center justify-center gap-7">
+		<!-- Entrance-only fades throughout: the outgoing state is removed at
+		     once, so no two states ever occupy the card at the same time and
+		     the layout cannot jump mid-transition. -->
+		<div class="flex flex-1 flex-col items-center justify-center gap-7" in:fade={{ duration: normal() }}>
 			<div class="flex flex-col items-center gap-1.5 text-center">
 				<p class="animate-pop text-lg font-bold tracking-tight">Ready to share</p>
 				<p class="max-w-64 text-xs text-muted-foreground">
@@ -144,14 +155,19 @@
                      share --qr-background so the seam is invisible. bgColor
                      must be opaque — the finder patterns paint their inner
                      ring with it, and a transparent one turns them into
-                     solid blobs. -->
-				<div class="shrink-0 rounded-2xl border bg-qr-background p-4 sm:p-3">
+                     solid blobs. The beam travelling the border is the
+                     "still waiting for your peer" tell — it stops the moment
+                     this screen is replaced. -->
+				<div class="relative shrink-0 rounded-2xl border bg-qr-background p-4 sm:p-3">
 					<QRCode
 						value={send.code}
 						fgColor="var(--qr-foreground)"
 						bgColor="var(--qr-background)"
 						class="size-44 sm:size-32"
 					/>
+					{#if motionOK()}
+						<BorderBeam size={70} duration={5} colorFrom="var(--tint)" colorTo="var(--tint-fg)" />
+					{/if}
 				</div>
 				<div class="flex w-full min-w-0 flex-col items-center gap-2.5 sm:items-start">
 					<InputGroup.Root>
@@ -159,9 +175,13 @@
 						<InputGroup.Addon align="inline-end">
 							<InputGroup.Button size="icon-xs" onclick={copyCode} aria-label="Copy code">
 								{#if copied}
-									<IconCheck class="text-(--tint-fg)" />
+									<span in:scale={{ start: 0.6, duration: fast() }}>
+										<IconCheck class="text-(--tint-fg)" />
+									</span>
 								{:else}
-									<IconCopy />
+									<span in:scale={{ start: 0.6, duration: fast() }}>
+										<IconCopy />
+									</span>
 								{/if}
 							</InputGroup.Button>
 						</InputGroup.Addon>
@@ -192,14 +212,16 @@
 			Cancel
 		</Button>
 	{:else}
-		<Empty.Root>
-			<Empty.Header>
-				<Empty.Media variant="icon" class="animate-pop">
-					<IconCheck class="text-(--tint-fg)" />
-				</Empty.Media>
-				<Empty.Title>Sent {summary}</Empty.Title>
-			</Empty.Header>
-		</Empty.Root>
+		<div class="flex min-h-0 flex-1 flex-col" in:fade={{ duration: normal() }}>
+			<Empty.Root>
+				<Empty.Header>
+					<Empty.Media variant="icon" class="animate-pop">
+						<IconCheck class="text-(--tint-fg)" />
+					</Empty.Media>
+					<Empty.Title>Sent {summary}</Empty.Title>
+				</Empty.Header>
+			</Empty.Root>
+		</div>
 		<Button variant="outline" size="sm" onclick={() => send.reset()}>New transfer</Button>
 	{/if}
 </TransferCard>

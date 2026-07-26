@@ -1,8 +1,10 @@
 <script lang="ts">
-	import type { TransferStats } from '$bindings/floppy/internal/services/models'
+	import type { ProgressEvent } from '$bindings/floppy/internal/services/models'
 	import { Progress } from '$lib/components/ui/progress'
 	import { Spinner } from '$lib/components/ui/spinner'
+	import { normal } from '$lib/motion'
 	import { Tween } from 'svelte/motion'
+	import { fade } from 'svelte/transition'
 	import { formatBytes, formatDuration, formatRate } from './format'
 
 	let {
@@ -11,7 +13,7 @@
 		label
 	}: {
 		progress?: number | null
-		stats?: TransferStats | null
+		stats?: ProgressEvent | null
 		label: string
 	} = $props()
 
@@ -29,7 +31,7 @@
 	})
 </script>
 
-<div class="flex flex-1 flex-col items-center justify-center gap-4">
+<div class="flex flex-1 flex-col items-center justify-center gap-4" in:fade={{ duration: normal() }}>
 	{#if progress !== null}
 		<p class="text-4xl font-bold tracking-tight tabular-nums">
 			{shown}<span class="text-xl">%</span>

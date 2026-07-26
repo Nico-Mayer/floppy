@@ -25,13 +25,10 @@
 	--input: #dcdfe3;
 	--ring: #98a0aa;
 	--radius: 0.625rem;
-	--send: #ff4e00;
-	--send-foreground: #c23b00;
-	--receive: #2757ff;
-	--receive-foreground: #1f45d6;
-	/* A QR code is a scannable artifact, not chrome: it stays ink-on-white in
-       both themes (many scanners fail on inverted, light-on-dark codes), so
-       these two are deliberately absent from the .dark block. */
+	--send: #e3711c;
+	--send-foreground: #f79d3d;
+	--receive: #2c8be1;
+	--receive-foreground: #69b1f1;
 	--qr-foreground: #0e1013;
 	--qr-background: #ffffff;
 }
@@ -57,8 +54,8 @@
 	--ring: #4e555e;
 	/* Accent fills stay identical in dark mode; only the text-usable
        variants lighten to hold contrast on dark surfaces. */
-	--send-foreground: #ff8a5c;
-	--receive-foreground: #8ca5ff;
+	--send-foreground: #f79d3d;
+	--receive-foreground: #69b1f1;
 }
 
 @theme inline {

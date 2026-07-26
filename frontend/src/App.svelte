@@ -7,10 +7,12 @@
 	import * as Kbd from '$lib/components/ui/kbd'
 	import { Spinner } from '$lib/components/ui/spinner'
 	import * as Tabs from '$lib/components/ui/tabs'
+	import { normal, shift } from '$lib/motion'
 	import { app, type Mode } from '$lib/transfer-app.svelte'
-	import { IconAlertCircle, IconDeviceFloppy, IconDownload, IconSend, IconX } from '@tabler/icons-svelte'
+	import { IconAlertCircle, IconDownload, IconSend, IconX } from '@tabler/icons-svelte'
 	import { ModeWatcher } from 'mode-watcher'
 	import { onMount } from 'svelte'
+	import { fly } from 'svelte/transition'
 	import './app.css'
 
 	onMount(() => app.listen())
@@ -64,8 +66,7 @@
 			class="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-3 sm:max-w-3xl md:max-w-4xl lg:max-w-7xl"
 		>
 			<div class="flex items-center gap-2.5 px-1">
-				<IconDeviceFloppy size={32} class={app.mode === 'send' ? 'stroke-send' : 'stroke-receive'} />
-				<h1 class="font-heading text-lg font-bold tracking-tight">Floppy</h1>
+				<h1 class="font-heading text-xl font-black tracking-tight uppercase">Floppy</h1>
 				<p class="truncate font-mono text-[9px] tracking-wider text-muted-foreground uppercase">
 					no cloud · direct device to device
 				</p>
@@ -82,18 +83,28 @@
 				</Tabs.List>
 
 				{#if app.error}
-					<Alert.Root variant="destructive" class="animate-shake">
-						<IconAlertCircle />
-						<Alert.Title>Something went wrong</Alert.Title>
-						<Alert.Description class="truncate font-mono" title={app.error}>
-							{app.error}
-						</Alert.Description>
-						<Alert.Action>
-							<Button variant="ghost" size="icon-xs" onclick={() => (app.error = '')} aria-label="Dismiss">
-								<IconX />
-							</Button>
-						</Alert.Action>
-					</Alert.Root>
+					<div transition:fly={{ y: -shift(), duration: normal() }}>
+						<Alert.Root variant="destructive" class="animate-shake">
+							<IconAlertCircle />
+							<Alert.Title>{app.error.title}</Alert.Title>
+							<!-- detail holds croc's original wording whenever we replaced
+							     it with something friendlier; surface it on hover rather
+							     than throwing raw text at the user. -->
+							<Alert.Description title={app.error.detail}>
+								{app.error.message}
+							</Alert.Description>
+							<Alert.Action>
+								<Button
+									variant="ghost"
+									size="icon-xs"
+									onclick={() => (app.error = null)}
+									aria-label="Dismiss"
+								>
+									<IconX />
+								</Button>
+							</Alert.Action>
+						</Alert.Root>
+					</div>
 				{/if}
 
 				<Tabs.Content value="send" class="min-h-0 flex-1">
