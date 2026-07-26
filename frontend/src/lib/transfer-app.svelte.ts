@@ -1,6 +1,6 @@
-import { CancelReceive, CancelSend, Receive, Send } from '$bindings/bibor/crocservice'
-import { SelectFiles } from '$bindings/bibor/fileservice'
-import type { TransferStats } from '$bindings/bibor/models'
+import { CancelReceive, CancelSend, Receive, Send } from '$bindings/floppy/crocservice'
+import { SelectFiles } from '$bindings/floppy/fileservice'
+import type { TransferStats } from '$bindings/floppy/models'
 import { Events } from '@wailsio/runtime'
 import type { ReceiveStatus, SendStatus } from './components/transfer/types'
 

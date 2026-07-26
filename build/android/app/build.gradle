@@ -11,7 +11,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.wails.app"
+        applicationId "com.nico-mayer.floppy"
         minSdk 21
         targetSdk 35
         versionCode 1

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { OpenPath } from '$bindings/bibor/fileservice'
+	import { OpenPath } from '$bindings/floppy/fileservice'
 	import { Button } from '$lib/components/ui/button'
 	import { Input } from '$lib/components/ui/input'
 	import { app } from '$lib/transfer-app.svelte'

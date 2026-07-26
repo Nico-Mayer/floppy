@@ -131,6 +131,10 @@ tasks:
   create:app:bundle:
     summary: Creates an `.app` bundle
     cmds:
+      # Rebuild the bundle from scratch: the copies below never delete, so a
+      # resource that stops being generated (Assets.car when the .icon file
+      # goes away) would otherwise linger and keep overriding icons.icns.
+      - rm -rf "{{.BIN_DIR}}/{{.APP_NAME}}.app"
       - mkdir -p "{{.BIN_DIR}}/{{.APP_NAME}}.app/Contents/MacOS"
       - mkdir -p "{{.BIN_DIR}}/{{.APP_NAME}}.app/Contents/Resources"
       - cp build/darwin/icons.icns "{{.BIN_DIR}}/{{.APP_NAME}}.app/Contents/Resources"
@@ -156,6 +160,9 @@ tasks:
 
   run:
     cmds:
+      # Same fresh-bundle rule as create:app:bundle — stale resources here are
+      # what make a changed app icon appear not to change.
+      - rm -rf "{{.BIN_DIR}}/{{.APP_NAME}}.dev.app"
       - mkdir -p "{{.BIN_DIR}}/{{.APP_NAME}}.dev.app/Contents/MacOS"
       - mkdir -p "{{.BIN_DIR}}/{{.APP_NAME}}.dev.app/Contents/Resources"
       - cp build/darwin/icons.icns "{{.BIN_DIR}}/{{.APP_NAME}}.dev.app/Contents/Resources"

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { TransferStats } from '$bindings/bibor/models'
+	import type { TransferStats } from '$bindings/floppy/models'
 	import { Progress } from '$lib/components/ui/progress'
 	import { IconLoader2 } from '@tabler/icons-svelte'
 	import { Tween } from 'svelte/motion'

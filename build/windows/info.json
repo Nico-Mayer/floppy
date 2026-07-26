@@ -5,11 +5,11 @@
 	"info": {
 		"0000": {
 			"ProductVersion": "0.1.0",
-			"CompanyName": "My Company",
-			"FileDescription": "A project-bibor application",
-			"LegalCopyright": "© 2026, My Company",
-			"ProductName": "My Product",
-			"Comments": "This is a comment"
+			"CompanyName": "Nico Mayer",
+			"FileDescription": "Send and receive files device to device",
+			"LegalCopyright": "(c) 2026, Nico Mayer",
+			"ProductName": "Floppy",
+			"Comments": "Peer-to-peer file transfer, no cloud"
 		}
 	}
 }

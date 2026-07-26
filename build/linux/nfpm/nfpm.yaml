@@ -3,26 +3,26 @@
 #
 # The lines below are called `modelines`. See `:help modeline`
 
-name: "project-bibor"
+name: "floppy"
 arch: ${GOARCH}
 platform: "linux"
 version: "0.1.0"
 section: "default"
 priority: "extra"
 maintainer: ${GIT_COMMITTER_NAME} <${GIT_COMMITTER_EMAIL}>
-description: "A project-bibor application"
-vendor: "My Company"
+description: "Send and receive files device to device"
+vendor: "Nico Mayer"
 homepage: "https://wails.io"
 license: "MIT"
 release: "1"
 
 contents:
-  - src: "./bin/project-bibor"
-    dst: "/usr/local/bin/project-bibor"
+  - src: "./bin/floppy"
+    dst: "/usr/local/bin/floppy"
   - src: "./build/appicon.png"
-    dst: "/usr/share/icons/hicolor/128x128/apps/project-bibor.png"
-  - src: "./build/linux/project-bibor.desktop"
-    dst: "/usr/share/applications/project-bibor.desktop"
+    dst: "/usr/share/icons/hicolor/128x128/apps/floppy.png"
+  - src: "./build/linux/floppy.desktop"
+    dst: "/usr/share/applications/floppy.desktop"
 
 # Default dependencies for the GTK4 + WebKitGTK 6.0 stack (Ubuntu 24.04+ / Debian 13+)
 depends:

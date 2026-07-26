@@ -40,7 +40,7 @@ func main() {
 	// 'Bind' is a list of Go struct instances. The frontend has access to the methods of these instances.
 	// 'Mac' options tailor the application when running an macOS.
 	app := application.New(application.Options{
-		Name:        "Project Bibor",
+		Name:        "Floppy",
 		Description: "A minimal app for sending and receiving files",
 		Services: []application.Service{
 			application.NewService(&FileService{}),
@@ -60,7 +60,7 @@ func main() {
 	// 'BackgroundColour' is the background colour of the window.
 	// 'URL' is the URL that will be loaded into the webview.
 	win := app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Title:          "Project Bibor",
+		Title:          "Floppy",
 		EnableFileDrop: true,
 		// On Windows the native frame is dropped and the frontend TitleBar
 		// renders its own window controls, matching the macOS hidden-inset

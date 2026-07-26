@@ -1,13 +1,13 @@
 [Desktop Entry]
 Version=1.0
-Name=My Product
-Comment=A project-bibor application
+Name=Floppy
+Comment=Send and receive files device to device
 # The Exec line includes %u to pass the URL to the application
-Exec=/usr/local/bin/project-bibor %u
+Exec=/usr/local/bin/floppy %u
 Terminal=false
 Type=Application
-Icon=project-bibor
+Icon=floppy
 Categories=Utility;
-StartupWMClass=project-bibor
+StartupWMClass=floppy
 
  

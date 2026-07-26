@@ -1,4 +1,4 @@
-module bibor
+module floppy
 
 go 1.25.0
 
