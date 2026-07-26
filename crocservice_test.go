@@ -11,6 +11,9 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/schollz/croc/v10/src/croc"
+	"github.com/schollz/croc/v10/src/models"
 )
 
 // eventRecorder captures CrocService events for one test by swapping the
@@ -240,5 +243,67 @@ func TestCancelReceive(t *testing.T) {
 	}
 	if rec.count("croc:received") > 0 {
 		t.Error("cancelled receive emitted completion")
+	}
+}
+
+// TestTransferPercentResumeCredit checks the resume accounting: croc only
+// counts freshly moved bytes in TotalSent, so chunks the receiver already has
+// must be credited (mirrors croc's own setBar math).
+func TestTransferPercentResumeCredit(t *testing.T) {
+	chunk := int64(models.TCP_BUFFER_SIZE / 2)
+	c := &croc.Client{}
+	c.Options.IsSender = true
+	c.Step4FileTransferred = true
+	c.FilesToTransfer = []croc.FileInfo{{Size: 100 * chunk}}
+	// Receiver is missing only 10 of 100 chunks.
+	c.CurrentFileChunks = make([]int64, 10)
+
+	if got, ok := transferPercent(c); !ok || got != 90 {
+		t.Errorf("resume start: got %d%% ok=%v, want 90%% true", got, ok)
+	}
+	c.TotalSent = 5 * chunk
+	if got, ok := transferPercent(c); !ok || got != 95 {
+		t.Errorf("resume mid: got %d%% ok=%v, want 95%% true", got, ok)
+	}
+	// Fresh transfer: no chunk list yet, no credit.
+	c.CurrentFileChunks = nil
+	c.TotalSent = 50 * chunk
+	if got, ok := transferPercent(c); !ok || got != 50 {
+		t.Errorf("fresh mid: got %d%% ok=%v, want 50%% true", got, ok)
+	}
+}
+
+// TestSendResumedTransfer pre-seeds the receiver with the first half of the
+// payload and verifies a resumed send still completes with an intact file.
+func TestSendResumedTransfer(t *testing.T) {
+	if testing.Short() {
+		t.Skip("network transfer")
+	}
+	rec := recordEvents(t)
+	src, payload := makePayload(t)
+	dest := t.TempDir()
+
+	// Pre-seed a partial file — same bytes croc would have left behind after
+	// an interrupted transfer.
+	if err := os.WriteFile(filepath.Join(dest, "payload.bin"), payload[:len(payload)/2], 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	svc := &CrocService{dest: dest}
+	if err := svc.Send([]string{src}); err != nil {
+		t.Fatalf("Send: %v", err)
+	}
+	code := rec.waitFor(t, "croc:code", 10*time.Second)
+
+	croctool(t, nil, "recv", code, dest)
+
+	rec.waitFor(t, "croc:sent", 120*time.Second)
+
+	got, err := os.ReadFile(filepath.Join(dest, "payload.bin"))
+	if err != nil {
+		t.Fatalf("received file: %v", err)
+	}
+	if !bytes.Equal(got, payload) {
+		t.Fatalf("resumed file differs: got %d bytes, want %d", len(got), len(payload))
 	}
 }

@@ -11,6 +11,12 @@
     import "./app.css";
 
     onMount(() => app.listen());
+
+    // Dev-only escape hatch: lets the browser preview (no Wails bindings)
+    // drive app state from the console to debug UI in isolation.
+    if (import.meta.env.DEV) {
+        (window as unknown as Record<string, unknown>).__app = app;
+    }
 </script>
 
 <ModeWatcher />
@@ -22,7 +28,9 @@
         class="flex min-h-0 flex-1 flex-col gap-3 p-4 sm:p-6"
         data-file-drop-target
     >
-        <div class="mx-auto flex w-full max-w-2xl items-center gap-2.5 px-1">
+        <div
+            class="mx-auto flex w-full max-w-2xl sm:max-w-3xl md:max-w-4xl lg:max-w-7xl items-center gap-2.5 px-1"
+        >
             <div
                 class="size-3.5 rounded-lg transition-colors {app.mode ===
                 'send'
@@ -40,13 +48,10 @@
         <Tabs.Root
             value={app.mode}
             onValueChange={(value) => (app.mode = value as Mode)}
-            class="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-3"
+            class="mx-auto flex min-h-0 w-full flex-1 flex-col gap-3 max-w-2xl sm:max-w-3xl md:max-w-4xl lg:max-w-7xl"
         >
             <Tabs.List class="w-full">
-                <Tabs.Trigger
-                    value="send"
-                    class="gap-1.5 data-active:text-send-foreground"
-                >
+                <Tabs.Trigger value="send" class="gap-1.5">
                     {#if app.send.busy}
                         <IconLoader2 class="animate-spin" />
                     {:else}
@@ -54,10 +59,7 @@
                     {/if}
                     Send
                 </Tabs.Trigger>
-                <Tabs.Trigger
-                    value="receive"
-                    class="gap-1.5 data-active:text-receive-foreground"
-                >
+                <Tabs.Trigger value="receive" class="gap-1.5">
                     {#if app.receive.busy}
                         <IconLoader2 class="animate-spin" />
                     {:else}

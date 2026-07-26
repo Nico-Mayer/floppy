@@ -1,6 +1,7 @@
 <script lang="ts">
     import { Progress } from "$lib/components/ui/progress";
     import { IconLoader2 } from "@tabler/icons-svelte";
+    import { Tween } from "svelte/motion";
     import type { Accent } from "./types";
 
     let {
@@ -12,18 +13,21 @@
         progress?: number | null;
         label: string;
     } = $props();
+
+    const tween = Tween.of(() => progress ?? 0, { duration: 1000 });
+    let shown = $derived(Math.round(tween.current));
 </script>
 
 <div class="flex flex-1 flex-col items-center justify-center gap-4">
     {#if progress !== null}
         <p class="text-4xl font-bold tracking-tight tabular-nums">
-            {progress}<span class="text-xl">%</span>
+            {shown}<span class="text-xl">%</span>
         </p>
         <Progress
-            value={progress}
+            value={tween.current}
             class="w-2/3 {accent === 'send'
-                ? '[&>[data-slot=progress-indicator]]:bg-send'
-                : '[&>[data-slot=progress-indicator]]:bg-receive'}"
+                ? '*:data-[slot=progress-indicator]:bg-send'
+                : '*:data-[slot=progress-indicator]:bg-receive'}"
         />
     {:else}
         <IconLoader2

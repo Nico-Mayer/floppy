@@ -126,7 +126,16 @@ func transferPercent(c *croc.Client) (int, bool) {
 		done += files[i].Size
 	}
 	if idx < len(files) {
-		if sent := min(c.TotalSent, files[idx].Size); sent > 0 {
+		// On a resumed transfer croc only moves the chunks the receiver is
+		// missing (CurrentFileChunks) and TotalSent counts just those bytes.
+		// Credit the part the receiver already has — same accounting as
+		// croc's own progress bar (setBar) — or a resume sits at 0% while it
+		// finishes.
+		credit := int64(0)
+		if n := int64(len(c.CurrentFileChunks)); n > 0 {
+			credit = max(files[idx].Size-n*models.TCP_BUFFER_SIZE/2, 0)
+		}
+		if sent := min(credit+c.TotalSent, files[idx].Size); sent > 0 {
 			done += sent
 		}
 	}
