@@ -16,15 +16,19 @@
 import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wailsio/runtime";
 
 /**
- * CancelReceive aborts a running receive transfer. A partially received file
- * may remain in the destination folder (croc reuses it to resume).
+ * CancelReceive aborts a running receive transfer, returning as soon as croc
+ * has been told to stop (see CancelSend). A partially received file may remain
+ * in the destination folder — croc reuses it to resume.
  */
 export function CancelReceive(): $CancellablePromise<void> {
     return $Call.ByID(329269001);
 }
 
 /**
- * CancelSend aborts a running send transfer.
+ * CancelSend aborts a running send transfer. It returns as soon as croc has
+ * been told to stop, without waiting for it to unwind: against a remote peer
+ * that takes seconds, and a Cancel button that does not respond until then
+ * reads as a hang. Send absorbs the leftover unwinding instead.
  */
 export function CancelSend(): $CancellablePromise<void> {
     return $Call.ByID(1762729354);

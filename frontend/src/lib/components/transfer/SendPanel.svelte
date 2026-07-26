@@ -6,16 +6,21 @@
 	import { Clipboard } from '@wailsio/runtime'
 	import CancelButton from './CancelButton.svelte'
 	import FileRow from './FileRow.svelte'
-	import { basename } from './files'
-	import Mascot from './Mascot.svelte'
+	import { formatBytes } from './format'
+	import Mascot3 from './Mascot3.svelte'
 	import TransferCard from './TransferCard.svelte'
 	import TransferProgress from './TransferProgress.svelte'
 
+	/** Above this, a transfer is long enough that leaving the app matters. */
+	const LARGE_TRANSFER = 2_000_000_000
+
 	const send = app.send
 
-	let summary = $derived(send.files.length === 1 ? basename(send.files[0]) : `${send.files.length} files`)
+	let summary = $derived(send.files.length === 1 ? send.files[0].name : `${send.files.length} files`)
 	let headline = $derived.by(() => {
 		switch (send.status) {
+			case 'cancelling':
+				return 'cancelling'
 			case 'starting':
 				return 'connecting'
 			case 'waiting':
@@ -30,6 +35,8 @@
 	})
 	let badge = $derived.by(() => {
 		switch (send.status) {
+			case 'cancelling':
+				return 'stopping'
 			case 'starting':
 				return '…'
 			case 'waiting':
@@ -39,7 +46,7 @@
 			case 'done':
 				return 'sent'
 			default:
-				return `${send.files.length} selected`
+				return send.files.length ? formatBytes(send.totalSize) : '0 selected'
 		}
 	})
 
@@ -77,7 +84,8 @@
 					? 'border-send bg-send/5'
 					: 'border-input bg-muted/40 hover:border-send/40'}"
 			>
-				<Mascot accent="send" />
+				<!-- <Mascot accent="send" /> -->
+				<Mascot3 class="size-20"></Mascot3>
 				<span class="text-lg font-bold tracking-tight"> Drag files here </span>
 				<span class="max-w-72 text-xs text-muted-foreground">
 					Drop them anywhere in this pane, or <span class="text-foreground underline underline-offset-2"
@@ -87,10 +95,15 @@
 			</button>
 		{:else}
 			<ul class="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto">
-				{#each send.files as path (path)}
-					<FileRow {path} onremove={() => send.removeFile(path)} />
+				{#each send.files as file (file.path)}
+					<FileRow {file} onremove={() => send.removeFile(file.path)} />
 				{/each}
 			</ul>
+			{#if send.totalSize > LARGE_TRANSFER}
+				<p class="text-center text-xs text-muted-foreground">
+					Large transfer — both devices need to stay awake with the app open until it finishes.
+				</p>
+			{/if}
 			<div class="flex gap-2">
 				<Button variant="outline" onclick={() => send.pick()}>
 					<IconPlus />
@@ -98,10 +111,12 @@
 				</Button>
 				<Button class="flex-1" onclick={() => send.start()}>
 					<IconSend />
-					Send {summary}
+					Send {summary} · {formatBytes(send.totalSize)}
 				</Button>
 			</div>
 		{/if}
+	{:else if send.status === 'cancelling'}
+		<TransferProgress accent="send" label="Cancelling…" />
 	{:else if send.status === 'starting'}
 		<TransferProgress accent="send" label="Connecting to peer…" />
 	{:else if send.status === 'waiting'}

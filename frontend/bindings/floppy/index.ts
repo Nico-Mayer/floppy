@@ -9,5 +9,6 @@ export {
 };
 
 export type {
+    FileEntry,
     TransferStats
 } from "./models.js";

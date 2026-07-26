@@ -13,6 +13,8 @@
 
 	let headline = $derived.by(() => {
 		switch (receive.status) {
+			case 'cancelling':
+				return 'cancelling'
 			case 'connecting':
 				return 'connecting'
 			case 'receiving':
@@ -25,6 +27,8 @@
 	})
 	let badge = $derived.by(() => {
 		switch (receive.status) {
+			case 'cancelling':
+				return 'stopping'
 			case 'connecting':
 				return '…'
 			case 'receiving':
@@ -55,6 +59,8 @@
 			</Button>
 			<Button variant="outline" size="sm" onclick={() => receive.reset()}>Receive more</Button>
 		</div>
+	{:else if receive.status === 'cancelling'}
+		<TransferProgress accent="receive" label="Cancelling…" />
 	{:else if receive.status === 'connecting'}
 		<TransferProgress accent="receive" label="Looking for the sender…" />
 		{#if receive.tooSlow}

@@ -23,13 +23,30 @@ import (
 // to the frontend via events: croc:code, croc:send:progress,
 // croc:recv:progress, croc:sent, croc:received, croc:error.
 type CrocService struct {
-	mu            sync.Mutex
-	destRoot      string
+	mu       sync.Mutex
+	destRoot string
+	// The *Done channels are closed when the corresponding transfer goroutine
+	// has fully unwound. Cancelling only asks croc to stop; it keeps running
+	// for a second or two afterwards, and starting the next transfer before it
+	// lets go would collide over the relay and (for receives) the working
+	// directory. Cancel waits on these so the slot is genuinely free when it
+	// returns.
+	sendDone      chan struct{}
+	recvDone      chan struct{}
 	sendCancel    context.CancelFunc
 	recvCancel    context.CancelFunc
 	sendCancelled bool
 	recvCancelled bool
 }
+
+const (
+	// cancelGracePeriod bounds how long Cancel waits for croc to unwind before
+	// giving up on it; unwinding normally takes a couple of seconds.
+	cancelGracePeriod = 20 * time.Second
+	// shutdownGracePeriod is the same bound for quitting, where a slow exit is
+	// worse than a peer left without its goodbye.
+	shutdownGracePeriod = 2 * time.Second
+)
 
 // emit is a variable so tests can capture events without a running app.
 var emit = func(name string, data any) {
@@ -93,8 +110,15 @@ const (
 // fields are written by the transfer goroutines without synchronization, so
 // reads may be slightly stale — fine for a progress bar. Its maps are
 // deliberately not touched (concurrent map reads can crash).
-func watchProgress(ctx context.Context, client *croc.Client, event string) {
+//
+// The returned channel is closed once the poller has stopped. Callers must
+// wait on it before emitting a terminal event: otherwise a tick already past
+// its ctx check can emit progress *after* croc:sent/croc:received and drag the
+// UI back out of its completion screen.
+func watchProgress(ctx context.Context, client *croc.Client, event string) chan struct{} {
+	stopped := make(chan struct{})
 	go func() {
+		defer close(stopped)
 		ticker := time.NewTicker(progressPollInterval)
 		defer ticker.Stop()
 		var (
@@ -147,6 +171,7 @@ func watchProgress(ctx context.Context, client *croc.Client, event string) {
 			}
 		}
 	}()
+	return stopped
 }
 
 // emitComplete reports a full progress bar. The poller stops with the
@@ -224,10 +249,14 @@ func (s *CrocService) Send(paths []string) error {
 		return fmt.Errorf("no files selected")
 	}
 
+	if err := awaitFreeSlot(s.dyingSend(), "send"); err != nil {
+		return err
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.sendCancel != nil {
-		return fmt.Errorf("a send is already in progress")
+		return fmt.Errorf("a send is already running — cancel it first")
 	}
 
 	options := defaultCrocOptions()
@@ -246,23 +275,28 @@ func (s *CrocService) Send(paths []string) error {
 		return err
 	}
 
+	done := make(chan struct{})
 	s.sendCancel = cancel
+	s.sendDone = done
 	s.sendCancelled = false
 	slog.Info("croc send: starting", "files", len(paths))
 
 	// Everything validated — hand out the code phrase; the frontend treats
 	// it as "waiting for receiver".
 	emit("croc:code", options.SharedSecret)
-	watchProgress(ctx, client, "croc:send:progress")
+	progressStopped := watchProgress(ctx, client, "croc:send:progress")
 
 	go func() {
+		defer close(done)
 		err := client.Send(filesInfo, emptyFolders, totalFolders)
 
 		s.mu.Lock()
 		cancelled := s.sendCancelled
 		s.sendCancel = nil
+		s.sendDone = nil
 		s.mu.Unlock()
 		cancel()
+		<-progressStopped
 
 		switch {
 		case cancelled:
@@ -291,10 +325,14 @@ func (s *CrocService) Receive(code string) error {
 		return fmt.Errorf("no code phrase given")
 	}
 
+	if err := awaitFreeSlot(s.dyingReceive(), "receive"); err != nil {
+		return err
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.recvCancel != nil {
-		return fmt.Errorf("a receive is already in progress")
+		return fmt.Errorf("a receive is already running — cancel it first")
 	}
 	if s.destRoot == "" {
 		return fmt.Errorf("receive destination not initialised")
@@ -326,20 +364,25 @@ func (s *CrocService) Receive(code string) error {
 		return err
 	}
 
+	done := make(chan struct{})
 	s.recvCancel = cancel
+	s.recvDone = done
 	s.recvCancelled = false
 	slog.Info("croc receive: starting", "dest", dest)
 
-	watchProgress(ctx, client, "croc:recv:progress")
+	progressStopped := watchProgress(ctx, client, "croc:recv:progress")
 
 	go func() {
+		defer close(done)
 		err := client.Receive()
 
 		s.mu.Lock()
 		cancelled := s.recvCancelled
 		s.recvCancel = nil
+		s.recvDone = nil
 		s.mu.Unlock()
 		cancel()
+		<-progressStopped
 
 		switch {
 		case cancelled:
@@ -369,8 +412,24 @@ func removeIfEmpty(dir string) {
 	_ = os.Remove(dir)
 }
 
-// CancelSend aborts a running send transfer.
+// CancelSend aborts a running send transfer. It returns as soon as croc has
+// been told to stop, without waiting for it to unwind: against a remote peer
+// that takes seconds, and a Cancel button that does not respond until then
+// reads as a hang. Send absorbs the leftover unwinding instead.
 func (s *CrocService) CancelSend() {
+	s.abortSend()
+}
+
+// CancelReceive aborts a running receive transfer, returning as soon as croc
+// has been told to stop (see CancelSend). A partially received file may remain
+// in the destination folder — croc reuses it to resume.
+func (s *CrocService) CancelReceive() {
+	s.abortReceive()
+}
+
+// abortSend asks the send to stop and returns the channel that reports it has,
+// leaving the waiting to the caller.
+func (s *CrocService) abortSend() chan struct{} {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.sendCancel != nil {
@@ -378,11 +437,30 @@ func (s *CrocService) CancelSend() {
 		s.sendCancelled = true
 		s.sendCancel()
 	}
+	return s.sendDone
 }
 
-// CancelReceive aborts a running receive transfer. A partially received file
-// may remain in the destination folder (croc reuses it to resume).
-func (s *CrocService) CancelReceive() {
+// dyingSend reports the completion channel of a send that was cancelled and
+// is still unwinding, or nil when the slot is free or genuinely still in use.
+func (s *CrocService) dyingSend() chan struct{} {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.sendCancel == nil || !s.sendCancelled {
+		return nil
+	}
+	return s.sendDone
+}
+
+func (s *CrocService) dyingReceive() chan struct{} {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.recvCancel == nil || !s.recvCancelled {
+		return nil
+	}
+	return s.recvDone
+}
+
+func (s *CrocService) abortReceive() chan struct{} {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.recvCancel != nil {
@@ -390,11 +468,42 @@ func (s *CrocService) CancelReceive() {
 		s.recvCancelled = true
 		s.recvCancel()
 	}
+	return s.recvDone
 }
 
-// ServiceShutdown aborts any running transfers when the app quits.
+// awaitFreeSlot waits out a transfer that was cancelled but has not finished
+// unwinding yet, so the next one can take its place. done is the dying
+// transfer's completion channel, or nil when the slot is already free. The
+// lock must not be held: the goroutine takes it on its way out.
+func awaitFreeSlot(done chan struct{}, kind string) error {
+	if done == nil {
+		return nil
+	}
+	slog.Info("croc " + kind + ": waiting for the cancelled transfer to unwind")
+	select {
+	case <-done:
+		return nil
+	case <-time.After(cancelGracePeriod):
+		return fmt.Errorf("the previous %s is still stopping — try again in a moment", kind)
+	}
+}
+
+// ServiceShutdown aborts any running transfers when the app quits. Both are
+// signalled before waiting on either, and with a short deadline: quitting must
+// not stall behind croc's unwinding the way a user-initiated cancel does.
 func (s *CrocService) ServiceShutdown() error {
-	s.CancelSend()
-	s.CancelReceive()
+	send, recv := s.abortSend(), s.abortReceive()
+	deadline := time.After(shutdownGracePeriod)
+	for _, done := range []chan struct{}{send, recv} {
+		if done == nil {
+			continue
+		}
+		select {
+		case <-done:
+		case <-deadline:
+			slog.Warn("croc: transfers still unwinding at shutdown")
+			return nil
+		}
+	}
 	return nil
 }

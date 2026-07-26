@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"crypto/rand"
 	"os"
 	"os/exec"
@@ -22,7 +23,9 @@ import (
 type eventRecorder struct {
 	mu     sync.Mutex
 	events map[string][]any
-	wake   chan struct{}
+	// order is every event name as emitted, so tests can assert on sequencing.
+	order []string
+	wake  chan struct{}
 }
 
 func recordEvents(t *testing.T) *eventRecorder {
@@ -32,6 +35,7 @@ func recordEvents(t *testing.T) *eventRecorder {
 	emit = func(name string, data any) {
 		r.mu.Lock()
 		r.events[name] = append(r.events[name], data)
+		r.order = append(r.order, name)
 		r.mu.Unlock()
 		select {
 		case r.wake <- struct{}{}:
@@ -46,6 +50,17 @@ func (r *eventRecorder) count(name string) int {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	return len(r.events[name])
+}
+
+// last returns the name of the most recently emitted event.
+func (r *eventRecorder) last(t *testing.T) string {
+	t.Helper()
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if len(r.order) == 0 {
+		t.Fatal("no events emitted")
+	}
+	return r.order[len(r.order)-1]
 }
 
 // stats returns every TransferStats payload recorded for a progress event.
@@ -224,6 +239,11 @@ func TestReceiveFromPeer(t *testing.T) {
 	if !slices.ContainsFunc(stats, func(s TransferStats) bool { return s.Bps > 0 }) {
 		t.Errorf("no progress event carried a transfer rate: %+v", stats)
 	}
+	// croc:received must be the last word: a progress event landing after it
+	// leaves the UI sitting on 100% instead of the completion screen.
+	if last := rec.last(t); last != "croc:received" {
+		t.Errorf("last event was %s, want croc:received", last)
+	}
 }
 
 // TestSendToPeer drives CrocService.Send against a real croc receiver running
@@ -274,11 +294,25 @@ func TestCancelReceive(t *testing.T) {
 		t.Fatalf("Receive: %v", err)
 	}
 	time.Sleep(200 * time.Millisecond)
+
+	// Cancel must return promptly whatever croc is doing: it drives a button,
+	// and against a remote peer the unwinding itself can take many seconds.
+	start := time.Now()
+	svc.CancelReceive()
+	if took := time.Since(start); took > time.Second {
+		t.Errorf("CancelReceive blocked for %s; it must not wait for croc to unwind", took)
+	}
+
+	// Retrying straight away is what a user does after mistyping a code. The
+	// slot may still be unwinding, so Receive waits it out rather than
+	// reporting the previous transfer as still running.
+	if err := svc.Receive(code); err != nil {
+		t.Fatalf("receive immediately after cancel: %v", err)
+	}
 	svc.CancelReceive()
 
-	// The folder is removed once the receive goroutine returns, and croc takes
-	// a second or two to unwind its relay connection after the context is
-	// cancelled — so wait for the cleanup rather than assuming a duration.
+	// Cleanup and the completion switch run as the goroutine unwinds, after
+	// cancel has returned — so wait for them rather than assuming a duration.
 	dest := filepath.Join(destRoot, code)
 	deadline := time.Now().Add(30 * time.Second)
 	for {
@@ -290,9 +324,6 @@ func TestCancelReceive(t *testing.T) {
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
-
-	// The goroutine has run its completion switch by now, so any event it
-	// would wrongly emit has already been recorded.
 	if rec.count("croc:error") > 0 {
 		rec.mu.Lock()
 		msg := rec.events["croc:error"][0]
@@ -332,6 +363,40 @@ func TestTransferBytesResumeCredit(t *testing.T) {
 	c.CurrentFileChunks = nil
 	c.TotalSent = 50 * chunk
 	check("fresh mid", 50*chunk)
+}
+
+// TestWatchProgressStops checks the channel watchProgress returns really means
+// "no more events". Transfers wait on it before emitting croc:sent or
+// croc:received; a tick escaping afterwards would knock the UI back off its
+// completion screen and leave it sitting at 100%.
+func TestWatchProgressStops(t *testing.T) {
+	rec := recordEvents(t)
+	c := &croc.Client{}
+	c.Options.IsSender = true
+	c.Step4FileTransferred = true
+	c.FilesToTransfer = []croc.FileInfo{{Size: 1000}}
+	c.TotalSent = 500
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	stopped := watchProgress(ctx, c, "croc:send:progress")
+
+	deadline := time.After(5 * time.Second)
+	for rec.count("croc:send:progress") == 0 {
+		select {
+		case <-rec.wake:
+		case <-deadline:
+			t.Fatal("poller emitted no progress at all")
+		}
+	}
+
+	cancel()
+	<-stopped
+	emitted := rec.count("croc:send:progress")
+	time.Sleep(3 * progressPollInterval)
+	if got := rec.count("croc:send:progress"); got != emitted {
+		t.Errorf("%d events emitted after the poller reported itself stopped", got-emitted)
+	}
 }
 
 // TestEtaSeconds covers the two states the UI treats specially: "no estimate
