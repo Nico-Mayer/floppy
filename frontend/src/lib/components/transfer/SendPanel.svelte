@@ -1,5 +1,6 @@
 <script lang="ts">
     import { Button } from "$lib/components/ui/button";
+    import { app } from "$lib/transfer-app.svelte";
     import {
         IconCheck,
         IconCopy,
@@ -14,55 +15,42 @@
     import Mascot from "./Mascot.svelte";
     import TransferCard from "./TransferCard.svelte";
     import TransferProgress from "./TransferProgress.svelte";
-    import type { SendStatus } from "./types";
 
-    let {
-        status,
-        files = $bindable(),
-        code,
-        progress,
-        onpick,
-        onstart,
-        oncancel,
-        onreset,
-    }: {
-        status: SendStatus;
-        files: string[];
-        code: string;
-        progress: number;
-        onpick: () => void;
-        onstart: () => void;
-        oncancel: () => void;
-        onreset: () => void;
-    } = $props();
+    const send = app.send;
 
     let summary = $derived(
-        files.length === 1 ? basename(files[0]) : `${files.length} files`,
+        send.files.length === 1
+            ? basename(send.files[0])
+            : `${send.files.length} files`,
     );
-    let headline = $derived(
-        status === "idle"
-            ? files.length
-                ? "review"
-                : "select files"
-            : status === "starting"
-              ? "connecting"
-              : status === "waiting"
-                ? "awaiting peer"
-                : status === "sending"
-                  ? "transferring"
-                  : "complete",
-    );
-    let badge = $derived(
-        status === "idle"
-            ? `${files.length} selected`
-            : status === "starting"
-              ? "…"
-              : status === "waiting"
-                ? "ready"
-                : status === "sending"
-                  ? `${progress}%`
-                  : "sent",
-    );
+    let headline = $derived.by(() => {
+        switch (send.status) {
+            case "starting":
+                return "connecting";
+            case "waiting":
+                return "awaiting peer";
+            case "sending":
+                return "transferring";
+            case "done":
+                return "complete";
+            default:
+                return send.files.length ? "review" : "select files";
+        }
+    });
+    let badge = $derived.by(() => {
+        switch (send.status) {
+            case "starting":
+                return "…";
+            case "waiting":
+                return "ready";
+            case "sending":
+                return `${send.progress}%`;
+            case "done":
+                return "sent";
+            default:
+                return `${send.files.length} selected`;
+        }
+    });
 
     let dragOver = $state(false);
     let copied = $state(false);
@@ -72,9 +60,9 @@
         try {
             // Native clipboard via the Go side — reliable in every webview,
             // unlike navigator.clipboard (secure-context/permission quirks).
-            await Clipboard.SetText(code);
+            await Clipboard.SetText(send.code);
         } catch {
-            await navigator.clipboard.writeText(code);
+            await navigator.clipboard.writeText(send.code);
         }
         copied = true;
         clearTimeout(copyResetTimer);
@@ -83,18 +71,18 @@
 </script>
 
 <TransferCard accent="send" title="Send" {headline} {badge}>
-    {#if status === "idle"}
-        {#if files.length === 0}
+    {#if send.status === "idle"}
+        {#if send.files.length === 0}
             <button
                 type="button"
-                onclick={onpick}
+                onclick={() => send.pick()}
                 ondragover={(e) => {
                     e.preventDefault();
                     dragOver = true;
                 }}
                 ondragleave={() => (dragOver = false)}
                 ondrop={() => (dragOver = false)}
-                class="flex flex-1 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed p-6 text-center transition-colors hover:cursor-pointer {dragOver
+                class="flex flex-1 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed p-6 text-center transition-duration-300 hover:cursor-pointer {dragOver
                     ? 'border-send bg-send/5'
                     : 'border-input bg-muted/40 hover:border-send'}"
             >
@@ -112,27 +100,24 @@
             </button>
         {:else}
             <ul class="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto">
-                {#each files as path (path)}
-                    <FileRow
-                        {path}
-                        onremove={() => (files = files.filter((f) => f !== path))}
-                    />
+                {#each send.files as path (path)}
+                    <FileRow {path} onremove={() => send.removeFile(path)} />
                 {/each}
             </ul>
             <div class="flex gap-2">
-                <Button variant="outline" onclick={onpick}>
+                <Button variant="outline" onclick={() => send.pick()}>
                     <IconPlus />
                     Add
                 </Button>
-                <Button class="flex-1" onclick={onstart}>
+                <Button class="flex-1" onclick={() => send.start()}>
                     <IconSend />
                     Send {summary}
                 </Button>
             </div>
         {/if}
-    {:else if status === "starting"}
+    {:else if send.status === "starting"}
         <TransferProgress accent="send" label="Connecting to peer…" />
-    {:else if status === "waiting"}
+    {:else if send.status === "waiting"}
         <div class="flex flex-1 flex-col items-center justify-center gap-4">
             <p class="animate-pop text-lg font-bold tracking-tight">
                 Ready to share
@@ -140,11 +125,13 @@
             <button
                 type="button"
                 onclick={copyCode}
-                class="border-l-send flex max-w-full items-center gap-3 rounded-xl border border-l-[3px] bg-card px-4 py-3 text-left transition-colors hover:cursor-pointer hover:bg-muted/50"
+                class="flex max-w-full items-center gap-3 rounded-xl border bg-card px-4 py-3 text-left transition-colors hover:cursor-pointer hover:bg-muted/50"
                 title="Click to copy"
             >
-                <span class="min-w-0 font-mono text-[15px] font-medium break-all">
-                    {code}
+                <span
+                    class="min-w-0 font-mono text-[15px] font-medium break-all"
+                >
+                    {send.code}
                 </span>
                 {#if copied}
                     <IconCheck class="text-send-foreground size-4 shrink-0" />
@@ -162,14 +149,14 @@
                 awaiting peer
             </div>
         </div>
-        <CancelButton onclick={oncancel} />
-    {:else if status === "sending"}
+        <CancelButton onclick={() => send.cancel()} />
+    {:else if send.status === "sending"}
         <TransferProgress
             accent="send"
-            {progress}
+            progress={send.progress}
             label="Encrypted · direct peer · {summary}"
         />
-        <CancelButton onclick={oncancel} />
+        <CancelButton onclick={() => send.cancel()} />
     {:else}
         <div class="flex flex-1 flex-col items-center justify-center gap-3">
             <div
@@ -179,7 +166,7 @@
             </div>
             <p class="text-base font-bold tracking-tight">Sent {summary}</p>
         </div>
-        <Button variant="outline" size="sm" onclick={onreset}>
+        <Button variant="outline" size="sm" onclick={() => send.reset()}>
             New transfer
         </Button>
     {/if}

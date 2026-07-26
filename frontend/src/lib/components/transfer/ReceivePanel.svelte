@@ -2,6 +2,7 @@
     import { OpenPath } from "$bindings/bibor/fileservice";
     import { Button } from "$lib/components/ui/button";
     import { Input } from "$lib/components/ui/input";
+    import { app } from "$lib/transfer-app.svelte";
     import {
         IconCheck,
         IconDownload,
@@ -11,47 +12,36 @@
     import Mascot from "./Mascot.svelte";
     import TransferCard from "./TransferCard.svelte";
     import TransferProgress from "./TransferProgress.svelte";
-    import type { ReceiveStatus } from "./types";
 
-    let {
-        status,
-        progress,
-        savedTo,
-        code = $bindable(),
-        onstart,
-        oncancel,
-        onreset,
-    }: {
-        status: ReceiveStatus;
-        progress: number | null;
-        savedTo: string;
-        code: string;
-        onstart: () => void;
-        oncancel: () => void;
-        onreset: () => void;
-    } = $props();
+    const receive = app.receive;
 
-    let headline = $derived(
-        status === "receiving"
-            ? "receiving"
-            : status === "done"
-              ? "complete"
-              : "enter code",
-    );
-    let badge = $derived(
-        status === "receiving"
-            ? progress !== null
-                ? `${progress}%`
-                : "…"
-            : status === "done"
-              ? "complete"
-              : "idle",
-    );
+    let headline = $derived.by(() => {
+        switch (receive.status) {
+            case "receiving":
+                return "receiving";
+            case "done":
+                return "complete";
+            default:
+                return "enter code";
+        }
+    });
+    let badge = $derived.by(() => {
+        switch (receive.status) {
+            case "receiving":
+                return receive.progress === null ? "…" : `${receive.progress}%`;
+            case "done":
+                return "complete";
+            default:
+                return "idle";
+        }
+    });
 </script>
 
 <TransferCard accent="receive" title="Receive" {headline} {badge}>
-    {#if status === "done"}
-        <div class="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+    {#if receive.status === "done"}
+        <div
+            class="flex flex-1 flex-col items-center justify-center gap-3 text-center"
+        >
             <div
                 class="animate-pop flex size-12 items-center justify-center rounded-full border"
             >
@@ -60,23 +50,27 @@
             <p class="text-base font-bold tracking-tight">Transfer complete</p>
             <p
                 class="max-w-full truncate font-mono text-xs text-muted-foreground"
-                title={savedTo}
+                title={receive.savedTo}
             >
-                {savedTo}
+                {receive.savedTo}
             </p>
         </div>
         <div class="flex flex-col gap-2">
-            <Button onclick={() => OpenPath(savedTo)}>
+            <Button onclick={() => OpenPath(receive.savedTo)}>
                 <IconFolderOpen />
                 Open folder
             </Button>
-            <Button variant="outline" size="sm" onclick={onreset}>
+            <Button variant="outline" size="sm" onclick={() => receive.reset()}>
                 Receive more
             </Button>
         </div>
-    {:else if status === "receiving"}
-        <TransferProgress accent="receive" {progress} label="Receiving…" />
-        <CancelButton onclick={oncancel} />
+    {:else if receive.status === "receiving"}
+        <TransferProgress
+            accent="receive"
+            progress={receive.progress}
+            label="Receiving…"
+        />
+        <CancelButton onclick={() => receive.cancel()} />
     {:else}
         <div
             class="mx-auto flex w-full max-w-sm flex-1 flex-col items-center justify-center gap-3 text-center"
@@ -90,11 +84,16 @@
                 <Input
                     class="text-center font-mono"
                     placeholder="1234-word-word-word"
-                    bind:value={code}
+                    bind:value={receive.code}
                     onkeydown={(e) =>
-                        e.key === "Enter" && code.trim() && onstart()}
+                        e.key === "Enter" &&
+                        receive.code.trim() &&
+                        receive.start()}
                 />
-                <Button onclick={onstart} disabled={!code.trim()}>
+                <Button
+                    onclick={() => receive.start()}
+                    disabled={!receive.code.trim()}
+                >
                     <IconDownload />
                     Receive files
                 </Button>
