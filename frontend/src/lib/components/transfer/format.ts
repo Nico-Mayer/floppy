@@ -1,3 +1,5 @@
+import type { TransferStats } from '$bindings/floppy/models'
+
 /** Decimal byte sizes, matching what croc itself reports. */
 export function formatBytes(bytes: number): string {
 	if (bytes < 1000) return `${Math.max(bytes, 0)} B`
@@ -13,6 +15,17 @@ export function formatBytes(bytes: number): string {
 
 export function formatRate(bytesPerSecond: number): string {
 	return `${formatBytes(bytesPerSecond)}/s`
+}
+
+/**
+ * What is moving right now: "photo.jpg", or "photo.jpg · 2 of 5" when there is
+ * more than one file. Empty until croc reports a manifest, which for a
+ * receiver is the first thing it learns about the transfer at all.
+ */
+export function currentFile(stats: TransferStats | null): string {
+	if (!stats?.file) return ''
+	if (stats.fileCount < 2) return stats.file
+	return `${stats.file} · ${stats.fileIndex} of ${stats.fileCount}`
 }
 
 /** Coarse duration for an ETA — seconds below a minute, then rounded. */

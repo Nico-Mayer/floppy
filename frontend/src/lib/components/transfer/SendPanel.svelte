@@ -6,7 +6,7 @@
 	import { Clipboard } from '@wailsio/runtime'
 	import CancelButton from './CancelButton.svelte'
 	import FileRow from './FileRow.svelte'
-	import { formatBytes } from './format'
+	import { currentFile, formatBytes } from './format'
 	import Mascot3 from './Mascot3.svelte'
 	import TransferCard from './TransferCard.svelte'
 	import TransferProgress from './TransferProgress.svelte'
@@ -177,7 +177,7 @@
 			accent="send"
 			progress={send.progress}
 			stats={send.stats}
-			label="Encrypted · direct peer · {summary}"
+			label="Encrypted · direct peer · {currentFile(send.stats) || summary}"
 		/>
 		<CancelButton onclick={() => send.cancel()} />
 	{:else}

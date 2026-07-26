@@ -234,6 +234,11 @@ func TestReceiveFromPeer(t *testing.T) {
 	if last := stats[len(stats)-1]; last.Percent != 100 || last.Sent != size || last.Total != size {
 		t.Errorf("final stats = %+v, want %d/%d bytes at 100%%", last, size, size)
 	}
+	// The receiver learns what it is getting from this payload and nothing
+	// else, so the very first one has to carry the manifest.
+	if first := stats[0]; first.File != "payload.bin" || first.FileCount != 1 || first.FileIndex != 1 {
+		t.Errorf("first stats = %+v, want payload.bin as file 1 of 1", first)
+	}
 	// The transfer is throttled to 500 kB/s, so the poller has several seconds
 	// of samples to measure a rate from.
 	if !slices.ContainsFunc(stats, func(s TransferStats) bool { return s.Bps > 0 }) {
@@ -350,9 +355,9 @@ func TestTransferBytesResumeCredit(t *testing.T) {
 
 	check := func(stage string, wantDone int64) {
 		t.Helper()
-		done, gotTotal, ok := transferBytes(c)
-		if !ok || done != wantDone || gotTotal != total {
-			t.Errorf("%s: got %d/%d ok=%v, want %d/%d true", stage, done, gotTotal, ok, wantDone, total)
+		got, ok := transferBytes(c)
+		if !ok || got.done != wantDone || got.total != total {
+			t.Errorf("%s: got %d/%d ok=%v, want %d/%d true", stage, got.done, got.total, ok, wantDone, total)
 		}
 	}
 
@@ -363,6 +368,40 @@ func TestTransferBytesResumeCredit(t *testing.T) {
 	c.CurrentFileChunks = nil
 	c.TotalSent = 50 * chunk
 	check("fresh mid", 50*chunk)
+}
+
+// TestTransferBytesManifest checks the file identification a receiver depends
+// on: until the first progress payload it knows nothing about what is coming.
+func TestTransferBytesManifest(t *testing.T) {
+	c := &croc.Client{}
+	c.Options.IsSender = true
+	c.Step4FileTransferred = true
+	c.FilesToTransfer = []croc.FileInfo{
+		{Name: "one.bin", Size: 100},
+		{Name: "two.bin", Size: 200},
+		{Name: "three.bin", Size: 300},
+	}
+
+	got, ok := transferBytes(c)
+	if !ok {
+		t.Fatal("no reading for a started transfer")
+	}
+	if got.file != "one.bin" || got.index != 1 || got.count != 3 || got.total != 600 {
+		t.Errorf("first file: got %+v, want one.bin 1/3 of 600 bytes", got)
+	}
+
+	// Two files done, third in flight.
+	c.FilesToTransferCurrentNum = 2
+	if got, _ = transferBytes(c); got.file != "three.bin" || got.index != 3 || got.done != 300 {
+		t.Errorf("third file: got %+v, want three.bin 3/3 with 300 bytes done", got)
+	}
+
+	// croc leaves the index past the end once everything is done; the label
+	// must not index out of range.
+	c.FilesToTransferCurrentNum = 3
+	if got, _ = transferBytes(c); got.file != "three.bin" || got.index != 3 {
+		t.Errorf("after the last file: got %+v, want three.bin held at 3/3", got)
+	}
 }
 
 // TestWatchProgressStops checks the channel watchProgress returns really means

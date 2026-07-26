@@ -28,7 +28,7 @@ func (f *FileService) SelectFiles() ([]FileEntry, error) {
 	paths, err := application.Get().Dialog.OpenFile().
 		SetTitle("Select files to share").
 		CanChooseFiles(true).
-		CanChooseDirectories(false).
+		CanChooseDirectories(true).
 		PromptForMultipleSelection()
 	if err != nil {
 		return nil, err

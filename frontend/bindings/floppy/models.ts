@@ -17,6 +17,8 @@ export interface FileEntry {
 
 /**
  * TransferStats is the payload of croc:send:progress and croc:recv:progress.
+ * It doubles as the receiver's manifest: until the first one arrives a
+ * receiver knows nothing about what it is being sent.
  */
 export interface TransferStats {
     "percent": number;
@@ -32,4 +34,12 @@ export interface TransferStats {
      * ETA is the estimated number of seconds left, -1 while unknown.
      */
     "eta": number;
+
+    /**
+     * File is the name of the file currently moving, FileIndex its 1-based
+     * place among FileCount files.
+     */
+    "file": string;
+    "fileIndex": number;
+    "fileCount": number;
 }

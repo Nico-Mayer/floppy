@@ -5,6 +5,7 @@
 	import { app } from '$lib/transfer-app.svelte'
 	import { IconCheck, IconDownload, IconFolderOpen } from '@tabler/icons-svelte'
 	import CancelButton from './CancelButton.svelte'
+	import { currentFile } from './format'
 	import Mascot2 from './Mascot2.svelte'
 	import TransferCard from './TransferCard.svelte'
 	import TransferProgress from './TransferProgress.svelte'
@@ -74,7 +75,12 @@
 		{/if}
 		<CancelButton onclick={() => receive.cancel()} />
 	{:else if receive.status === 'receiving'}
-		<TransferProgress accent="receive" progress={receive.progress} stats={receive.stats} label="Receiving…" />
+		<TransferProgress
+			accent="receive"
+			progress={receive.progress}
+			stats={receive.stats}
+			label={currentFile(receive.stats) || 'Receiving…'}
+		/>
 		<CancelButton onclick={() => receive.cancel()} />
 	{:else}
 		<div class="mx-auto flex w-full max-w-sm flex-1 flex-col items-center justify-center gap-3 text-center">

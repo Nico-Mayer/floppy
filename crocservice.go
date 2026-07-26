@@ -54,6 +54,8 @@ var emit = func(name string, data any) {
 }
 
 // TransferStats is the payload of croc:send:progress and croc:recv:progress.
+// It doubles as the receiver's manifest: until the first one arrives a
+// receiver knows nothing about what it is being sent.
 type TransferStats struct {
 	Percent int   `json:"percent"`
 	Sent    int64 `json:"sent"`
@@ -62,6 +64,11 @@ type TransferStats struct {
 	Bps int64 `json:"bps"`
 	// ETA is the estimated number of seconds left, -1 while unknown.
 	ETA int `json:"eta"`
+	// File is the name of the file currently moving, FileIndex its 1-based
+	// place among FileCount files.
+	File      string `json:"file"`
+	FileIndex int    `json:"fileIndex"`
+	FileCount int    `json:"fileCount"`
 }
 
 func defaultCrocOptions() croc.Options {
@@ -127,6 +134,7 @@ func watchProgress(ctx context.Context, client *croc.Client, event string) chan 
 			lastSent    int64
 			lastSample  time.Time
 			lastEmit    time.Time
+			lastFile    string
 			lastPercent = -1
 		)
 		for {
@@ -134,19 +142,19 @@ func watchProgress(ctx context.Context, client *croc.Client, event string) chan 
 			case <-ctx.Done():
 				return
 			case now := <-ticker.C:
-				sent, total, ok := transferBytes(client)
+				t, ok := transferBytes(client)
 				if !ok {
 					continue
 				}
 				// The first sample only establishes a baseline: on a resumed
-				// transfer `sent` starts at whatever the receiver already has,
+				// transfer `done` starts at whatever the receiver already has,
 				// and dividing that by one poll interval would invent a
 				// gigabyte-per-second rate.
 				if !lastSample.IsZero() {
 					if dt := now.Sub(lastSample).Seconds(); dt > 0 {
 						// Clamped: croc resets its byte counter per file, so a
 						// file boundary can briefly look like negative progress.
-						sample := max(float64(sent-lastSent)/dt, 0)
+						sample := max(float64(t.done-lastSent)/dt, 0)
 						if haveRate {
 							bps += rateSmoothing * (sample - bps)
 						} else {
@@ -154,19 +162,25 @@ func watchProgress(ctx context.Context, client *croc.Client, event string) chan 
 						}
 					}
 				}
-				lastSent, lastSample = sent, now
+				lastSent, lastSample = t.done, now
 
-				percent := int(min(sent*100/total, 100))
-				if percent == lastPercent && now.Sub(lastEmit) < statsInterval {
+				percent := int(min(t.done*100/t.total, 100))
+				// The file being moved changes without the percentage moving,
+				// and on the receiving side this payload is the only thing
+				// describing what is arriving — so emit on either change.
+				if percent == lastPercent && t.file == lastFile && now.Sub(lastEmit) < statsInterval {
 					continue
 				}
-				lastPercent, lastEmit = percent, now
+				lastPercent, lastFile, lastEmit = percent, t.file, now
 				emit(event, TransferStats{
-					Percent: percent,
-					Sent:    sent,
-					Total:   total,
-					Bps:     int64(bps),
-					ETA:     etaSeconds(total-sent, bps),
+					Percent:   percent,
+					Sent:      t.done,
+					Total:     t.total,
+					Bps:       int64(bps),
+					ETA:       etaSeconds(t.total-t.done, bps),
+					File:      t.file,
+					FileIndex: t.index,
+					FileCount: t.count,
 				})
 			}
 		}
@@ -178,11 +192,19 @@ func watchProgress(ctx context.Context, client *croc.Client, event string) chan 
 // transfer, so its last sample lands a few percent short of the end — without
 // this the bar visibly freezes below 100% before the completion screen.
 func emitComplete(c *croc.Client, event string) {
-	_, total, ok := transferBytes(c)
+	t, ok := transferBytes(c)
 	if !ok {
 		return
 	}
-	emit(event, TransferStats{Percent: 100, Sent: total, Total: total, ETA: -1})
+	emit(event, TransferStats{
+		Percent:   100,
+		Sent:      t.total,
+		Total:     t.total,
+		ETA:       -1,
+		File:      t.file,
+		FileIndex: t.count,
+		FileCount: t.count,
+	})
 }
 
 // etaSeconds estimates how long the remaining bytes will take at the given
@@ -197,6 +219,15 @@ func etaSeconds(remaining int64, bps float64) int {
 	return int(float64(remaining) / bps)
 }
 
+// transfer is what one poll of the client's counters yields.
+type transfer struct {
+	done, total int64
+	// file is the name of the file being moved now, index its 1-based place
+	// among count files.
+	file         string
+	index, count int
+}
+
 // transferBytes derives overall progress: the sizes of the files already
 // done (croc transfers them in order) plus the byte counter of the current
 // one, which croc resets per file. For a sender it reports false until the
@@ -205,21 +236,25 @@ func etaSeconds(remaining int64, bps float64) int {
 // relies on the first progress event to switch from "waiting" to "sending".
 // A receiver has no file list until the handshake, so the length check below
 // already keeps it quiet before the transfer.
-func transferBytes(c *croc.Client) (done, total int64, ok bool) {
+func transferBytes(c *croc.Client) (t transfer, ok bool) {
 	if c.Options.IsSender && !c.Step4FileTransferred {
-		return 0, 0, false
+		return transfer{}, false
 	}
 	files := c.FilesToTransfer
 	if len(files) == 0 {
-		return 0, 0, false
+		return transfer{}, false
 	}
 	for _, f := range files {
-		total += f.Size
+		t.total += f.Size
 	}
-	if total <= 0 {
-		return 0, 0, false
+	if t.total <= 0 {
+		return transfer{}, false
 	}
 	idx := c.FilesToTransferCurrentNum
+	t.count = len(files)
+	t.index = min(idx+1, t.count)
+	t.file = files[t.index-1].Name
+	done := int64(0)
 	for i := 0; i < idx && i < len(files); i++ {
 		done += files[i].Size
 	}
@@ -237,7 +272,8 @@ func transferBytes(c *croc.Client) (done, total int64, ok bool) {
 			done += sent
 		}
 	}
-	return min(done, total), total, true
+	t.done = min(done, t.total)
+	return t, true
 }
 
 // Send starts a send transfer for the given paths and returns immediately.
