@@ -7,14 +7,18 @@
 		class: className,
 		children,
 		...restProps
-	}: WithElementRef<HTMLAttributes<HTMLElement>> = $props()
+	}: WithElementRef<HTMLAttributes<HTMLDivElement>> = $props()
 </script>
 
-<kbd
+<div
 	bind:this={ref}
-	data-slot="kbd-group"
-	class={cn('inline-flex items-center gap-1', className)}
+	role="list"
+	data-slot="item-group"
+	class={cn(
+		'group/item-group flex w-full flex-col gap-4 has-data-[size=sm]:gap-2.5 has-data-[size=xs]:gap-2',
+		className
+	)}
 	{...restProps}
 >
 	{@render children?.()}
-</kbd>
+</div>

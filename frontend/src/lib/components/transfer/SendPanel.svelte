@@ -1,13 +1,16 @@
 <script lang="ts">
 	import { QRCode } from '$lib/components/spell/qrcode'
 	import { Button } from '$lib/components/ui/button'
+	import * as Empty from '$lib/components/ui/empty'
+	import * as InputGroup from '$lib/components/ui/input-group'
+	import * as Item from '$lib/components/ui/item'
+	import { Spinner } from '$lib/components/ui/spinner'
 	import { app } from '$lib/transfer-app.svelte'
-	import { IconCheck, IconCopy, IconLoader2, IconPlus, IconSend } from '@tabler/icons-svelte'
+	import { IconCheck, IconCopy, IconPlus, IconSend, IconX } from '@tabler/icons-svelte'
 	import { Clipboard } from '@wailsio/runtime'
-	import CancelButton from './CancelButton.svelte'
 	import FileRow from './FileRow.svelte'
 	import { currentFile, formatBytes } from './format'
-	import Mascot3 from './Mascot3.svelte'
+	import Mascot from './Mascot.svelte'
 	import TransferCard from './TransferCard.svelte'
 	import TransferProgress from './TransferProgress.svelte'
 
@@ -71,34 +74,40 @@
 <TransferCard accent="send" title="Send" {headline} {badge}>
 	{#if send.status === 'idle'}
 		{#if send.files.length === 0}
-			<button
-				type="button"
+			<Empty.Root
+				role="button"
+				tabindex={0}
+				class={[
+					'cursor-pointer border transition-colors duration-500',
+					dragOver ? 'border-send bg-send/5' : 'bg-muted/40 hover:border-send/40'
+				]}
 				onclick={() => send.pick()}
+				onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && send.pick()}
 				ondragover={(e) => {
 					e.preventDefault()
 					dragOver = true
 				}}
 				ondragleave={() => (dragOver = false)}
 				ondrop={() => (dragOver = false)}
-				class="flex flex-1 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed p-6 text-center transition-colors duration-500 hover:cursor-pointer {dragOver
-					? 'border-send bg-send/5'
-					: 'border-input bg-muted/40 hover:border-send/40'}"
 			>
-				<!-- <Mascot accent="send" /> -->
-				<Mascot3 class="size-20"></Mascot3>
-				<span class="text-lg font-bold tracking-tight"> Drag files here </span>
-				<span class="max-w-72 text-xs text-muted-foreground">
-					Drop them anywhere in this pane, or <span class="text-foreground underline underline-offset-2"
-						>browse your files</span
-					>. Transfers are peer-to-peer — nothing is uploaded to a server.
-				</span>
-			</button>
+				<Empty.Header>
+					<Empty.Media>
+						<Mascot accent="send" class="size-20" />
+					</Empty.Media>
+					<Empty.Title>Drag files here</Empty.Title>
+					<Empty.Description>
+						Drop them anywhere in this pane, or <span class="underline underline-offset-2">
+							browse your files
+						</span>. Transfers are peer-to-peer — nothing is uploaded to a server.
+					</Empty.Description>
+				</Empty.Header>
+			</Empty.Root>
 		{:else}
-			<ul class="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto">
+			<Item.Group class="min-h-0 flex-1 overflow-y-auto">
 				{#each send.files as file (file.path)}
 					<FileRow {file} onremove={() => send.removeFile(file.path)} />
 				{/each}
-			</ul>
+			</Item.Group>
 			{#if send.totalSize > LARGE_TRANSFER}
 				<p class="text-center text-xs text-muted-foreground">
 					Large transfer — both devices need to stay awake with the app open until it finishes.
@@ -116,9 +125,9 @@
 			</div>
 		{/if}
 	{:else if send.status === 'cancelling'}
-		<TransferProgress accent="send" label="Cancelling…" />
+		<TransferProgress label="Cancelling…" />
 	{:else if send.status === 'starting'}
-		<TransferProgress accent="send" label="Connecting to peer…" />
+		<TransferProgress label="Connecting to peer…" />
 	{:else if send.status === 'waiting'}
 		<div class="flex flex-1 flex-col items-center justify-center gap-7">
 			<div class="flex flex-col items-center gap-1.5 text-center">
@@ -145,21 +154,18 @@
 					/>
 				</div>
 				<div class="flex w-full min-w-0 flex-col items-center gap-2.5 sm:items-start">
-					<button
-						type="button"
-						onclick={copyCode}
-						class="flex w-full items-center justify-between rounded-xl border bg-card px-4 py-3.5 text-left transition-colors hover:cursor-pointer hover:bg-muted/50"
-						title="Click to copy"
-					>
-						<span class="min-w-0 font-mono text-[15px] font-medium break-all">
-							{send.code}
-						</span>
-						{#if copied}
-							<IconCheck class="size-4 shrink-0 text-send-foreground" />
-						{:else}
-							<IconCopy class="size-4 shrink-0 text-muted-foreground" />
-						{/if}
-					</button>
+					<InputGroup.Root>
+						<InputGroup.Input readonly value={send.code} class="font-mono font-medium" />
+						<InputGroup.Addon align="inline-end">
+							<InputGroup.Button size="icon-xs" onclick={copyCode} aria-label="Copy code">
+								{#if copied}
+									<IconCheck class="text-(--tint-fg)" />
+								{:else}
+									<IconCopy />
+								{/if}
+							</InputGroup.Button>
+						</InputGroup.Addon>
+					</InputGroup.Root>
 					<p class="text-center text-xs text-muted-foreground sm:text-left">Expires when you quit the app.</p>
 				</div>
 			</div>
@@ -167,26 +173,33 @@
 			<div
 				class="flex items-center gap-2 font-mono text-[11px] tracking-wider text-muted-foreground uppercase"
 			>
-				<IconLoader2 class="size-3.5 shrink-0 animate-spin" />
+				<Spinner class="size-3.5" />
 				awaiting peer
 			</div>
 		</div>
-		<CancelButton onclick={() => send.cancel()} />
+		<Button variant="destructive" size="sm" onclick={() => send.cancel()}>
+			<IconX />
+			Cancel
+		</Button>
 	{:else if send.status === 'sending'}
 		<TransferProgress
-			accent="send"
 			progress={send.progress}
 			stats={send.stats}
 			label="Encrypted · direct peer · {currentFile(send.stats) || summary}"
 		/>
-		<CancelButton onclick={() => send.cancel()} />
+		<Button variant="destructive" size="sm" onclick={() => send.cancel()}>
+			<IconX />
+			Cancel
+		</Button>
 	{:else}
-		<div class="flex flex-1 flex-col items-center justify-center gap-3">
-			<div class="flex size-12 animate-pop items-center justify-center rounded-full border">
-				<IconCheck class="size-6 text-send-foreground" />
-			</div>
-			<p class="text-base font-bold tracking-tight">Sent {summary}</p>
-		</div>
+		<Empty.Root>
+			<Empty.Header>
+				<Empty.Media variant="icon" class="animate-pop">
+					<IconCheck class="text-(--tint-fg)" />
+				</Empty.Media>
+				<Empty.Title>Sent {summary}</Empty.Title>
+			</Empty.Header>
+		</Empty.Root>
 		<Button variant="outline" size="sm" onclick={() => send.reset()}>New transfer</Button>
 	{/if}
 </TransferCard>

@@ -21,7 +21,7 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
  * in the destination folder — croc reuses it to resume.
  */
 export function CancelReceive(): $CancellablePromise<void> {
-    return $Call.ByID(329269001);
+    return $Call.ByID(1476844187);
 }
 
 /**
@@ -31,7 +31,7 @@ export function CancelReceive(): $CancellablePromise<void> {
  * reads as a hang. Send absorbs the leftover unwinding instead.
  */
 export function CancelSend(): $CancellablePromise<void> {
-    return $Call.ByID(1762729354);
+    return $Call.ByID(1894710452);
 }
 
 /**
@@ -41,7 +41,7 @@ export function CancelSend(): $CancellablePromise<void> {
  * destination directory as payload), failure as croc:error.
  */
 export function Receive(code: string): $CancellablePromise<void> {
-    return $Call.ByID(2115431883, code);
+    return $Call.ByID(3225367265, code);
 }
 
 /**
@@ -51,5 +51,5 @@ export function Receive(code: string): $CancellablePromise<void> {
  * as croc:error.
  */
 export function Send(paths: string[] | null): $CancellablePromise<void> {
-    return $Call.ByID(1729625572, paths);
+    return $Call.ByID(3652812786, paths);
 }

@@ -15,7 +15,7 @@ run = "lsof -ti tcp:9245 | xargs kill -9"
 run_windows = "Stop-Process -Id (Get-NetTCPConnection -LocalPort 9245 -State Listen).OwningProcess -Force"
 
 [tasks.test]
-run = "gotestsum ./..."
+run = "gotestsum ./internal/..."
 
 [tasks."frontend:fmt"]
 run = """

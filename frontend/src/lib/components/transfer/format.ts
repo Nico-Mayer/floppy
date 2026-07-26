@@ -1,4 +1,4 @@
-import type { TransferStats } from '$bindings/floppy/models'
+import type { TransferStats } from '$bindings/floppy/internal/services/models'
 
 /** Decimal byte sizes, matching what croc itself reports. */
 export function formatBytes(bytes: number): string {

@@ -1,12 +1,12 @@
 <script lang="ts">
-	import { OpenPath } from '$bindings/floppy/fileservice'
+	import { OpenPath } from '$bindings/floppy/internal/services/fileservice'
 	import { Button } from '$lib/components/ui/button'
+	import * as Empty from '$lib/components/ui/empty'
 	import { Input } from '$lib/components/ui/input'
 	import { app } from '$lib/transfer-app.svelte'
-	import { IconCheck, IconDownload, IconFolderOpen } from '@tabler/icons-svelte'
-	import CancelButton from './CancelButton.svelte'
+	import { IconCheck, IconDownload, IconFolderOpen, IconX } from '@tabler/icons-svelte'
 	import { currentFile } from './format'
-	import Mascot2 from './Mascot2.svelte'
+	import Mascot from './Mascot.svelte'
 	import TransferCard from './TransferCard.svelte'
 	import TransferProgress from './TransferProgress.svelte'
 
@@ -44,15 +44,17 @@
 
 <TransferCard accent="receive" title="Receive" {headline} {badge}>
 	{#if receive.status === 'done'}
-		<div class="flex flex-1 flex-col items-center justify-center gap-3 text-center">
-			<div class="flex size-12 animate-pop items-center justify-center rounded-full border">
-				<IconCheck class="size-6 text-receive-foreground" />
-			</div>
-			<p class="text-base font-bold tracking-tight">Transfer complete</p>
-			<p class="max-w-full truncate font-mono text-xs text-muted-foreground" title={receive.savedTo}>
-				{receive.savedTo}
-			</p>
-		</div>
+		<Empty.Root>
+			<Empty.Header>
+				<Empty.Media variant="icon" class="animate-pop">
+					<IconCheck class="text-(--tint-fg)" />
+				</Empty.Media>
+				<Empty.Title>Transfer complete</Empty.Title>
+				<Empty.Description class="w-full truncate font-mono text-xs" title={receive.savedTo}>
+					{receive.savedTo}
+				</Empty.Description>
+			</Empty.Header>
+		</Empty.Root>
 		<div class="flex flex-col gap-2">
 			<Button onclick={() => OpenPath(receive.savedTo)}>
 				<IconFolderOpen />
@@ -61,9 +63,9 @@
 			<Button variant="outline" size="sm" onclick={() => receive.reset()}>Receive more</Button>
 		</div>
 	{:else if receive.status === 'cancelling'}
-		<TransferProgress accent="receive" label="Cancelling…" />
+		<TransferProgress label="Cancelling…" />
 	{:else if receive.status === 'connecting'}
-		<TransferProgress accent="receive" label="Looking for the sender…" />
+		<TransferProgress label="Looking for the sender…" />
 		{#if receive.tooSlow}
 			<!-- croc never times out on a bad code, so the only clue the user
                  gets that they mistyped is this one. -->
@@ -73,23 +75,30 @@
 				matches the sender's code, and that they are still waiting.
 			</p>
 		{/if}
-		<CancelButton onclick={() => receive.cancel()} />
+		<Button variant="destructive" size="sm" onclick={() => receive.cancel()}>
+			<IconX />
+			Cancel
+		</Button>
 	{:else if receive.status === 'receiving'}
 		<TransferProgress
-			accent="receive"
 			progress={receive.progress}
 			stats={receive.stats}
 			label={currentFile(receive.stats) || 'Receiving…'}
 		/>
-		<CancelButton onclick={() => receive.cancel()} />
+		<Button variant="destructive" size="sm" onclick={() => receive.cancel()}>
+			<IconX />
+			Cancel
+		</Button>
 	{:else}
-		<div class="mx-auto flex w-full max-w-sm flex-1 flex-col items-center justify-center gap-3 text-center">
-			<!-- <Mascot accent="receive" /> -->
-
-			<Mascot2 class="size-20"></Mascot2>
-			<p class="text-lg font-bold tracking-tight">Enter transfer code</p>
-			<p class="max-w-64 text-xs text-muted-foreground">Paste the four-word code the sender gave you.</p>
-			<div class="mt-1 flex w-full flex-col gap-2">
+		<Empty.Root>
+			<Empty.Header>
+				<Empty.Media>
+					<Mascot accent="receive" class="size-20" />
+				</Empty.Media>
+				<Empty.Title>Enter transfer code</Empty.Title>
+				<Empty.Description>Paste the four-word code the sender gave you.</Empty.Description>
+			</Empty.Header>
+			<Empty.Content class="gap-2">
 				<Input
 					class="text-center font-mono"
 					placeholder="1234-word-word-word"
@@ -97,14 +106,14 @@
 					maxlength={32}
 					onkeydown={(e) => e.key === 'Enter' && receive.code.trim() && receive.start()}
 				/>
-				<Button onclick={() => receive.start()} disabled={!receive.code.trim()}>
+				<Button class="w-full" onclick={() => receive.start()} disabled={!receive.code.trim()}>
 					<IconDownload />
 					Receive files
 				</Button>
 				<p class="font-mono text-xs text-muted-foreground">
 					saves to ~/Downloads/{receive.code}
 				</p>
-			</div>
-		</div>
+			</Empty.Content>
+		</Empty.Root>
 	{/if}
 </TransferCard>

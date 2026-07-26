@@ -16,7 +16,7 @@ import * as $models from "./models.js";
  * gone by the time this runs, and one bad path should not discard the rest.
  */
 export function Describe(paths: string[] | null): $CancellablePromise<$models.FileEntry[] | null> {
-    return $Call.ByID(3517517302, paths);
+    return $Call.ByID(470109992, paths);
 }
 
 /**
@@ -24,12 +24,12 @@ export function Describe(paths: string[] | null): $CancellablePromise<$models.Fi
  * (Finder/Explorer/xdg-open).
  */
 export function OpenPath(path: string): $CancellablePromise<void> {
-    return $Call.ByID(1363948864, path);
+    return $Call.ByID(3923211666, path);
 }
 
 /**
  * SelectFiles opens a native file picker and returns the selected files.
  */
 export function SelectFiles(): $CancellablePromise<$models.FileEntry[] | null> {
-    return $Call.ByID(3388695362);
+    return $Call.ByID(3462896520);
 }

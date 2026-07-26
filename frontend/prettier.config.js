@@ -1,6 +1,6 @@
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath } from 'node:url'
 
-const plugin = (name) => fileURLToPath(import.meta.resolve(name));
+const plugin = (name) => fileURLToPath(import.meta.resolve(name))
 
 /** @type {import("prettier").Config} */
 const config = {
@@ -12,6 +12,6 @@ const config = {
 	plugins: [plugin('prettier-plugin-svelte'), plugin('prettier-plugin-tailwindcss')],
 	overrides: [{ files: '*.svelte', options: { parser: 'svelte' } }],
 	tailwindStylesheet: fileURLToPath(import.meta.resolve('./src/app.css'))
-};
+}
 
-export default config;
+export default config

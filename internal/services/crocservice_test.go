@@ -1,4 +1,4 @@
-package main
+package services
 
 import (
 	"bufio"
@@ -126,7 +126,10 @@ var (
 // croc relay ports and corrupts later tests' handshakes.
 func croctool(t *testing.T, env []string, args ...string) (*exec.Cmd, *bufio.Scanner) {
 	t.Helper()
-	moduleRoot, err := os.Getwd()
+	// go test starts each test with the package directory as the working
+	// directory, which is what ./testdata/croctool is relative to. Capture it
+	// before any test chdirs away (Receive does, and so do some tests).
+	pkgDir, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,7 +141,7 @@ func croctool(t *testing.T, env []string, args ...string) (*exec.Cmd, *bufio.Sca
 		}
 		croctoolBin = filepath.Join(dir, "croctool")
 		build := exec.Command("go", "build", "-o", croctoolBin, "./testdata/croctool")
-		build.Dir = moduleRoot
+		build.Dir = pkgDir
 		build.Stderr = os.Stderr
 		croctoolErr = build.Run()
 	})
@@ -147,7 +150,7 @@ func croctool(t *testing.T, env []string, args ...string) (*exec.Cmd, *bufio.Sca
 	}
 
 	cmd := exec.Command(croctoolBin, args...)
-	cmd.Dir = moduleRoot
+	cmd.Dir = pkgDir
 	cmd.Env = append(os.Environ(), env...)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {

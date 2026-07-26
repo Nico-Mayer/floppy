@@ -5,6 +5,8 @@ import (
 	"log"
 	"runtime"
 
+	"floppy/internal/services"
+
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 )
@@ -23,8 +25,8 @@ func init() {
 	// and provide a strongly typed JS/TS API for them.
 	application.RegisterEvent[[]string]("files-dropped")
 	application.RegisterEvent[string]("croc:code")
-	application.RegisterEvent[TransferStats]("croc:send:progress")
-	application.RegisterEvent[TransferStats]("croc:recv:progress")
+	application.RegisterEvent[services.TransferStats]("croc:send:progress")
+	application.RegisterEvent[services.TransferStats]("croc:recv:progress")
 	application.RegisterEvent[string]("croc:sent")
 	application.RegisterEvent[string]("croc:received")
 	application.RegisterEvent[string]("croc:error")
@@ -43,8 +45,8 @@ func main() {
 		Name:        "Floppy",
 		Description: "A minimal app for sending and receiving files",
 		Services: []application.Service{
-			application.NewService(&FileService{}),
-			application.NewService(&CrocService{}),
+			application.NewService(&services.FileService{}),
+			application.NewService(&services.CrocService{}),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),

@@ -1,18 +1,15 @@
 <script lang="ts">
-	import type { TransferStats } from '$bindings/floppy/models'
+	import type { TransferStats } from '$bindings/floppy/internal/services/models'
 	import { Progress } from '$lib/components/ui/progress'
-	import { IconLoader2 } from '@tabler/icons-svelte'
+	import { Spinner } from '$lib/components/ui/spinner'
 	import { Tween } from 'svelte/motion'
 	import { formatBytes, formatDuration, formatRate } from './format'
-	import type { Accent } from './types'
 
 	let {
-		accent,
 		progress = null,
 		stats = null,
 		label
 	}: {
-		accent: Accent
 		progress?: number | null
 		stats?: TransferStats | null
 		label: string
@@ -37,19 +34,12 @@
 		<p class="text-4xl font-bold tracking-tight tabular-nums">
 			{shown}<span class="text-xl">%</span>
 		</p>
-		<Progress
-			value={tween.current}
-			class="w-2/3 {accent === 'send'
-				? '*:data-[slot=progress-indicator]:bg-send'
-				: '*:data-[slot=progress-indicator]:bg-receive'}"
-		/>
+		<Progress value={tween.current} class="w-2/3 *:data-[slot=progress-indicator]:bg-(--tint)" />
 		{#if detail}
 			<p class="font-mono text-xs tabular-nums">{detail}</p>
 		{/if}
 	{:else}
-		<IconLoader2
-			class="size-8 animate-spin {accent === 'send' ? 'text-send-foreground' : 'text-receive-foreground'}"
-		/>
+		<Spinner class="size-8 text-(--tint-fg)" />
 	{/if}
 	<p class="font-mono text-xs text-muted-foreground">{label}</p>
 </div>

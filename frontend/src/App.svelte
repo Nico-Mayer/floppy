@@ -1,12 +1,14 @@
 <script lang="ts">
 	import TitleBar from '$lib/components/TitleBar.svelte'
-	import ErrorBanner from '$lib/components/transfer/ErrorBanner.svelte'
 	import ReceivePanel from '$lib/components/transfer/ReceivePanel.svelte'
 	import SendPanel from '$lib/components/transfer/SendPanel.svelte'
-	import * as Kbd from '$lib/components/ui/kbd/index.js'
+	import * as Alert from '$lib/components/ui/alert'
+	import { Button } from '$lib/components/ui/button'
+	import * as Kbd from '$lib/components/ui/kbd'
+	import { Spinner } from '$lib/components/ui/spinner'
 	import * as Tabs from '$lib/components/ui/tabs'
 	import { app, type Mode } from '$lib/transfer-app.svelte'
-	import { IconDeviceFloppy, IconDownload, IconLoader2, IconSend } from '@tabler/icons-svelte'
+	import { IconAlertCircle, IconDeviceFloppy, IconDownload, IconSend, IconX } from '@tabler/icons-svelte'
 	import { ModeWatcher } from 'mode-watcher'
 	import { onMount } from 'svelte'
 	import './app.css'
@@ -38,67 +40,70 @@
 
 <ModeWatcher />
 
+{#snippet trigger(mode: Mode, label: string, Icon: typeof IconSend, shortcut: string)}
+	<Tabs.Trigger value={mode} class="relative">
+		<div class="flex items-center gap-1.5">
+			{#if app[mode].busy}
+				<Spinner />
+			{:else}
+				<Icon />
+			{/if}
+			{label}
+		</div>
+		<Kbd.Root class="absolute right-1">{shortcut}</Kbd.Root>
+	</Tabs.Trigger>
+{/snippet}
+
 <div class="flex h-svh flex-col [--header-height:calc(--spacing(13))]">
 	<TitleBar />
 
 	<main class="flex min-h-0 flex-1 flex-col gap-3 p-4 sm:p-6" data-file-drop-target>
+		<!-- One width ceiling for the whole pane, so the header and the tabs
+             can never drift apart. -->
 		<div
-			class="mx-auto flex w-full max-w-2xl items-center gap-2.5 px-1 sm:max-w-3xl md:max-w-4xl lg:max-w-7xl"
-		>
-			<IconDeviceFloppy size={32} class={app.mode === 'send' ? 'stroke-send' : 'stroke-receive'} />
-			<h1 class="font-heading text-lg font-bold tracking-tight">Floppy</h1>
-			<p class="truncate font-mono text-[9px] tracking-wider text-muted-foreground uppercase">
-				no cloud · direct device to device
-			</p>
-		</div>
-
-		<Tabs.Root
-			value={app.mode}
-			onValueChange={(value) => (app.mode = value as Mode)}
 			class="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-3 sm:max-w-3xl md:max-w-4xl lg:max-w-7xl"
 		>
-			<Tabs.List class="w-full">
-				<Tabs.Trigger class="relative" value="send">
-					<div class="flex items-center gap-1.5">
-						{#if app.send.busy}
-							<IconLoader2 class="animate-spin" />
-						{:else}
-							<IconSend />
-						{/if}
-						Send
-					</div>
+			<div class="flex items-center gap-2.5 px-1">
+				<IconDeviceFloppy size={32} class={app.mode === 'send' ? 'stroke-send' : 'stroke-receive'} />
+				<h1 class="font-heading text-lg font-bold tracking-tight">Floppy</h1>
+				<p class="truncate font-mono text-[9px] tracking-wider text-muted-foreground uppercase">
+					no cloud · direct device to device
+				</p>
+			</div>
 
-					<Kbd.Group class="absolute right-1">
-						<Kbd.Root>⌘1</Kbd.Root>
-					</Kbd.Group>
-				</Tabs.Trigger>
-				<Tabs.Trigger value="receive" class="relative">
-					<div class="flex items-center gap-1.5">
-						{#if app.receive.busy}
-							<IconLoader2 class="animate-spin" />
-						{:else}
-							<IconDownload />
-						{/if}
-						Receive
-					</div>
+			<Tabs.Root
+				value={app.mode}
+				onValueChange={(value) => (app.mode = value as Mode)}
+				class="flex min-h-0 flex-1 flex-col gap-3"
+			>
+				<Tabs.List class="w-full">
+					{@render trigger('send', 'Send', IconSend, '⌘1')}
+					{@render trigger('receive', 'Receive', IconDownload, '⌘2')}
+				</Tabs.List>
 
-					<Kbd.Group class="absolute right-1">
-						<Kbd.Root>⌘2</Kbd.Root>
-					</Kbd.Group>
-				</Tabs.Trigger>
-			</Tabs.List>
+				{#if app.error}
+					<Alert.Root variant="destructive" class="animate-shake">
+						<IconAlertCircle />
+						<Alert.Title>Something went wrong</Alert.Title>
+						<Alert.Description class="truncate font-mono" title={app.error}>
+							{app.error}
+						</Alert.Description>
+						<Alert.Action>
+							<Button variant="ghost" size="icon-xs" onclick={() => (app.error = '')} aria-label="Dismiss">
+								<IconX />
+							</Button>
+						</Alert.Action>
+					</Alert.Root>
+				{/if}
 
-			{#if app.error}
-				<ErrorBanner message={app.error} ondismiss={() => (app.error = '')} />
-			{/if}
+				<Tabs.Content value="send" class="min-h-0 flex-1">
+					<SendPanel />
+				</Tabs.Content>
 
-			<Tabs.Content value="send" class="min-h-0 flex-1">
-				<SendPanel />
-			</Tabs.Content>
-
-			<Tabs.Content value="receive" class="min-h-0 flex-1">
-				<ReceivePanel />
-			</Tabs.Content>
-		</Tabs.Root>
+				<Tabs.Content value="receive" class="min-h-0 flex-1">
+					<ReceivePanel />
+				</Tabs.Content>
+			</Tabs.Root>
+		</div>
 	</main>
 </div>
