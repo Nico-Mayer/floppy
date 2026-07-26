@@ -8,7 +8,9 @@
     "build:dev": "vite build --minify false --mode development",
     "build": "vite build --mode production",
     "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.json"
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "lint": "prettier --check .",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@wailsio/runtime": "latest",
@@ -26,6 +28,9 @@
     "@types/node": "^26.1.1",
     "bits-ui": "^2.18.1",
     "clsx": "^2.1.1",
+    "prettier": "^3.8.3",
+    "prettier-plugin-svelte": "^4.1.0",
+    "prettier-plugin-tailwindcss": "^0.8.0",
     "shadcn-svelte": "^1.4.2",
     "svelte": "^5.56.8",
     "svelte-check": "^4.7.3",
