@@ -56,6 +56,11 @@ dev_mode:
       type: blocking
     - cmd: wails3 task common:dev:frontend
       type: background
+    # Wait until Vite is actually listening before starting the app — on a cold
+    # start (especially Windows) the app otherwise races the dev server and
+    # dies with "unable to connect to frontend server".
+    - cmd: node build/wait-for-frontend.mjs
+      type: blocking
     - cmd: wails3 task run
       type: primary
 
