@@ -98,9 +98,8 @@
 					<div class="flex min-w-0 flex-col items-center gap-2">
 						<Empty.Title>Drag files here</Empty.Title>
 						<Empty.Description>
-							Drop them anywhere in this pane, or <span class="underline underline-offset-2">
-								browse your files
-							</span>. Transfers are peer-to-peer — nothing is uploaded to a server.
+							Drop files here or <span class="underline underline-offset-2"> browse </span>. Transfers are
+							peer-to-peer—nothing is uploaded.
 						</Empty.Description>
 					</div>
 				</Empty.Header>
