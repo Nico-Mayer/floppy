@@ -37,4 +37,11 @@ npm run check
 """
 
 [tasks.install]
+run = """
+case "$(uname -s)" in
+  Darwin) ./scripts/install-macos.sh ;;
+  Linux) ./scripts/install-linux.sh ;;
+  *) echo "unsupported platform: $(uname -s)" >&2; exit 1 ;;
+esac
+"""
 run_windows = "pwsh -NoProfile -File ./scripts/install-windows.ps1"

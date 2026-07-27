@@ -6,6 +6,7 @@ import (
 	"runtime"
 
 	"floppy/internal/services"
+	"floppy/internal/stdio"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
@@ -20,6 +21,11 @@ import (
 var assets embed.FS
 
 func init() {
+	// The Windows GUI build has no console, and croc turns a failed write to
+	// the dead stderr handle into a failed transfer. Must run before any
+	// transfer starts.
+	stdio.SilenceUnusableStderr()
+
 	// Event registration is not required, but the binding generator picks up
 	// registered events and provides a strongly typed JS/TS API for them.
 	// The croc:* events live with the service that emits them.
