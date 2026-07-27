@@ -77,7 +77,7 @@
 				onValueChange={(value) => (app.mode = value as Mode)}
 				class="flex min-h-0 flex-1 flex-col gap-3"
 			>
-				<Tabs.List class="w-full">
+				<Tabs.List class="w-full gap-1">
 					{@render trigger('send', 'Send', IconSend, '⌘1')}
 					{@render trigger('receive', 'Receive', IconDownload, '⌘2')}
 				</Tabs.List>
