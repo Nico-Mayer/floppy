@@ -35,3 +35,6 @@ run = """
 cd frontend
 npm run check
 """
+
+[tasks.install]
+run_windows = "pwsh -NoProfile -File ./scripts/install-windows.ps1"

@@ -20,7 +20,7 @@
     "**/.settings",
     "**/node_modules",
     "**/dist",
-    "**/bin",
-    "**/.task"
-  ]
+    // "**/bin",
+    "**/.task",
+  ],
 }
