@@ -91,11 +91,11 @@
 			>
 				<!-- Same compact/regular mascot treatment as the receive panel;
 				     the whole surface stays the click/drop target. -->
-				<Empty.Header class="@md:max-w-none @md:flex-row @md:gap-6 @md:text-left">
+				<Empty.Header class="@md:max-w-none @md:gap-6">
 					<Empty.Media class="@md:mb-0">
-						<Mascot accent="send" class="size-14 @md:size-24" />
+						<Mascot accent="send" class="size-20 @md:size-24" />
 					</Empty.Media>
-					<div class="flex min-w-0 flex-col items-center gap-2 @md:items-start">
+					<div class="flex min-w-0 flex-col items-center gap-2">
 						<Empty.Title>Drag files here</Empty.Title>
 						<Empty.Description>
 							Drop them anywhere in this pane, or <span class="underline underline-offset-2">

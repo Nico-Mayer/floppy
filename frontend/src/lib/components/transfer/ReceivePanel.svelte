@@ -144,11 +144,11 @@
 		     branding stays without spending the card's height on it. -->
 		<div class="flex min-h-0 flex-1 flex-col" in:fade={{ duration: normal() }}>
 			<Empty.Root class="p-6 @md:p-8">
-				<Empty.Header class="@md:max-w-none @md:flex-row @md:gap-6 @md:text-left">
+				<Empty.Header class="@md:max-w-none @md:gap-6">
 					<Empty.Media class="@md:mb-0">
-						<Mascot accent="receive" class="size-14 @md:size-24" />
+						<Mascot accent="receive" class="size-20 @md:size-24" />
 					</Empty.Media>
-					<div class="flex min-w-0 flex-col items-center gap-2 @md:items-start">
+					<div class="flex min-w-0 flex-col items-center gap-2">
 						<Empty.Title>Enter transfer code</Empty.Title>
 						<Empty.Description>Paste the four-word code the sender gave you.</Empty.Description>
 					</div>

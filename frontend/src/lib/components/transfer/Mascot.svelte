@@ -38,7 +38,7 @@
 	let c = $derived({ ...shared, ...shells[accent] })
 </script>
 
-<div class={cn('size-16 animate-bob', className)} aria-hidden="true">
+<div class={cn('size-16 animate-bob transition-all duration-400', className)} aria-hidden="true">
 	<svg
 		version="1.1"
 		viewBox="0 0 128 128"
