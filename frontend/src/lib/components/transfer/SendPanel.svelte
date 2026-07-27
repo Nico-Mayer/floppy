@@ -8,7 +8,7 @@
 	import { Spinner } from '$lib/components/ui/spinner'
 	import { fast, motionOK, normal } from '$lib/motion'
 	import { app } from '$lib/transfer-app.svelte'
-	import { IconCheck, IconCopy, IconPlus, IconSend, IconX } from '@tabler/icons-svelte'
+	import { IconCheck, IconCopy, IconFolderPlus, IconPlus, IconSend, IconX } from '@tabler/icons-svelte'
 	import { Clipboard } from '@wailsio/runtime'
 	import { flip } from 'svelte/animate'
 	import { fade, scale } from 'svelte/transition'
@@ -86,8 +86,8 @@
 				role="button"
 				tabindex={0}
 				class="cursor-pointer border bg-muted/40 p-6 transition-all duration-200 hover:border-send/40 hover:bg-muted/60 in-[.file-drop-target-active]:scale-[1.01] in-[.file-drop-target-active]:border-send in-[.file-drop-target-active]:bg-send/5 @md:p-8"
-				onclick={() => send.pick()}
-				onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && send.pick()}
+				onclick={() => send.pickFiles()}
+				onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && send.pickFiles()}
 			>
 				<!-- Same compact/regular mascot treatment as the receive panel;
 				     the whole surface stays the click/drop target. -->
@@ -101,6 +101,22 @@
 							Drop files here or <span class="underline underline-offset-2"> browse </span>. Transfers are
 							peer-to-peer—nothing is uploaded.
 						</Empty.Description>
+						<!-- Folders need their own picker: Windows' dialog cannot
+						     offer files and folders at once (see
+						     FileService.SelectFiles). stopPropagation because the
+						     surface behind this button opens the file picker. -->
+						<Button
+							variant="outline"
+							size="sm"
+							class="mt-1"
+							onclick={(e) => {
+								e.stopPropagation()
+								send.pickFolder()
+							}}
+						>
+							<IconFolderPlus />
+							Choose folder
+						</Button>
 					</div>
 				</Empty.Header>
 			</Empty.Root>
@@ -209,9 +225,18 @@
 	{#snippet actions()}
 		{#if send.status === 'idle' && send.files.length > 0}
 			<div class="flex gap-2">
-				<Button variant="outline" class="@max-md:min-h-11" onclick={() => send.pick()}>
+				<Button variant="outline" class="@max-md:min-h-11" onclick={() => send.pickFiles()}>
 					<IconPlus />
 					Add
+				</Button>
+				<Button
+					variant="outline"
+					size="icon"
+					class="@max-md:min-h-11 @max-md:min-w-11"
+					aria-label="Add folder"
+					onclick={() => send.pickFolder()}
+				>
+					<IconFolderPlus />
 				</Button>
 				<Button class="flex-1 @max-md:min-h-11" onclick={() => send.start()}>
 					<IconSend />

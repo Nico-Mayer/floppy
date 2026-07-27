@@ -1,5 +1,5 @@
 import { CancelReceive, CancelSend, Receive, Send } from '$bindings/floppy/internal/services/crocservice'
-import { Describe, SelectFiles } from '$bindings/floppy/internal/services/fileservice'
+import { Describe, SelectFiles, SelectFolder } from '$bindings/floppy/internal/services/fileservice'
 import type { FileEntry, ProgressEvent } from '$bindings/floppy/internal/services/models'
 import { Events } from '@wailsio/runtime'
 import { describeError, type AppError } from './components/transfer/errors'
@@ -36,8 +36,15 @@ class SendTransfer {
 		this.files = this.files.filter((file) => file.path !== path)
 	}
 
-	async pick() {
+	async pickFiles() {
 		this.add((await SelectFiles()) ?? [])
+	}
+
+	// Separate from pickFiles because Windows cannot offer both in one dialog
+	// (see FileService.SelectFiles) — the two entry points exist on every
+	// platform so the UI does not have to branch.
+	async pickFolder() {
+		this.add((await SelectFolder()) ?? [])
 	}
 
 	async start() {

@@ -24,10 +24,29 @@ type FileEntry struct {
 }
 
 // SelectFiles opens a native file picker and returns the selected files.
+//
+// Windows' shell dialog has no combined mode — asking for directories there
+// turns the whole dialog into a folder picker, and files become unselectable —
+// so on Windows this offers files only and folders go through SelectFolder.
+// macOS and Linux keep the one dialog that does both.
 func (f *FileService) SelectFiles() ([]FileEntry, error) {
 	paths, err := application.Get().Dialog.OpenFile().
 		SetTitle("Select files to share").
 		CanChooseFiles(true).
+		CanChooseDirectories(runtime.GOOS != "windows").
+		PromptForMultipleSelection()
+	if err != nil {
+		return nil, err
+	}
+	return f.Describe(paths), nil
+}
+
+// SelectFolder opens a native folder picker. Windows only ever returns one
+// folder from it; the other platforms allow several.
+func (f *FileService) SelectFolder() ([]FileEntry, error) {
+	paths, err := application.Get().Dialog.OpenFile().
+		SetTitle("Select a folder to share").
+		CanChooseFiles(false).
 		CanChooseDirectories(true).
 		PromptForMultipleSelection()
 	if err != nil {

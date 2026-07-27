@@ -29,7 +29,20 @@ export function OpenPath(path: string): $CancellablePromise<void> {
 
 /**
  * SelectFiles opens a native file picker and returns the selected files.
+ * 
+ * Windows' shell dialog has no combined mode — asking for directories there
+ * turns the whole dialog into a folder picker, and files become unselectable —
+ * so on Windows this offers files only and folders go through SelectFolder.
+ * macOS and Linux keep the one dialog that does both.
  */
 export function SelectFiles(): $CancellablePromise<$models.FileEntry[] | null> {
     return $Call.ByID(3462896520);
+}
+
+/**
+ * SelectFolder opens a native folder picker. Windows only ever returns one
+ * folder from it; the other platforms allow several.
+ */
+export function SelectFolder(): $CancellablePromise<$models.FileEntry[] | null> {
+    return $Call.ByID(2305443077);
 }
