@@ -62,6 +62,8 @@ func main() {
 		// renders its own window controls, matching the macOS hidden-inset
 		// look. macOS keeps its native traffic lights.
 		Frameless: runtime.GOOS == "windows",
+		MinWidth:  500,
+		MinHeight: 800,
 		Mac: application.MacWindow{
 			InvisibleTitleBarHeight: 50,
 			Backdrop:                application.MacBackdropTranslucent,

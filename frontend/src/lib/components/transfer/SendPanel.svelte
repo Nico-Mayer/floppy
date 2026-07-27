@@ -57,7 +57,6 @@
 		}
 	})
 
-	let dragOver = $state(false)
 	let copied = $state(false)
 	let copyResetTimer: ReturnType<typeof setTimeout>
 
@@ -75,26 +74,20 @@
 	}
 </script>
 
-<TransferCard accent="send" title="Send" {headline} {badge}>
+<!-- Only this card accepts dropped files, and only while the queue is still
+     editable: Wails resolves a drop against the innermost
+     [data-file-drop-target] under the cursor and drops it on the floor when
+     there is none, so dropping onto the rest of the window (or onto a running
+     transfer) is refused with a no-drop cursor instead of silently appending. -->
+<TransferCard accent="send" title="Send" {headline} {badge} dropTarget={send.status === 'idle'}>
 	{#if send.status === 'idle'}
 		{#if send.files.length === 0}
 			<Empty.Root
 				role="button"
 				tabindex={0}
-				class={[
-					'cursor-pointer border transition-all duration-200',
-					dragOver
-						? 'scale-[1.01] border-send bg-send/5'
-						: 'bg-muted/40 hover:border-send/40 hover:bg-muted/60'
-				]}
+				class="cursor-pointer border bg-muted/40 transition-all duration-200 hover:border-send/40 hover:bg-muted/60 in-[.file-drop-target-active]:scale-[1.01] in-[.file-drop-target-active]:border-send in-[.file-drop-target-active]:bg-send/5"
 				onclick={() => send.pick()}
 				onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && send.pick()}
-				ondragover={(e) => {
-					e.preventDefault()
-					dragOver = true
-				}}
-				ondragleave={() => (dragOver = false)}
-				ondrop={() => (dragOver = false)}
 			>
 				<Empty.Header>
 					<Empty.Media>

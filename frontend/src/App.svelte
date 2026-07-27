@@ -59,7 +59,7 @@
 <div class="flex h-svh flex-col [--header-height:calc(--spacing(13))]">
 	<TitleBar />
 
-	<main class="flex min-h-0 flex-1 flex-col gap-3 p-4 sm:p-6" data-file-drop-target>
+	<main class="flex min-h-0 flex-1 flex-col gap-3 p-4 sm:p-6">
 		<!-- One width ceiling for the whole pane, so the header and the tabs
              can never drift apart. -->
 		<div
