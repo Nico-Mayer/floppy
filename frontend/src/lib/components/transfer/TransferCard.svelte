@@ -10,7 +10,8 @@
 		headline,
 		badge,
 		dropTarget = false,
-		children
+		children,
+		actions
 	}: {
 		accent: Accent
 		title: string
@@ -25,6 +26,13 @@
 		 */
 		dropTarget?: boolean
 		children: Snippet
+		/**
+		 * Controls for the anchored zone at the bottom of the card. Every
+		 * state renders its primary/destructive actions here so they sit at
+		 * one consistent position (and in thumb reach) instead of drifting
+		 * with the status content above.
+		 */
+		actions?: Snippet
 	} = $props()
 </script>
 
@@ -53,7 +61,21 @@
 			</Badge>
 		</Card.Action>
 	</Card.Header>
-	<Card.Content class="flex min-h-0 flex-1 flex-col gap-3">
-		{@render children()}
+	<!-- @container makes the card content the layout unit: panels switch
+	     compact/regular on the card's own width (@sm:/@md: variants), so they
+	     stay correct however the window — or a future shell — composes them. -->
+	<Card.Content class="@container flex min-h-0 flex-1 flex-col gap-3">
+		<!-- No overflow on the zone itself: overflow-y-auto would force
+		     overflow-x to auto (CSS pairs the axes) and paint a dead
+		     horizontal scrollbar. Content that can grow (the send file
+		     list) brings its own overflow-y-auto instead. -->
+		<div class="flex min-h-0 flex-1 flex-col gap-3">
+			{@render children()}
+		</div>
+		{#if actions}
+			<div class="flex shrink-0 flex-col gap-2">
+				{@render actions()}
+			</div>
+		{/if}
 	</Card.Content>
 </Card.Root>

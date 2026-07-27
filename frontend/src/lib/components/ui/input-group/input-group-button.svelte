@@ -7,8 +7,10 @@
 			size: {
 				xs: "h-6 gap-1 rounded-xl px-1.5 [&>svg:not([class*='size-'])]:size-3.5",
 				sm: 'cn-input-group-button-size-sm',
-				'icon-xs': 'size-6 rounded-xl p-0 has-[>svg]:p-0',
-				'icon-sm': 'size-8 p-0 has-[>svg]:p-0'
+				// Width minimum for the 44px touch target on coarse pointers;
+				// the height minimum comes from the underlying Button size.
+				'icon-xs': 'size-6 rounded-xl p-0 has-[>svg]:p-0 pointer-coarse:min-w-11',
+				'icon-sm': 'size-8 p-0 has-[>svg]:p-0 pointer-coarse:min-w-11'
 			}
 		},
 		defaultVariants: {

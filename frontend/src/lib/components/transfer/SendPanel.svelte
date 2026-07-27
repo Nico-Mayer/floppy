@@ -85,20 +85,24 @@
 			<Empty.Root
 				role="button"
 				tabindex={0}
-				class="cursor-pointer border bg-muted/40 transition-all duration-200 hover:border-send/40 hover:bg-muted/60 in-[.file-drop-target-active]:scale-[1.01] in-[.file-drop-target-active]:border-send in-[.file-drop-target-active]:bg-send/5"
+				class="cursor-pointer border bg-muted/40 p-6 transition-all duration-200 hover:border-send/40 hover:bg-muted/60 in-[.file-drop-target-active]:scale-[1.01] in-[.file-drop-target-active]:border-send in-[.file-drop-target-active]:bg-send/5 @md:p-8"
 				onclick={() => send.pick()}
 				onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && send.pick()}
 			>
-				<Empty.Header>
-					<Empty.Media>
-						<Mascot accent="send" class="size-20" />
+				<!-- Same compact/regular mascot treatment as the receive panel;
+				     the whole surface stays the click/drop target. -->
+				<Empty.Header class="@md:max-w-none @md:flex-row @md:gap-6 @md:text-left">
+					<Empty.Media class="@md:mb-0">
+						<Mascot accent="send" class="size-14 @md:size-24" />
 					</Empty.Media>
-					<Empty.Title>Drag files here</Empty.Title>
-					<Empty.Description>
-						Drop them anywhere in this pane, or <span class="underline underline-offset-2">
-							browse your files
-						</span>. Transfers are peer-to-peer — nothing is uploaded to a server.
-					</Empty.Description>
+					<div class="flex min-w-0 flex-col items-center gap-2 @md:items-start">
+						<Empty.Title>Drag files here</Empty.Title>
+						<Empty.Description>
+							Drop them anywhere in this pane, or <span class="underline underline-offset-2">
+								browse your files
+							</span>. Transfers are peer-to-peer — nothing is uploaded to a server.
+						</Empty.Description>
+					</div>
 				</Empty.Header>
 			</Empty.Root>
 		{:else}
@@ -114,16 +118,6 @@
 					Large transfer — both devices need to stay awake with the app open until it finishes.
 				</p>
 			{/if}
-			<div class="flex gap-2">
-				<Button variant="outline" onclick={() => send.pick()}>
-					<IconPlus />
-					Add
-				</Button>
-				<Button class="flex-1" onclick={() => send.start()}>
-					<IconSend />
-					Send {summary} · {formatBytes(send.totalSize)}
-				</Button>
-			</div>
 		{/if}
 	{:else if send.status === 'cancelling'}
 		<TransferProgress label="Cancelling…" />
@@ -141,9 +135,11 @@
 				</p>
 			</div>
 
-			<!-- Scanning is a phone-held-up gesture, so narrow layouts lead
-                 with a large QR; on desktop it recedes beside the phrase. -->
-			<div class="flex w-full max-w-md flex-col items-center gap-5 sm:max-w-lg sm:flex-row sm:gap-6">
+			<!-- Scanning is a phone-held-up gesture, so compact cards lead
+                 with a large QR; in a regular-width card it recedes beside
+                 the phrase. Container variants, not viewport: the card is
+                 the layout unit. -->
+			<div class="flex w-full max-w-md flex-col items-center gap-5 @md:max-w-lg @md:flex-row @md:gap-6">
 				<!-- The padding is the QR quiet zone; both it and the code
                      share --qr-background so the seam is invisible. bgColor
                      must be opaque — the finder patterns paint their inner
@@ -151,18 +147,18 @@
                      solid blobs. The beam travelling the border is the
                      "still waiting for your peer" tell — it stops the moment
                      this screen is replaced. -->
-				<div class="relative shrink-0 rounded-2xl border bg-qr-background p-4 sm:p-3">
+				<div class="relative shrink-0 rounded-2xl border bg-qr-background p-4 @md:p-3">
 					<QRCode
 						value={send.code}
 						fgColor="var(--qr-foreground)"
 						bgColor="var(--qr-background)"
-						class="size-44 sm:size-32"
+						class="size-44 @md:size-32"
 					/>
 					{#if motionOK()}
 						<BorderBeam size={70} duration={5} colorFrom="var(--tint)" colorTo="var(--tint-fg)" />
 					{/if}
 				</div>
-				<div class="flex w-full min-w-0 flex-col items-center gap-2.5 sm:items-start">
+				<div class="flex w-full min-w-0 flex-col items-center gap-2.5 @md:items-start">
 					<InputGroup.Root>
 						<InputGroup.Input readonly value={send.code} class="font-mono font-medium" />
 						<InputGroup.Addon align="inline-end">
@@ -179,7 +175,9 @@
 							</InputGroup.Button>
 						</InputGroup.Addon>
 					</InputGroup.Root>
-					<p class="text-center text-xs text-muted-foreground sm:text-left">Expires when you quit the app.</p>
+					<p class="text-center text-xs text-muted-foreground @md:text-left">
+						Expires when you quit the app.
+					</p>
 				</div>
 			</div>
 
@@ -190,20 +188,12 @@
 				awaiting peer
 			</div>
 		</div>
-		<Button variant="destructive" size="sm" onclick={() => send.cancel()}>
-			<IconX />
-			Cancel
-		</Button>
 	{:else if send.status === 'sending'}
 		<TransferProgress
 			progress={send.progress}
 			stats={send.stats}
 			label="Encrypted · direct peer · {currentFile(send.stats) || summary}"
 		/>
-		<Button variant="destructive" size="sm" onclick={() => send.cancel()}>
-			<IconX />
-			Cancel
-		</Button>
 	{:else}
 		<div class="flex min-h-0 flex-1 flex-col" in:fade={{ duration: normal() }}>
 			<Empty.Root>
@@ -215,6 +205,29 @@
 				</Empty.Header>
 			</Empty.Root>
 		</div>
-		<Button variant="outline" size="sm" onclick={() => send.reset()}>New transfer</Button>
 	{/if}
+
+	{#snippet actions()}
+		{#if send.status === 'idle' && send.files.length > 0}
+			<div class="flex gap-2">
+				<Button variant="outline" class="@max-md:min-h-11" onclick={() => send.pick()}>
+					<IconPlus />
+					Add
+				</Button>
+				<Button class="flex-1 @max-md:min-h-11" onclick={() => send.start()}>
+					<IconSend />
+					Send {summary} · {formatBytes(send.totalSize)}
+				</Button>
+			</div>
+		{:else if send.status === 'waiting' || send.status === 'sending'}
+			<Button variant="destructive" size="sm" class="@max-md:min-h-11" onclick={() => send.cancel()}>
+				<IconX />
+				Cancel
+			</Button>
+		{:else if send.status === 'done'}
+			<Button variant="outline" size="sm" class="@max-md:min-h-11" onclick={() => send.reset()}>
+				New transfer
+			</Button>
+		{/if}
+	{/snippet}
 </TransferCard>

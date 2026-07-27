@@ -2,10 +2,10 @@
 	import { OpenPath } from '$bindings/floppy/internal/services/fileservice'
 	import { Button } from '$lib/components/ui/button'
 	import * as Empty from '$lib/components/ui/empty'
-	import { Input } from '$lib/components/ui/input'
+	import * as InputGroup from '$lib/components/ui/input-group'
 	import { normal, shift } from '$lib/motion'
 	import { app } from '$lib/transfer-app.svelte'
-	import { IconCheck, IconClipboard, IconDownload, IconFolderOpen, IconX } from '@tabler/icons-svelte'
+	import { IconCheck, IconDownload, IconFolderOpen, IconX } from '@tabler/icons-svelte'
 	import { Clipboard } from '@wailsio/runtime'
 	import { fade, fly } from 'svelte/transition'
 	import { currentFile } from './format'
@@ -40,18 +40,28 @@
 		// Fill only an empty input or an unmodified earlier fill — never
 		// overwrite something the user typed, and never start the receive.
 		if (receive.code.trim() && receive.code !== filled) return
+		if (receive.code === text) return
 		receive.code = text
 		filled = text
+		// Pop the input so the fill is seen, not just found. Class comes off
+		// after the 0.3s keyframe so a later fill can replay it; app.css
+		// collapses the keyframe to a fade under prefers-reduced-motion.
+		justFilled = true
+		clearTimeout(fillFlashTimer)
+		fillFlashTimer = setTimeout(() => (justFilled = false), 400)
 	}
+
+	let justFilled = $state(false)
+	let fillFlashTimer: ReturnType<typeof setTimeout>
 
 	$effect(() => {
 		if (app.mode === 'receive') checkClipboard()
 	})
 
-	let fromClipboard = $derived(filled !== null && receive.code === filled)
-
-	function clearFill() {
-		dismissed = filled
+	function clearInput() {
+		// Clearing an auto-filled code also blocks that value for the session,
+		// otherwise the next window focus would immediately re-fill it.
+		if (filled) dismissed = filled
 		filled = null
 		receive.code = ''
 	}
@@ -105,13 +115,6 @@
 				</Empty.Header>
 			</Empty.Root>
 		</div>
-		<div class="flex flex-col gap-2">
-			<Button onclick={() => OpenPath(receive.savedTo)}>
-				<IconFolderOpen />
-				Open folder
-			</Button>
-			<Button variant="outline" size="sm" onclick={() => receive.reset()}>Receive more</Button>
-		</div>
 	{:else if receive.status === 'cancelling'}
 		<TransferProgress label="Cancelling…" />
 	{:else if receive.status === 'connecting'}
@@ -129,59 +132,78 @@
 				matches the sender's code, and that they are still waiting.
 			</p>
 		{/if}
-		<Button variant="destructive" size="sm" onclick={() => receive.cancel()}>
-			<IconX />
-			Cancel
-		</Button>
 	{:else if receive.status === 'receiving'}
 		<TransferProgress
 			progress={receive.progress}
 			stats={receive.stats}
 			label={currentFile(receive.stats) || 'Receiving…'}
 		/>
-		<Button variant="destructive" size="sm" onclick={() => receive.cancel()}>
-			<IconX />
-			Cancel
-		</Button>
 	{:else}
+		<!-- Compact: mascot shrinks and stacks. Regular (@md, card width):
+		     hero row — mascot beside the copy, text left-aligned — so the
+		     branding stays without spending the card's height on it. -->
 		<div class="flex min-h-0 flex-1 flex-col" in:fade={{ duration: normal() }}>
-			<Empty.Root>
-				<Empty.Header>
-					<Empty.Media>
-						<Mascot accent="receive" class="size-20" />
+			<Empty.Root class="p-6 @md:p-8">
+				<Empty.Header class="@md:max-w-none @md:flex-row @md:gap-6 @md:text-left">
+					<Empty.Media class="@md:mb-0">
+						<Mascot accent="receive" class="size-14 @md:size-24" />
 					</Empty.Media>
-					<Empty.Title>Enter transfer code</Empty.Title>
-					<Empty.Description>Paste the four-word code the sender gave you.</Empty.Description>
+					<div class="flex min-w-0 flex-col items-center gap-2 @md:items-start">
+						<Empty.Title>Enter transfer code</Empty.Title>
+						<Empty.Description>Paste the four-word code the sender gave you.</Empty.Description>
+					</div>
 				</Empty.Header>
-				<Empty.Content class="gap-2">
-					<Input
+			</Empty.Root>
+		</div>
+	{/if}
+
+	{#snippet actions()}
+		{#if receive.status === 'done'}
+			<Button class="@max-md:min-h-11" onclick={() => OpenPath(receive.savedTo)}>
+				<IconFolderOpen />
+				Open folder
+			</Button>
+			<Button variant="outline" size="sm" class="@max-md:min-h-11" onclick={() => receive.reset()}>
+				Receive more
+			</Button>
+		{:else if receive.status === 'connecting' || receive.status === 'receiving'}
+			<Button variant="destructive" size="sm" class="@max-md:min-h-11" onclick={() => receive.cancel()}>
+				<IconX />
+				Cancel
+			</Button>
+		{:else if receive.status === 'idle'}
+			<!-- The code group is the panel's real primary — it lives in the
+			     anchored action zone (thumb reach), width-capped once the card
+			     is wide so it never stretches into a ribbon. -->
+			<div class="flex w-full flex-col gap-2 @sm:mx-auto @sm:max-w-sm">
+				<InputGroup.Root class={[justFilled && 'animate-pop']}>
+					<InputGroup.Input
 						class="text-center font-mono"
 						placeholder="1234-word-word-word"
 						bind:value={receive.code}
 						maxlength={32}
 						onkeydown={(e) => e.key === 'Enter' && receive.code.trim() && receive.start()}
 					/>
-					{#if fromClipboard}
-						<div
-							class="flex items-center justify-center gap-1 text-xs text-muted-foreground"
-							transition:fly={{ y: -shift(), duration: normal() }}
-						>
-							<IconClipboard class="size-3.5" />
-							from clipboard
-							<Button variant="ghost" size="icon-xs" onclick={clearFill} aria-label="Clear">
+					{#if receive.code}
+						<InputGroup.Addon align="inline-end">
+							<InputGroup.Button size="icon-xs" onclick={clearInput} aria-label="Clear code">
 								<IconX />
-							</Button>
-						</div>
+							</InputGroup.Button>
+						</InputGroup.Addon>
 					{/if}
-					<Button class="w-full" onclick={() => receive.start()} disabled={!receive.code.trim()}>
-						<IconDownload />
-						Receive files
-					</Button>
-					<p class="font-mono text-xs text-muted-foreground">
-						saves to ~/Downloads/{receive.code}
-					</p>
-				</Empty.Content>
-			</Empty.Root>
-		</div>
-	{/if}
+				</InputGroup.Root>
+				<Button
+					class="w-full @max-md:min-h-11"
+					onclick={() => receive.start()}
+					disabled={!receive.code.trim()}
+				>
+					<IconDownload />
+					Receive files
+				</Button>
+				<p class="text-center font-mono text-xs text-muted-foreground">
+					saves to ~/Downloads/{receive.code}
+				</p>
+			</div>
+		{/if}
+	{/snippet}
 </TransferCard>

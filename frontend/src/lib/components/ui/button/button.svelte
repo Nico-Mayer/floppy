@@ -19,14 +19,20 @@
 				link: 'text-primary underline-offset-4 hover:underline'
 			},
 			size: {
-				default: 'h-9 gap-1.5 px-3 has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5',
-				xs: "h-6 gap-1 px-2.5 text-xs has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 [&_svg:not([class*='size-'])]:size-3",
-				sm: 'h-8 gap-1 px-3 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2',
-				lg: 'h-10 gap-1.5 px-4 has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3',
-				icon: 'size-9',
-				'icon-xs': "size-6 [&_svg:not([class*='size-'])]:size-3",
-				'icon-sm': 'size-8',
-				'icon-lg': 'size-10'
+				// pointer-coarse minimums keep every control at the 44px touch
+				// target (Apple HIG) without changing fine-pointer density.
+				// min-h/min-w rather than h/w so they win over the fixed sizes
+				// regardless of utility order in the stylesheet.
+				default:
+					'h-9 gap-1.5 px-3 has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5 pointer-coarse:min-h-11',
+				xs: "h-6 gap-1 px-2.5 text-xs has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 [&_svg:not([class*='size-'])]:size-3 pointer-coarse:min-h-11",
+				sm: 'h-8 gap-1 px-3 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 pointer-coarse:min-h-11',
+				lg: 'h-10 gap-1.5 px-4 has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3 pointer-coarse:min-h-11',
+				icon: 'size-9 pointer-coarse:min-h-11 pointer-coarse:min-w-11',
+				'icon-xs':
+					"size-6 [&_svg:not([class*='size-'])]:size-3 pointer-coarse:min-h-11 pointer-coarse:min-w-11",
+				'icon-sm': 'size-8 pointer-coarse:min-h-11 pointer-coarse:min-w-11',
+				'icon-lg': 'size-10 pointer-coarse:min-h-11 pointer-coarse:min-w-11'
 			}
 		},
 		defaultVariants: {
