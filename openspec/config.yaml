@@ -1,0 +1,49 @@
+schema: spec-driven
+
+context: |
+  floppy — desktop file-transfer app built on croc.
+
+  Tech stack:
+  - Backend: Go + Wails 3 (`wails3` CLI, Taskfile build)
+  - Frontend: Svelte 5 runes (`$state`, `$derived`, `$props`, `$effect`) in `frontend/`
+  - UI: shadcn-svelte first; animated variants from https://v-animations.vercel.app
+
+  Layout:
+  - `main.go` stays at repo root (`//go:embed all:frontend/dist` cannot reach a parent dir)
+  - `internal/transfer/` — transfer core: `Manager`, sessions, progress polling, croc wiring.
+    No Wails imports; reports through an injected `Emitter`. Only `croc.go` touches croc internals.
+  - `internal/services/` — thin Wails adapters (`CrocService`, `FileService`): bind methods,
+    translate `transfer.Event` into `croc:*` events. Event names + payload types live here.
+  - Bindings generated per Go package → frontend imports from `$bindings/floppy/internal/services/...`
+
+  Croc (file transfer):
+  - Uses the croc v10 library (not the CLI), compiled into the binary; clients run in-process
+    on goroutines via `croc.NewCtx`. Cancelling the context aborts and notifies the peer.
+  - Progress comes from polling `crocPeer.Snapshot()` — a deliberate, fenced data race.
+  - Events: `croc:code`, `croc:send:progress`, `croc:recv:progress`, `croc:sent`,
+    `croc:received`, `croc:error`. Every payload carries `id` and `kind`.
+    Cancelled transfers emit no terminal event.
+  - Receive destination is `DestRoot/<code>/` (app: `~/Downloads/<code>/`); the Manager owns
+    the process CWD — nothing else may depend on it.
+  - One send and one receive may run concurrently, never two of the same kind (`ErrBusy`).
+  - Sentinel errors `ErrBusy`, `ErrUnwinding`, `ErrNoFiles`, `ErrBadCode` — message text is
+    frontend contract, keep stable.
+
+  Tests:
+  - Gate: `go test -race ./...` — fast, no network, must stay green.
+  - Full: `go test ./...` — adds `TestLive*` against a croctool peer process via an in-process relay.
+  - E2E: `FLOPPY_E2E=1 go test ./internal/transfer/ -run TestE2E` — needs internet, can flake.
+
+  Dev:
+  - `wails3 dev` (or `mise run dev`), Vite on port 9245.
+  - The browser tab at :9245 is UI preview only — bindings and events do not work there.
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours

@@ -5,7 +5,8 @@
 	import { Input } from '$lib/components/ui/input'
 	import { normal, shift } from '$lib/motion'
 	import { app } from '$lib/transfer-app.svelte'
-	import { IconCheck, IconDownload, IconFolderOpen, IconX } from '@tabler/icons-svelte'
+	import { IconCheck, IconClipboard, IconDownload, IconFolderOpen, IconX } from '@tabler/icons-svelte'
+	import { Clipboard } from '@wailsio/runtime'
 	import { fade, fly } from 'svelte/transition'
 	import { currentFile } from './format'
 	import Mascot from './Mascot.svelte'
@@ -13,6 +14,47 @@
 	import TransferProgress from './TransferProgress.svelte'
 
 	const receive = app.receive
+
+	// Clipboard auto-fill: a croc-shaped clipboard code lands directly in the
+	// empty code input, with visible provenance and one-click undo. Read only
+	// on discrete focus moments (tab switch, window focus) — never on a timer.
+	// Anchored to the default croc shape so arbitrary clipboard text is
+	// dropped on the floor, not displayed or retained.
+	const CODE_SHAPE = /^\d+-\w+-\w+-\w+$/
+
+	let filled: string | null = $state(null)
+	let dismissed: string | null = $state(null)
+
+	async function checkClipboard() {
+		if (app.mode !== 'receive' || receive.status !== 'idle') return
+		let text: string
+		try {
+			// Native clipboard via the Go side — reliable in every webview,
+			// unlike navigator.clipboard. Rejects in the browser preview
+			// (no Wails runtime); staying empty is the correct degradation.
+			text = (await Clipboard.Text()).trim()
+		} catch {
+			return
+		}
+		if (!CODE_SHAPE.test(text) || text === dismissed) return
+		// Fill only an empty input or an unmodified earlier fill — never
+		// overwrite something the user typed, and never start the receive.
+		if (receive.code.trim() && receive.code !== filled) return
+		receive.code = text
+		filled = text
+	}
+
+	$effect(() => {
+		if (app.mode === 'receive') checkClipboard()
+	})
+
+	let fromClipboard = $derived(filled !== null && receive.code === filled)
+
+	function clearFill() {
+		dismissed = filled
+		filled = null
+		receive.code = ''
+	}
 
 	let headline = $derived.by(() => {
 		switch (receive.status) {
@@ -43,6 +85,8 @@
 		}
 	})
 </script>
+
+<svelte:window onfocus={checkClipboard} />
 
 <TransferCard accent="receive" title="Receive" {headline} {badge}>
 	{#if receive.status === 'done'}
@@ -117,6 +161,18 @@
 						maxlength={32}
 						onkeydown={(e) => e.key === 'Enter' && receive.code.trim() && receive.start()}
 					/>
+					{#if fromClipboard}
+						<div
+							class="flex items-center justify-center gap-1 text-xs text-muted-foreground"
+							transition:fly={{ y: -shift(), duration: normal() }}
+						>
+							<IconClipboard class="size-3.5" />
+							from clipboard
+							<Button variant="ghost" size="icon-xs" onclick={clearFill} aria-label="Clear">
+								<IconX />
+							</Button>
+						</div>
+					{/if}
 					<Button class="w-full" onclick={() => receive.start()} disabled={!receive.code.trim()}>
 						<IconDownload />
 						Receive files

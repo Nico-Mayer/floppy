@@ -3,6 +3,7 @@ go = "1.26.5"
 "go:github.com/wailsapp/wails/v3/cmd/wails3" = "3.0.0-alpha2.117"
 gotestsum = "1.13.0"
 node = "26.5.0"
+"npm:@fission-ai/openspec" = "1.6.0"
 
 [shell_alias]
 mr = "mise run"
