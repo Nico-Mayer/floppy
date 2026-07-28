@@ -25,7 +25,7 @@
 		aria-label="Account"
 	>
 		<Avatar.Root class="size-8">
-			<!-- No account yet — fallback only. -->
+			<Avatar.Image src="https://api.dicebear.com/10.x/initial-face/svg?seed=Nico"></Avatar.Image>
 			<Avatar.Fallback><IconUser class="size-4" /></Avatar.Fallback>
 		</Avatar.Root>
 	</Sheet.Trigger>

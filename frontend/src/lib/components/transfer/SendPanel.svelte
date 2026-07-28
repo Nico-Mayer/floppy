@@ -5,12 +5,15 @@
 	import * as Empty from '$lib/components/ui/empty'
 	import * as InputGroup from '$lib/components/ui/input-group'
 	import * as Item from '$lib/components/ui/item'
+	import { Label } from '$lib/components/ui/label'
 	import * as Select from '$lib/components/ui/select'
 	import { Spinner } from '$lib/components/ui/spinner'
+	import * as Tooltip from '$lib/components/ui/tooltip'
 	import { fast, motionOK, normal } from '$lib/motion'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import { app } from '$lib/transfer-app.svelte'
 	import {
+		IconAlertTriangle,
 		IconCheck,
 		IconCopy,
 		IconDeviceLaptop,
@@ -117,7 +120,29 @@
      [data-file-drop-target] under the cursor and drops it on the floor when
      there is none, so dropping onto the rest of the window (or onto a running
      transfer) is refused with a no-drop cursor instead of silently appending. -->
-<TransferCard accent="send" title="Send" {headline} {badge} dropTarget={send.status === 'idle'}>
+{#snippet largeTransferWarning()}
+	{#if send.status === 'idle' && send.totalSize > LARGE_TRANSFER}
+		<Tooltip.Provider delayDuration={150}>
+			<Tooltip.Root>
+				<Tooltip.Trigger aria-label="Large transfer warning" class="flex text-amber-500">
+					<IconAlertTriangle class="size-4" />
+				</Tooltip.Trigger>
+				<Tooltip.Content class="max-w-56 text-center">
+					Large transfer — keep both devices awake with the app open until it finishes.
+				</Tooltip.Content>
+			</Tooltip.Root>
+		</Tooltip.Provider>
+	{/if}
+{/snippet}
+
+<TransferCard
+	accent="send"
+	title="Send"
+	{headline}
+	{badge}
+	alert={largeTransferWarning}
+	dropTarget={send.status === 'idle'}
+>
 	{#if send.status === 'idle'}
 		{#if send.files.length === 0}
 			<Empty.Root
@@ -152,43 +177,6 @@
 					</div>
 				{/each}
 			</Item.Group>
-			{#if send.totalSize > LARGE_TRANSFER}
-				<p class="text-center text-xs text-muted-foreground">
-					Large transfer — both devices need to stay awake with the app open until it finishes.
-				</p>
-			{/if}
-			{#if pairing.devices.length > 0}
-				<!-- Trusted devices skip the code: pick one and it gets a prompt to
-				     accept. "Anyone with a code" is the classic phrase-based send. -->
-				<div class="flex items-center gap-2 px-1">
-					<!-- <label for="send-target" class="shrink-0 text-xs text-muted-foreground">Send to</label> -->
-					<Select.Root type="single" bind:value={target}>
-						<Select.Trigger id="send-target" class="min-w-0 flex-1">
-							{#if target === 'code'}
-								<IconWorld class="size-4 text-muted-foreground" />
-							{:else}
-								<IconDeviceLaptop class="size-4 text-muted-foreground" />
-							{/if}
-							{targetName}
-						</Select.Trigger>
-						<Select.Content>
-							<Select.Item value="code" label="Anyone with a code">
-								<IconWorld class="size-4 text-muted-foreground" />
-								Anyone with a code
-							</Select.Item>
-							{#if pairing.devices.length > 0}
-								<Select.Separator />
-								{#each pairing.devices as device (device.fingerprint)}
-									<Select.Item value={device.fingerprint} label={device.name}>
-										<IconDeviceLaptop class="size-4 text-muted-foreground" />
-										{device.name}
-									</Select.Item>
-								{/each}
-							{/if}
-						</Select.Content>
-					</Select.Root>
-				</div>
-			{/if}
 		{/if}
 	{:else if send.status === 'cancelling'}
 		<TransferProgress label="Cancelling…" />
@@ -280,15 +268,46 @@
 
 	{#snippet actions()}
 		{#if send.status === 'idle' && send.files.length > 0}
-			<div class="flex gap-2">
-				<Button variant="outline" class="@max-md:min-h-11" onclick={() => send.pickFiles()}>
-					<IconPlus />
-					Add
-				</Button>
-				<Button class="flex-1 @max-md:min-h-11" onclick={dispatchSend}>
-					<IconSend />
-					{target === 'code' ? 'Send' : 'Send to device'}
-				</Button>
+			<div class="flex flex-col gap-3">
+				{#if pairing.devices.length > 0}
+					<!-- Trusted devices skip the code: pick one and it gets a prompt to
+					     accept. "Anyone with a code" is the classic phrase-based send. -->
+					<div class="flex flex-col gap-1.5">
+						<Label for="send-target" class="px-1 text-xs text-muted-foreground">Send to</Label>
+						<Select.Root type="single" bind:value={target}>
+							<Select.Trigger id="send-target" class="w-full">
+								{#if target === 'code'}
+									<IconWorld class="size-4 text-muted-foreground" />
+								{:else}
+									<IconDeviceLaptop class="size-4 text-muted-foreground" />
+								{/if}
+								{targetName}
+							</Select.Trigger>
+							<Select.Content>
+								<Select.Item value="code" label="Anyone with a code">
+									<IconWorld class="size-4 text-muted-foreground" />
+									Anyone with a code
+								</Select.Item>
+								<Select.Separator />
+								{#each pairing.devices as device (device.fingerprint)}
+									<Select.Item value={device.fingerprint} label={device.name}>
+										<IconDeviceLaptop class="size-4 text-muted-foreground" />
+										{device.name}
+									</Select.Item>
+								{/each}
+							</Select.Content>
+						</Select.Root>
+					</div>
+				{/if}
+				<div class="flex gap-2">
+					<Button variant="outline" class="@max-md:min-h-11" onclick={() => send.pickFiles()}>
+						<IconPlus />
+					</Button>
+					<Button class="flex-1 @max-md:min-h-11" onclick={dispatchSend}>
+						<IconSend />
+						{target === 'code' ? 'Send' : 'Send to device'}
+					</Button>
+				</div>
 			</div>
 		{:else if send.status === 'waiting' || send.status === 'sending'}
 			<Button variant="destructive" size="sm" class="@max-md:min-h-11" onclick={() => send.cancel()}>

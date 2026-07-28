@@ -5,6 +5,7 @@
 	import * as Field from '$lib/components/ui/field'
 	import * as Item from '$lib/components/ui/item'
 	import { pairing } from '$lib/pairing-app.svelte'
+	import { cn } from '$lib/utils'
 	import {
 		IconCheck,
 		IconCopy,
@@ -16,7 +17,6 @@
 		IconTrash
 	} from '@tabler/icons-svelte'
 	import { Clipboard } from '@wailsio/runtime'
-	import { cn } from '$lib/utils'
 	import AddDeviceDialog from './AddDeviceDialog.svelte'
 
 	// The QR is always mounted; a blur veils it by default so it isn't exposed
@@ -107,45 +107,47 @@
 
 		<Field.FieldSeparator />
 
-		<!-- Trusted list: send to, or un-trust. Adding is a modal, not inline. -->
-		<div>
-			<div class="mb-3 flex items-center justify-between gap-2">
-				<span class="font-medium">Trusted</span>
-				<Button variant="outline" size="sm" onclick={() => (addOpen = true)}>
-					<IconPlus data-icon="inline-start" />
-					Add
-				</Button>
+		<Field.FieldSet>
+			<!-- Trusted list: send to, or un-trust. Adding is a modal, not inline. -->
+			<div>
+				<div class="mb-3 flex items-center justify-between gap-2">
+					<span class="font-medium">Trusted</span>
+					<Button variant="outline" size="sm" onclick={() => (addOpen = true)}>
+						<IconPlus data-icon="inline-start" />
+						Add
+					</Button>
+				</div>
+				{#if pairing.devices.length === 0}
+					<p class="px-1 py-2 text-sm text-muted-foreground">No trusted devices yet.</p>
+				{:else}
+					<Item.Group class="gap-1">
+						{#each pairing.devices as device (device.fingerprint)}
+							<Item.Root variant="outline" size="sm">
+								<Item.Media variant="icon">
+									<IconDeviceLaptop class="text-muted-foreground" />
+								</Item.Media>
+								<Item.Content>
+									<Item.Title class="truncate">{device.name}</Item.Title>
+									<Item.Description class="truncate font-mono text-[10px]">
+										{device.fingerprint.slice(0, 16)}
+									</Item.Description>
+								</Item.Content>
+								<Item.Actions>
+									<Button
+										variant="ghost"
+										size="icon-sm"
+										aria-label="Remove"
+										onclick={() => pairing.untrust(device.fingerprint)}
+									>
+										<IconTrash />
+									</Button>
+								</Item.Actions>
+							</Item.Root>
+						{/each}
+					</Item.Group>
+				{/if}
 			</div>
-			{#if pairing.devices.length === 0}
-				<p class="px-1 py-2 text-sm text-muted-foreground">No trusted devices yet.</p>
-			{:else}
-				<Item.Group class="gap-1">
-					{#each pairing.devices as device (device.fingerprint)}
-						<Item.Root variant="outline" size="sm">
-							<Item.Media variant="icon">
-								<IconDeviceLaptop class="text-muted-foreground" />
-							</Item.Media>
-							<Item.Content>
-								<Item.Title class="truncate">{device.name}</Item.Title>
-								<Item.Description class="truncate font-mono text-[10px]">
-									{device.fingerprint.slice(0, 16)}
-								</Item.Description>
-							</Item.Content>
-							<Item.Actions>
-								<Button
-									variant="ghost"
-									size="icon-sm"
-									aria-label="Remove"
-									onclick={() => pairing.untrust(device.fingerprint)}
-								>
-									<IconTrash />
-								</Button>
-							</Item.Actions>
-						</Item.Root>
-					{/each}
-				</Item.Group>
-			{/if}
-		</div>
+		</Field.FieldSet>
 	</Field.FieldGroup>
 
 	<AddDeviceDialog bind:open={addOpen} />

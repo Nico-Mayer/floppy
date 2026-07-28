@@ -32,6 +32,7 @@
 <!-- Signed-out identity card. -->
 <div class="flex flex-col items-center gap-3 py-4 text-center">
 	<Avatar.Root class="size-16">
+		<Avatar.Image src="https://api.dicebear.com/10.x/initial-face/svg?seed=Nico"></Avatar.Image>
 		<Avatar.Fallback><IconUser class="size-7" /></Avatar.Fallback>
 	</Avatar.Root>
 	<div class="flex flex-col gap-0.5">
