@@ -150,7 +150,7 @@
 					</Empty.Media>
 					<div class="flex min-w-0 flex-col items-center gap-2">
 						<Empty.Title>Enter transfer code</Empty.Title>
-						<Empty.Description>Paste the four-word code the sender gave you.</Empty.Description>
+						<Empty.Description>Paste the code given by the transmitter.</Empty.Description>
 					</div>
 				</Empty.Header>
 			</Empty.Root>
@@ -200,9 +200,6 @@
 					<IconDownload />
 					Receive files
 				</Button>
-				<p class="text-center font-mono text-xs text-muted-foreground">
-					saves to ~/Downloads/{receive.code}
-				</p>
 			</div>
 		{/if}
 	{/snippet}

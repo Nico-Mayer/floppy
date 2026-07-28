@@ -85,7 +85,7 @@
 			<Empty.Root
 				role="button"
 				tabindex={0}
-				class="cursor-pointer border bg-muted/40 p-6 transition-all duration-200 hover:border-send/40 hover:bg-muted/60 in-[.file-drop-target-active]:scale-[1.01] in-[.file-drop-target-active]:border-send in-[.file-drop-target-active]:bg-send/5 @md:p-8"
+				class="relative cursor-pointer border bg-muted/40 p-6 transition-all duration-200 hover:border-send/40 hover:bg-muted/60 in-[.file-drop-target-active]:scale-[1.01] in-[.file-drop-target-active]:border-send in-[.file-drop-target-active]:bg-send/5 @md:p-8"
 				onclick={() => send.pickFiles()}
 				onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && send.pickFiles()}
 			>
@@ -98,14 +98,13 @@
 					<div class="flex min-w-0 flex-col items-center gap-2">
 						<Empty.Title>Drag files here</Empty.Title>
 						<Empty.Description>
-							Drop files here or <span class="underline underline-offset-2"> browse </span>. Transfers are
-							peer-to-peer—nothing is uploaded.
+							or <span class="underline underline-offset-2"> browse </span>
 						</Empty.Description>
 						<!-- Folders need their own picker: Windows' dialog cannot
 						     offer files and folders at once (see
 						     FileService.SelectFiles). stopPropagation because the
 						     surface behind this button opens the file picker. -->
-						<Button
+						<!-- <Button
 							variant="outline"
 							size="sm"
 							class="mt-1"
@@ -116,9 +115,12 @@
 						>
 							<IconFolderPlus />
 							Choose folder
-						</Button>
+						</Button> -->
 					</div>
 				</Empty.Header>
+				<Button class="absolute right-4 bottom-4 bg-send" size="icon-lg">
+					<IconPlus></IconPlus>
+				</Button>
 			</Empty.Root>
 		{:else}
 			<Item.Group class="min-h-0 flex-1 overflow-y-auto">
@@ -240,7 +242,7 @@
 				</Button>
 				<Button class="flex-1 @max-md:min-h-11" onclick={() => send.start()}>
 					<IconSend />
-					Send {summary} · {formatBytes(send.totalSize)}
+					Send
 				</Button>
 			</div>
 		{:else if send.status === 'waiting' || send.status === 'sending'}

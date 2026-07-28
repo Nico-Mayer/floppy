@@ -49,14 +49,17 @@
 >
 	<Card.Header>
 		<Card.Title class="flex items-center gap-2">
-			<span class="size-3 rounded-full bg-(--tint)"></span>
+			<div class="relative flex">
+				<span class="absolute size-3 animate-ping rounded-full bg-(--tint) [animation-duration:2s]"></span>
+				<span class="size-3 rounded-full bg-(--tint)"></span>
+			</div>
 			{title}
 		</Card.Title>
 		<Card.Description class="font-mono text-[10px] tracking-widest uppercase">
 			{headline}
 		</Card.Description>
 		<Card.Action>
-			<Badge variant="outline" class="font-mono tracking-widest text-muted-foreground uppercase">
+			<Badge variant="outline" class="p-3 uppercase">
 				{badge}
 			</Badge>
 		</Card.Action>
