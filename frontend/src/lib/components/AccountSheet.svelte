@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { QRCode } from '$lib/components/spell/qrcode'
 	import * as Avatar from '$lib/components/ui/avatar'
 	import { Button, buttonVariants } from '$lib/components/ui/button'
 	import * as Empty from '$lib/components/ui/empty'
@@ -6,16 +7,25 @@
 	import { Input } from '$lib/components/ui/input'
 	import * as Sheet from '$lib/components/ui/sheet'
 	import { Switch } from '$lib/components/ui/switch'
+	import { Textarea } from '$lib/components/ui/textarea'
+	import { pairing } from '$lib/pairing-app.svelte'
+	import type { PairingPreview } from '$bindings/floppy/internal/services/models'
 	import {
 		IconBrandGoogle,
+		IconCheck,
 		IconChevronLeft,
 		IconChevronRight,
+		IconCopy,
+		IconDeviceLaptop,
 		IconDevices,
 		IconInfoCircle,
 		IconLogin2,
 		IconSettings,
+		IconShieldCheck,
+		IconTrash,
 		IconUser
 	} from '@tabler/icons-svelte'
+	import { Clipboard } from '@wailsio/runtime'
 
 	// In-sheet view stack — a stand-in for real routing. When Settings and
 	// Trusted devices graduate to their own pages, each `view` becomes a
@@ -35,10 +45,63 @@
 	let notifyOnComplete = $state(true)
 	let folderPerCode = $state(true)
 
+	// Trusted-devices panel state. The add flow is two steps: paste an identity,
+	// then confirm the SAS matches on both screens before trusting.
+	let showIdentity = $state(false)
+	let pasteBlob = $state('')
+	let pasteName = $state('')
+	let preview = $state<PairingPreview | null>(null)
+	let previewError = $state('')
+
+	// Keep the device list fresh whenever the panel is shown.
+	$effect(() => {
+		if (view === 'devices') pairing.refresh()
+	})
+
+	async function continuePairing() {
+		previewError = ''
+		try {
+			preview = await pairing.preview(pasteBlob)
+		} catch (e) {
+			previewError = String(e)
+		}
+	}
+
+	async function confirmPairing() {
+		await pairing.trust(pasteBlob, pasteName)
+		resetPairing()
+	}
+
+	function resetPairing() {
+		pasteBlob = ''
+		pasteName = ''
+		preview = null
+		previewError = ''
+	}
+
+	let copied = $state(false)
+	let copyResetTimer: ReturnType<typeof setTimeout>
+
+	async function copyIdentity() {
+		try {
+			// Native clipboard via the Go side — reliable in every webview, unlike
+			// navigator.clipboard (secure-context/permission quirks). Same as SendPanel.
+			await Clipboard.SetText(pairing.identity)
+		} catch {
+			await navigator.clipboard.writeText(pairing.identity)
+		}
+		copied = true
+		clearTimeout(copyResetTimer)
+		copyResetTimer = setTimeout(() => (copied = false), 2000)
+	}
+
 	// Reopening always lands on the hub, never a stale sub-view.
 	function onOpenChange(next: boolean) {
 		open = next
-		if (!next) view = 'menu'
+		if (!next) {
+			view = 'menu'
+			resetPairing()
+		}
 	}
 </script>
 
@@ -184,17 +247,140 @@
 					</Field.FieldSet>
 				</Field.FieldGroup>
 			{:else if view === 'devices'}
-				<Empty.Root>
-					<Empty.Header>
-						<Empty.Media variant="icon">
-							<IconDevices />
-						</Empty.Media>
-						<Empty.Title>No trusted devices</Empty.Title>
-						<Empty.Description>
-							Devices you mark as trusted will skip the code prompt. Sign in to start building your list.
-						</Empty.Description>
-					</Empty.Header>
-				</Empty.Root>
+				{#if !pairing.available}
+					<Empty.Root>
+						<Empty.Header>
+							<Empty.Media variant="icon">
+								<IconDevices />
+							</Empty.Media>
+							<Empty.Title>Pairing unavailable</Empty.Title>
+							<Empty.Description>
+								Could not reach the rendezvous. Start the broker and reopen Floppy to pair devices.
+							</Empty.Description>
+						</Empty.Header>
+					</Empty.Root>
+				{:else}
+					<Field.FieldGroup>
+						<!-- This device's identity: QR + copyable blob for the peer to add. -->
+						<Field.FieldSet>
+							<Field.FieldLegend>This device</Field.FieldLegend>
+							<div class="flex flex-col items-center gap-3">
+								{#if showIdentity}
+									<div class="rounded-2xl border bg-qr-background p-4">
+										<QRCode
+											value={pairing.identity}
+											fgColor="var(--qr-foreground)"
+											bgColor="var(--qr-background)"
+											class="size-40"
+										/>
+									</div>
+								{/if}
+								<div class="flex gap-2">
+									<Button variant="outline" size="sm" onclick={() => (showIdentity = !showIdentity)}>
+										<IconDeviceLaptop data-icon="inline-start" />
+										{showIdentity ? 'Hide' : 'Show'} pairing code
+									</Button>
+									<Button variant="outline" size="sm" onclick={copyIdentity}>
+										{#if copied}
+											<IconCheck data-icon="inline-start" />
+											Copied
+										{:else}
+											<IconCopy data-icon="inline-start" />
+											Copy
+										{/if}
+									</Button>
+								</div>
+							</div>
+						</Field.FieldSet>
+
+						<Field.FieldSeparator />
+
+						<!-- Add a device: paste its code, confirm the SAS, trust it. -->
+						<Field.FieldSet>
+							<Field.FieldLegend>Add a device</Field.FieldLegend>
+							{#if preview}
+								<div class="flex flex-col items-center gap-2 text-center">
+									<IconShieldCheck class="size-8 text-muted-foreground" />
+									<p class="text-sm text-muted-foreground">
+										This code also shows on
+										<span class="font-medium">{pasteName.trim() || 'the other device'}</span>
+										when it pastes <span class="font-medium">your</span> pairing code. Trust only if both screens
+										show the same digits.
+									</p>
+									<p class="font-mono text-3xl font-bold tracking-widest tabular-nums">
+										{preview.sas}
+									</p>
+									<p class="max-w-full font-mono text-[10px] break-all text-muted-foreground">
+										{preview.fingerprint}
+									</p>
+									<div class="mt-1 flex gap-2">
+										<Button variant="outline" size="sm" onclick={resetPairing}>Cancel</Button>
+										<Button size="sm" onclick={confirmPairing}>
+											<IconShieldCheck data-icon="inline-start" />
+											They match — trust
+										</Button>
+									</div>
+								</div>
+							{:else}
+								<Field.Field>
+									<Field.FieldLabel for="paste-blob">Pairing code</Field.FieldLabel>
+									<Textarea
+										id="paste-blob"
+										bind:value={pasteBlob}
+										placeholder="Paste the other device's pairing code"
+										class="w-full resize-none font-mono text-xs break-all"
+										rows={3}
+									/>
+									<Field.FieldDescription>
+										Both devices must add each other before a transfer can be sent.
+									</Field.FieldDescription>
+								</Field.Field>
+								<Field.Field>
+									<Field.FieldLabel for="paste-name">Name</Field.FieldLabel>
+									<Input id="paste-name" bind:value={pasteName} placeholder="e.g. Bob's laptop" />
+								</Field.Field>
+								{#if previewError}
+									<Field.FieldDescription class="text-destructive">
+										{previewError}
+									</Field.FieldDescription>
+								{/if}
+								<Button size="sm" disabled={!pasteBlob.trim()} onclick={continuePairing}>Continue</Button>
+							{/if}
+						</Field.FieldSet>
+
+						<Field.FieldSeparator />
+
+						<!-- Trusted list: send to, or un-trust. -->
+						<Field.FieldSet>
+							<Field.FieldLegend>Trusted</Field.FieldLegend>
+							{#if pairing.devices.length === 0}
+								<p class="px-1 py-2 text-sm text-muted-foreground">No trusted devices yet.</p>
+							{:else}
+								<div class="flex flex-col gap-1">
+									{#each pairing.devices as device (device.fingerprint)}
+										<div class="flex items-center gap-2 rounded-xl border px-3 py-2">
+											<IconDeviceLaptop class="size-5 shrink-0 text-muted-foreground" />
+											<div class="min-w-0 flex-1">
+												<p class="truncate text-sm font-medium">{device.name}</p>
+												<p class="truncate font-mono text-[10px] text-muted-foreground">
+													{device.fingerprint.slice(0, 16)}
+												</p>
+											</div>
+											<Button
+												variant="ghost"
+												size="icon-sm"
+												aria-label="Remove"
+												onclick={() => pairing.untrust(device.fingerprint)}
+											>
+												<IconTrash />
+											</Button>
+										</div>
+									{/each}
+								</div>
+							{/if}
+						</Field.FieldSet>
+					</Field.FieldGroup>
+				{/if}
 			{/if}
 		</div>
 	</Sheet.Content>

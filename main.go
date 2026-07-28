@@ -2,7 +2,10 @@ package main
 
 import (
 	"embed"
+	"flag"
+	"io"
 	"log"
+	"os"
 	"runtime"
 
 	"floppy/internal/services"
@@ -30,12 +33,36 @@ func init() {
 	// registered events and provides a strongly typed JS/TS API for them.
 	// The croc:* events live with the service that emits them.
 	services.RegisterEvents()
+	services.RegisterPairingEvents()
 }
 
 // main function serves as the application's entry point. It initializes the application, creates a window,
 // and starts a goroutine that emits a time-based event every second. It subsequently runs the application and
 // logs any error that might occur.
 func main() {
+	// Trusted-device config (desktop slice): identity-dir isolates two
+	// instances on one machine, seed-trust pre-trusts a peer without the
+	// pairing UI, broker-url points at the rendezvous relay. Each reads a flag
+	// (for direct binary runs) defaulting to an env var — `wails3 dev` cannot
+	// forward flags to the app, but the environment passes straight through, so
+	// `FLOPPY_IDENTITY_DIR=… wails3 dev` is the dev-mode path. Parsing is lenient:
+	// the dev harness may hand the binary args of its own, and an unknown one
+	// must not abort the GUI.
+	fs := flag.NewFlagSet("floppy", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	identityDir := fs.String("identity-dir", os.Getenv("FLOPPY_IDENTITY_DIR"), "directory for the device identity + trust store (default: user config dir)")
+	brokerURL := fs.String("broker-url", os.Getenv("FLOPPY_BROKER_URL"), "rendezvous broker WebSocket URL (default: ws://localhost:8080/ws)")
+	seedTrust := fs.String("seed-trust", os.Getenv("FLOPPY_SEED_TRUST"), "dev: trust a peer at startup, \"<encoded-public-key>[,name]\"")
+	_ = fs.Parse(os.Args[1:])
+
+	// CrocService owns the transfer.Manager; PairingService drives it with
+	// derived codes for trusted-device transfers — one Manager, shared.
+	croc := &services.CrocService{}
+	pairingSvc := services.NewPairingService(croc)
+	pairingSvc.IdentityDir = *identityDir
+	pairingSvc.BrokerURL = *brokerURL
+	pairingSvc.SeedTrust = *seedTrust
+
 	// Create a new Wails application by providing the necessary options.
 	// Variables 'Name' and 'Description' are for application metadata.
 	// 'Assets' configures the asset server with the 'FS' variable pointing to the frontend files.
@@ -46,7 +73,8 @@ func main() {
 		Description: "A minimal app for sending and receiving files",
 		Services: []application.Service{
 			application.NewService(&services.FileService{}),
-			application.NewService(&services.CrocService{}),
+			application.NewService(croc),
+			application.NewService(pairingSvc),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),

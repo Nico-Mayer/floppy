@@ -7,6 +7,7 @@
 	import * as Item from '$lib/components/ui/item'
 	import { Spinner } from '$lib/components/ui/spinner'
 	import { fast, motionOK, normal } from '$lib/motion'
+	import { pairing } from '$lib/pairing-app.svelte'
 	import { app } from '$lib/transfer-app.svelte'
 	import { IconCheck, IconCopy, IconFolderPlus, IconPlus, IconSend, IconX } from '@tabler/icons-svelte'
 	import { Clipboard } from '@wailsio/runtime'
@@ -56,6 +57,27 @@
 				return send.files.length ? formatBytes(send.totalSize) : '0 selected'
 		}
 	})
+
+	// Send target: 'code' is the classic anyone-with-the-phrase send; any other
+	// value is a trusted device's fingerprint. Falls back to 'code' if the
+	// chosen device is un-trusted while it is selected.
+	let target = $state('code')
+	$effect(() => {
+		if (target !== 'code' && !pairing.devices.some((d) => d.fingerprint === target)) {
+			target = 'code'
+		}
+	})
+
+	function dispatchSend() {
+		if (target === 'code') {
+			send.start()
+		} else {
+			pairing.sendTo(
+				target,
+				send.files.map((file) => file.path)
+			)
+		}
+	}
 
 	let copied = $state(false)
 	let copyResetTimer: ReturnType<typeof setTimeout>
@@ -134,6 +156,23 @@
 				<p class="text-center text-xs text-muted-foreground">
 					Large transfer — both devices need to stay awake with the app open until it finishes.
 				</p>
+			{/if}
+			{#if pairing.devices.length > 0}
+				<!-- Trusted devices skip the code: pick one and it gets a prompt to
+				     accept. "Anyone with a code" is the classic phrase-based send. -->
+				<div class="flex items-center gap-2 px-1">
+					<label for="send-target" class="shrink-0 text-xs text-muted-foreground">Send to</label>
+					<select
+						id="send-target"
+						bind:value={target}
+						class="h-9 min-w-0 flex-1 rounded-md border bg-transparent px-2 text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+					>
+						<option value="code">Anyone with a code</option>
+						{#each pairing.devices as device (device.fingerprint)}
+							<option value={device.fingerprint}>{device.name}</option>
+						{/each}
+					</select>
+				</div>
 			{/if}
 		{/if}
 	{:else if send.status === 'cancelling'}
@@ -240,9 +279,9 @@
 				>
 					<IconFolderPlus />
 				</Button>
-				<Button class="flex-1 @max-md:min-h-11" onclick={() => send.start()}>
+				<Button class="flex-1 @max-md:min-h-11" onclick={dispatchSend}>
 					<IconSend />
-					Send
+					{target === 'code' ? 'Send' : 'Send to device'}
 				</Button>
 			</div>
 		{:else if send.status === 'waiting' || send.status === 'sending'}

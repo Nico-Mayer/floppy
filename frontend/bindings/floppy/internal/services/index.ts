@@ -3,15 +3,22 @@
 
 import * as CrocService from "./crocservice.js";
 import * as FileService from "./fileservice.js";
+import * as PairingService from "./pairingservice.js";
 export {
     CrocService,
-    FileService
+    FileService,
+    PairingService
 };
 
 export type {
     CodeEvent,
+    DeviceInfo,
     DoneEvent,
     ErrorEvent,
     FileEntry,
+    PairingErrorEvent,
+    PairingOfferEvent,
+    PairingPreview,
+    PairingStatusEvent,
     ProgressEvent
 } from "./models.js";

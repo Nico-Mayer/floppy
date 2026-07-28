@@ -60,6 +60,17 @@ class SendTransfer {
 		}
 	}
 
+	/**
+	 * Enter the connecting state for a trusted-device send. Unlike start() this
+	 * does not call croc — the pairing layer offers the files and the real send
+	 * begins only when the peer accepts, arriving as the usual croc:code event.
+	 */
+	beginTrusted() {
+		this.progress = 0
+		this.stats = null
+		this.status = 'starting'
+	}
+
 	async cancel() {
 		// CancelSend resolves as soon as croc has been told to stop, not once
 		// it has finished unwinding — so the button never appears to hang.
@@ -120,6 +131,20 @@ class ReceiveTransfer {
 			app.error = describeError(String(e), 'receive')
 			this.stop()
 		}
+	}
+
+	/**
+	 * Enter the connecting state for an accepted trusted-device transfer. The
+	 * sender starts first; croc:recv:progress flips this to receiving once bytes
+	 * arrive. No mistyped-code hint — there was no code to mistype.
+	 */
+	beginTrusted() {
+		app.error = null
+		this.savedTo = ''
+		this.progress = null
+		this.stats = null
+		this.tooSlow = false
+		this.status = 'connecting'
 	}
 
 	/** True while progress events are still meaningful for this transfer. */

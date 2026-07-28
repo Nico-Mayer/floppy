@@ -1,5 +1,6 @@
 <script lang="ts">
 	import AccountSheet from '$lib/components/AccountSheet.svelte'
+	import IncomingOfferDialog from '$lib/components/IncomingOfferDialog.svelte'
 	import ModeSwitcher from '$lib/components/ModeSwitcher.svelte'
 	import TitleBar from '$lib/components/TitleBar.svelte'
 	import ReceivePanel from '$lib/components/transfer/ReceivePanel.svelte'
@@ -8,6 +9,7 @@
 	import { Button } from '$lib/components/ui/button'
 	import * as Tabs from '$lib/components/ui/tabs'
 	import { normal, shift } from '$lib/motion'
+	import { pairing } from '$lib/pairing-app.svelte'
 	import { app, type Mode } from '$lib/transfer-app.svelte'
 	import { IconAlertCircle, IconX } from '@tabler/icons-svelte'
 	import { ModeWatcher } from 'mode-watcher'
@@ -15,13 +17,29 @@
 	import { fly } from 'svelte/transition'
 	import './app.css'
 
-	onMount(() => app.listen())
+	onMount(() => {
+		const stopTransfer = app.listen()
+		let stopPairing: (() => void) | undefined
+		pairing.init().then((stop) => (stopPairing = stop))
+		return () => {
+			stopTransfer()
+			stopPairing?.()
+		}
+	})
 
 	// Dev-only escape hatch: lets the browser preview (no Wails bindings)
 	// drive app state from the console to debug UI in isolation.
 	if (import.meta.env.DEV) {
 		;(window as unknown as Record<string, unknown>).__app = app
 	}
+
+	// Pairing status toasts (accepted / declined / error) clear themselves — a
+	// pending decision lives in the dialog, not here.
+	$effect(() => {
+		if (!pairing.toast) return
+		const timer = setTimeout(() => pairing.dismissToast(), 4000)
+		return () => clearTimeout(timer)
+	})
 </script>
 
 <ModeWatcher />
@@ -92,3 +110,28 @@
 		</div>
 	</main>
 </div>
+
+<!-- Trusted-device incoming transfer prompt — opens whenever an offer arrives. -->
+<IncomingOfferDialog />
+
+{#if pairing.toast}
+	<div
+		class="fixed inset-x-0 bottom-4 z-50 flex justify-center px-4"
+		transition:fly={{ y: shift(), duration: normal() }}
+	>
+		<div
+			class={[
+				'flex items-center gap-2 rounded-full border px-4 py-2 text-sm shadow-lg backdrop-blur',
+				pairing.toast.kind === 'error'
+					? 'border-destructive/30 bg-destructive/10 text-destructive'
+					: 'bg-background/90'
+			]}
+			role="status"
+		>
+			<span>{pairing.toast.message}</span>
+			<Button variant="ghost" size="icon-xs" onclick={() => pairing.dismissToast()} aria-label="Dismiss">
+				<IconX />
+			</Button>
+		</div>
+	</div>
+{/if}
