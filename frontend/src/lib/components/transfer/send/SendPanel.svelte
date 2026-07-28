@@ -118,17 +118,12 @@
 			<div class="flex flex-col gap-3">
 				<SendTargetPicker bind:value={() => selection, (next) => (picked = next)} />
 				<div class="flex gap-2">
-					<Button
-						variant="outline"
-						class="@max-md:min-h-11"
-						onclick={() => send.pickFiles()}
-						aria-label="Add files"
-					>
+					<Button variant="outline" size="icon" onclick={() => send.pickFiles()} aria-label="Add files">
 						<IconPlus />
 					</Button>
 					<Button class="min-w-0 flex-1 @max-md:min-h-11" onclick={dispatchSend}>
 						<IconSend />
-						{selection === 'code' ? 'Send' : 'Send to device'}
+						Send
 					</Button>
 				</div>
 			</div>

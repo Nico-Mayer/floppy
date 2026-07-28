@@ -1,10 +1,8 @@
 <script lang="ts">
 	import * as Empty from '$lib/components/ui/empty'
 	import * as Item from '$lib/components/ui/item'
-	import { Button } from '$lib/components/ui/button'
 	import { fast } from '$lib/motion'
 	import { app } from '$lib/transfer-app.svelte'
-	import { IconPlus } from '@tabler/icons-svelte'
 	import { flip } from 'svelte/animate'
 	import FileRow from '../FileRow.svelte'
 	import Mascot from '../Mascot.svelte'
@@ -18,7 +16,7 @@
 	<Empty.Root
 		role="button"
 		tabindex={0}
-		class="relative cursor-pointer border bg-muted/40 p-6 transition-all duration-200 hover:border-send/40 hover:bg-muted/60 in-[.file-drop-target-active]:scale-[1.01] in-[.file-drop-target-active]:border-send in-[.file-drop-target-active]:bg-send/5 @md:p-8"
+		class="cursor-pointer border bg-muted/40 p-6 transition-all duration-200 hover:border-send/40 hover:bg-muted/60 in-[.file-drop-target-active]:scale-[1.01] in-[.file-drop-target-active]:border-send in-[.file-drop-target-active]:bg-send/5 @md:p-8"
 		onclick={() => send.pickFiles()}
 		onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && send.pickFiles()}
 	>
@@ -35,9 +33,6 @@
 				</Empty.Description>
 			</div>
 		</Empty.Header>
-		<Button class="absolute right-4 bottom-4 bg-send" size="icon-lg">
-			<IconPlus />
-		</Button>
 	</Empty.Root>
 {:else}
 	<Item.Group class="min-h-0 flex-1 overflow-y-auto">

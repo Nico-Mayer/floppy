@@ -3,6 +3,7 @@
 	import { Button } from '$lib/components/ui/button'
 	import * as Sheet from '$lib/components/ui/sheet'
 	import { IconChevronLeft, IconUser } from '@tabler/icons-svelte'
+	import ActivityView from './ActivityView.svelte'
 	import DevicesView from './DevicesView.svelte'
 	import LoginView from './LoginView.svelte'
 	import MenuView from './MenuView.svelte'
@@ -88,6 +89,8 @@
 				<SettingsView />
 			{:else if view === 'devices'}
 				<DevicesView />
+			{:else if view === 'activity'}
+				<ActivityView />
 			{/if}
 		</div>
 	</Sheet.Content>

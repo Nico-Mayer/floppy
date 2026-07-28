@@ -4,18 +4,31 @@
 	import * as Field from '$lib/components/ui/field'
 	import {
 		IconChevronRight,
+		IconClockHour3,
 		IconDevices,
 		IconInfoCircle,
 		IconLogin2,
 		IconSettings,
 		IconUser
 	} from '@tabler/icons-svelte'
+	import { pairing } from '$lib/pairing-app.svelte'
 	import type { View } from './types'
 
 	let { navigate }: { navigate: (v: View) => void } = $props()
+
+	// A row that says "None yet" is an invitation; a bare label is furniture. The
+	// count is the hub's only hint that pairing exists at all — and once it reads
+	// a number, it is also how anyone finds their way back to add the next one.
+	const deviceHint = $derived(
+		!pairing.available
+			? 'Unavailable'
+			: pairing.devices.length === 0
+				? 'None yet'
+				: `${pairing.devices.length} paired`
+	)
 </script>
 
-{#snippet row(label: string, Icon: typeof IconSettings, target: View)}
+{#snippet row(label: string, Icon: typeof IconSettings, target: View, hint?: string)}
 	<button
 		class={[
 			buttonVariants({ variant: 'ghost' }),
@@ -25,6 +38,9 @@
 	>
 		<Icon class="size-5 text-muted-foreground" />
 		<span class="flex-1 text-left">{label}</span>
+		{#if hint}
+			<span class="shrink-0 text-sm text-muted-foreground">{hint}</span>
+		{/if}
 		<IconChevronRight class="size-4 text-muted-foreground" />
 	</button>
 {/snippet}
@@ -48,8 +64,9 @@
 <Field.FieldSeparator />
 
 <nav class="flex flex-col gap-0.5">
+	{@render row('Activity', IconClockHour3, 'activity')}
 	{@render row('Settings', IconSettings, 'settings')}
-	{@render row('Trusted devices', IconDevices, 'devices')}
+	{@render row('Trusted devices', IconDevices, 'devices', deviceHint)}
 </nav>
 
 <Field.FieldSeparator />

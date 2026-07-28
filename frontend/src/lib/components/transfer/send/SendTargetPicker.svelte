@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PairDeviceButton from '$lib/components/account/PairDeviceButton.svelte'
 	import * as Field from '$lib/components/ui/field'
 	import * as Select from '$lib/components/ui/select'
 	import { pairing } from '$lib/pairing-app.svelte'
@@ -13,11 +14,26 @@
 	)
 </script>
 
-<!-- Only worth a choice once there is something to choose: with no trusted
-     devices every send is a code send. -->
-{#if pairing.devices.length > 0}
-	<Field.Field>
-		<Field.FieldLabel for="send-target">Send to</Field.FieldLabel>
+<!-- This is where the user decides who the files are going to, so pairing is
+     offered from here — it used to be the one screen that said nothing about
+     devices at all, three taps away from the only way to add one.
+     The offer stays put once devices exist rather than only filling the empty
+     state: pairing is mutual and per-peer, so "add another" is a recurring need,
+     and an affordance that vanishes after the first success never taught anyone
+     where it went. It is a link beside the picker, not an item inside it —
+     Select.Content is a listbox whose children are options, i.e. values, and
+     bits' keyboard nav only walks [data-select-item] nodes, so a command in
+     there would be a value by ARIA and mouse-only by keyboard.
+     With nothing paired the Select would be a one-option control, so the link
+     stands alone and carries the explanation instead. -->
+{#if pairing.devices.length === 0}
+	<PairDeviceButton class="self-start" label="Pair a device to skip codes" />
+{:else}
+	<Field.Field class="gap-2">
+		<div class="flex items-center justify-between gap-2">
+			<Field.FieldLabel for="send-target" class="font-normal">Send to</Field.FieldLabel>
+			<PairDeviceButton iconOnly label="Pair a device" class="-my-1" />
+		</div>
 		<Select.Root type="single" bind:value>
 			<Select.Trigger id="send-target" class="w-full">
 				{#if value === 'code'}

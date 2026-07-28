@@ -139,6 +139,15 @@
 						<Empty.Title>No trusted devices</Empty.Title>
 						<Empty.Description>Add a device to send to it without a code.</Empty.Description>
 					</Empty.Header>
+					<!-- The way out of the empty state, in the empty state. The Add button
+					     in the section heading above is easy to read as decoration of the
+					     list rather than as the thing to press when the list is bare. -->
+					<Empty.Content>
+						<Button variant="outline" size="sm" onclick={() => (addOpen = true)}>
+							<IconPlus data-icon="inline-start" />
+							Add a device
+						</Button>
+					</Empty.Content>
 				</Empty.Root>
 			{:else}
 				<Item.Group>
