@@ -1,7 +1,6 @@
 <script lang="ts">
+	import AccountSheet from '$lib/components/AccountSheet.svelte'
 	import ModeSwitcher from '$lib/components/ModeSwitcher.svelte'
-	import ProfileDialog from '$lib/components/ProfileDialog.svelte'
-	import SettingsSheet from '$lib/components/SettingsSheet.svelte'
 	import TitleBar from '$lib/components/TitleBar.svelte'
 	import ReceivePanel from '$lib/components/transfer/ReceivePanel.svelte'
 	import SendPanel from '$lib/components/transfer/SendPanel.svelte'
@@ -46,8 +45,7 @@
 					no cloud · peer to peer
 				</p>
 				<div class="flex shrink-0 items-center gap-1">
-					<SettingsSheet />
-					<ProfileDialog />
+					<AccountSheet />
 				</div>
 			</div>
 

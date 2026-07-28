@@ -11,7 +11,7 @@
 </script>
 
 <header
-	class="sticky top-0 z-50 flex w-full items-center border-b bg-background"
+	class="sticky top-0 z-60 flex w-full items-center border-b bg-background"
 	style="--wails-draggable:drag"
 >
 	<div class="flex h-(--header-height) w-full items-center gap-2 pr-2 pl-4">

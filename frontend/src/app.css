@@ -32,6 +32,10 @@
 	--receive-foreground: #69b1f1;
 	--qr-foreground: #0e1013;
 	--qr-background: #ffffff;
+	/* Window titlebar height. Global (not just on the app wrapper) so portaled
+	   overlays — the account sheet mounts on <body> — can offset below it and
+	   never cover the window controls / macOS traffic lights. */
+	--header-height: calc(var(--spacing) * 13);
 }
 
 .dark {
