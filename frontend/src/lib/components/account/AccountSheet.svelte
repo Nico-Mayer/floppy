@@ -26,26 +26,36 @@
 		class="cursor-pointer rounded-full ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
 		aria-label="Account"
 	>
-		<Avatar.Root class="size-8">
+		<Avatar.Root class="size-8 ring ring-accent ring-offset-1">
 			<!-- Decorative: the trigger's aria-label already names the control. -->
 			<Avatar.Image src="https://api.dicebear.com/10.x/initial-face/svg?seed=Nico" alt="" />
 			<Avatar.Fallback><IconUser class="size-4" /></Avatar.Fallback>
 		</Avatar.Root>
 	</Sheet.Trigger>
 
-	<!-- The panel always starts below the window titlebar so the OS controls
-	     (Windows min/max/close, macOS traffic lights) stay visible and
-	     clickable — TitleBar sits above the sheet in z-order. Height comes from
-	     the top/bottom insets the component already sets (h-auto! releases its
-	     h-full) rather than a 100svh calc: no viewport unit to resolve, so the
-	     panel cannot be laid out against a stale viewport height. On mobile it
+	<!-- Panel *and* overlay start below the window titlebar — that is what
+	     --header-height is global for. An overlay left at inset-0 covers the window
+	     frame: it dims the OS controls (Windows min/max/close, macOS traffic
+	     lights), swallows the Wails drag region, and turns every titlebar press
+	     into a press on the backdrop.
+	     Clearing the frame is not enough on its own, though: bits decides "outside"
+	     from a document-wide pointerdown against the panel's bounding rect, so a
+	     press on the titlebar still counts and would dismiss the sheet mid-drag.
+	     Hence interactOutsideBehavior "ignore" — and with the frame clear, the
+	     overlay is the only outside surface left, so its own click is the
+	     dismissal. Filtering bits' own detection by target instead does not work:
+	     the handler is debounced by 10ms, so a preventDefault() there lands on an
+	     event that has already finished dispatching.
+	     Panel height comes from the top/bottom insets the component already sets
+	     (h-auto! releases its h-full) rather than a 100svh calc, so there is no
+	     viewport unit to resolve against a possibly stale viewport. On mobile it
 	     goes edge-to-edge, square and borderless, reading like a pushed screen. -->
-	<!-- interactOutsideBehavior="ignore": the titlebar sits above the sheet in
-	     z-order (Wails drag region), so pressing or dragging the window frame
-	     registers as an outside interaction and would dismiss the sheet. Block
-	     outside-dismiss entirely; the sheet closes via Esc or the X button. -->
 	<Sheet.Content
 		interactOutsideBehavior="ignore"
+		overlayProps={{
+			class: 'top-(--header-height)!',
+			onclick: () => (open = false)
+		}}
 		class="top-(--header-height)! flex h-auto! flex-col max-sm:w-full! max-sm:border-0!"
 	>
 		<!-- p-4 matches the body's px-4 and the close button's right-4, so the
