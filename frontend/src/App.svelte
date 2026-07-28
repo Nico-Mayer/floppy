@@ -1,5 +1,5 @@
 <script lang="ts">
-	import AccountSheet from '$lib/components/AccountSheet.svelte'
+	import AccountSheet from '$lib/components/account/AccountSheet.svelte'
 	import IncomingOfferDialog from '$lib/components/IncomingOfferDialog.svelte'
 	import ModeSwitcher from '$lib/components/ModeSwitcher.svelte'
 	import TitleBar from '$lib/components/TitleBar.svelte'
