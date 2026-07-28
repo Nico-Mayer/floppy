@@ -128,8 +128,20 @@ class PairingApp {
 		await this.refresh()
 	}
 
+	/**
+	 * Un-trust a device. Both halves of the trust store are on disk, so this can
+	 * genuinely fail — and it used to fail silently: an unhandled rejection left
+	 * the row sitting in the list with nothing said, so the store and the list
+	 * disagreed until the next refresh put the device back.
+	 */
 	async untrust(fingerprint: string) {
-		await Untrust(fingerprint)
+		try {
+			await Untrust(fingerprint)
+		} catch (e) {
+			toast.error(`Could not remove the device: ${e}`)
+		}
+		// Refresh either way: on success it drops the row, on failure it restores
+		// the one the list already believes is gone.
 		await this.refresh()
 	}
 

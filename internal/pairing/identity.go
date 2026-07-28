@@ -19,10 +19,13 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // PublicKey is a device's public identity: the two public keys a peer needs to
@@ -226,5 +229,52 @@ func writeFileAtomic(path string, data []byte, perm os.FileMode) error {
 	if err := tmp.Close(); err != nil {
 		return err
 	}
-	return os.Rename(tmpName, path)
+	return replaceFile(tmpName, path)
+}
+
+// How long replaceFile keeps trying a denied replace before giving up. Long
+// enough to outlast a scanner's pass over one small JSON file, short enough that
+// a genuinely stuck file still reports promptly to the UI.
+const replaceRetryBudget = 300 * time.Millisecond
+
+// replaceFile moves tmpName onto path, allowing for Windows' rules about
+// replacing an open file.
+//
+// POSIX rename swaps the directory entry and cares nothing for the destination
+// file itself. Windows' MoveFileEx needs delete access to that destination, so
+// it fails with "Access is denied" in two cases neither macOS nor Linux has:
+// the destination carries the read-only attribute, or another process still
+// holds a handle to it — on the identity dir under %AppData%\Roaming that means
+// Defender, the search indexer, or a profile-sync agent mid-sweep.
+//
+// The read-only case is permanent until cleared, so clear it. The open-handle
+// case clears itself in milliseconds, so retry briefly rather than failing a
+// user action (un-trusting a device) that has nothing wrong with it.
+func replaceFile(tmpName, path string) error {
+	err := os.Rename(tmpName, path)
+	if err == nil {
+		return err
+	}
+	// Only permission errors are worth waiting on; a missing directory or a
+	// destination that is really a directory will not fix itself.
+	if !errors.Is(err, fs.ErrPermission) {
+		return err
+	}
+	if chmodErr := os.Chmod(path, 0o600); chmodErr == nil {
+		// On Windows this drops FILE_ATTRIBUTE_READONLY; elsewhere it is a
+		// no-op on a file we own and are about to replace anyway.
+		if err = os.Rename(tmpName, path); err == nil {
+			return nil
+		}
+	}
+	for wait := 10 * time.Millisecond; wait <= replaceRetryBudget; wait *= 2 {
+		time.Sleep(wait)
+		if err = os.Rename(tmpName, path); err == nil {
+			return nil
+		}
+		if !errors.Is(err, fs.ErrPermission) {
+			return err
+		}
+	}
+	return fmt.Errorf("%w (the file is held open by another program)", err)
 }

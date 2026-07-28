@@ -241,6 +241,46 @@ func TestTrustStoreCRUDAndPersist(t *testing.T) {
 	}
 }
 
+// A read-only trust.json must not stop the user un-trusting a device. On
+// Windows that attribute makes MoveFileEx refuse the replace outright ("Access
+// is denied"), which surfaced as being unable to remove a trusted device; POSIX
+// rename ignores it, so this asserts the contract rather than reproducing the
+// failure on a Mac.
+func TestTrustStoreWritesOverReadOnlyFile(t *testing.T) {
+	dir := t.TempDir()
+	ts, err := LoadTrustStore(dir)
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	dev := newIdentity(t).Public()
+	if err := ts.Add(dev, "Bob's laptop"); err != nil {
+		t.Fatalf("Add: %v", err)
+	}
+
+	path := filepath.Join(dir, trustFile)
+	if err := os.Chmod(path, 0o400); err != nil {
+		t.Fatalf("chmod read-only: %v", err)
+	}
+	if err := ts.Remove(dev.Fingerprint()); err != nil {
+		t.Fatalf("Remove over read-only store: %v", err)
+	}
+
+	reloaded, err := LoadTrustStore(dir)
+	if err != nil {
+		t.Fatalf("reload: %v", err)
+	}
+	if len(reloaded.List()) != 0 {
+		t.Fatalf("reloaded %d devices, want 0 — removal did not persist", len(reloaded.List()))
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("stat: %v", err)
+	}
+	if perm := info.Mode().Perm(); perm != 0o600 {
+		t.Fatalf("trust store perm = %o, want 600", perm)
+	}
+}
+
 // minCodeLenTest mirrors croc's 6-char minimum without importing the transfer
 // package (pairing has zero deps by design).
 const minCodeLenTest = 6

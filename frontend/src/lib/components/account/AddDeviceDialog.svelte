@@ -7,6 +7,7 @@
 	import { Textarea } from '$lib/components/ui/textarea'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import { IconShieldCheck } from '@tabler/icons-svelte'
+	import { toast } from 'svelte-sonner'
 
 	let { open = $bindable() }: { open: boolean } = $props()
 
@@ -27,7 +28,15 @@
 	}
 
 	async function confirmPairing() {
-		await pairing.trust(pasteBlob, pasteName)
+		// Trusting writes the store to disk, so it can fail (a locked or read-only
+		// trust.json). Keep the prompt open on failure — the SAS is still on both
+		// screens, so retrying costs nothing, whereas closing would lose the step.
+		try {
+			await pairing.trust(pasteBlob, pasteName)
+		} catch (e) {
+			toast.error(`Could not trust the device: ${e}`)
+			return
+		}
 		open = false
 	}
 
