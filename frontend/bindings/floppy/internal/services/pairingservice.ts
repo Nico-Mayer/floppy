@@ -24,8 +24,11 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 import * as $models from "./models.js";
 
 /**
- * Accept confirms an incoming offer: derive the code, start receiving, and tell
- * the sender to begin. No code or passphrase is entered by the user.
+ * Accept confirms an incoming offer and tells the sender to begin. It does NOT
+ * start receiving yet: the sender starts its croc endpoint first (mirroring the
+ * classic code flow, where the sender creates the room and hashes before the
+ * receiver joins), then signals ready — see onReady. No code or passphrase is
+ * entered by the user.
  */
 export function Accept(transferID: string): $CancellablePromise<void> {
     return $Call.ByID(492542427, transferID);

@@ -159,7 +159,7 @@ func (s *PairingService) ServiceStartup(ctx context.Context, _ application.Servi
 	if s.rv == nil {
 		url := s.BrokerURL
 		if url == "" {
-			url = "ws://localhost:8080/ws"
+			url = "wss://floppy-production.up.railway.app/ws"
 		}
 		dialCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
