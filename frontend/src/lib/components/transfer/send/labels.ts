@@ -1,0 +1,59 @@
+import type { SendStatus, SendTarget } from '../types'
+import { formatBytes } from '../format'
+
+/**
+ * The send panel's state table, in one place.
+ *
+ * Every screen is a cell of (status × target): the statuses come from croc and
+ * the pairing layer, and the target decides what two of them *mean* — see
+ * SendTarget. Reading the flows top to bottom:
+ *
+ *   code:   idle → starting (croc booting) → waiting (phrase is up, anyone may
+ *           bring it) → sending → done
+ *   device: idle → starting (offered, peer has not answered) → waiting (peer
+ *           accepted, croc connecting) → sending → done
+ *
+ * Cancelling can interrupt any of the middle three and lands back on idle with
+ * the queue intact.
+ */
+
+/** Lowercase line under the card title: what is happening right now. */
+export function sendHeadline(status: SendStatus, target: SendTarget, fileCount: number): string {
+	switch (status) {
+		case 'cancelling':
+			return 'cancelling'
+		case 'starting':
+			return target.kind === 'device' ? 'awaiting accept' : 'connecting'
+		case 'waiting':
+			return target.kind === 'device' ? 'connecting' : 'awaiting peer'
+		case 'sending':
+			return 'transferring'
+		case 'done':
+			return 'complete'
+		default:
+			return fileCount ? 'review' : 'select files'
+	}
+}
+
+/** Badge in the card's top-right corner: the state at a glance. */
+export function sendBadge(
+	status: SendStatus,
+	target: SendTarget,
+	files: { count: number; totalSize: number },
+	progress: number
+): string {
+	switch (status) {
+		case 'cancelling':
+			return 'stopping'
+		case 'starting':
+			return target.kind === 'device' ? 'offered' : '…'
+		case 'waiting':
+			return target.kind === 'device' ? 'accepted' : 'ready'
+		case 'sending':
+			return `${progress}%`
+		case 'done':
+			return 'sent'
+		default:
+			return files.count ? formatBytes(files.totalSize) : '0 selected'
+	}
+}

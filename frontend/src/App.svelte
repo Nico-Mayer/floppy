@@ -3,8 +3,8 @@
 	import IncomingOfferDialog from '$lib/components/IncomingOfferDialog.svelte'
 	import ModeSwitcher from '$lib/components/ModeSwitcher.svelte'
 	import TitleBar from '$lib/components/TitleBar.svelte'
-	import ReceivePanel from '$lib/components/transfer/ReceivePanel.svelte'
-	import SendPanel from '$lib/components/transfer/SendPanel.svelte'
+	import ReceivePanel from '$lib/components/transfer/receive/ReceivePanel.svelte'
+	import SendPanel from '$lib/components/transfer/send/SendPanel.svelte'
 	import * as Alert from '$lib/components/ui/alert'
 	import { Button } from '$lib/components/ui/button'
 	import { Toaster } from '$lib/components/ui/sonner'
@@ -107,5 +107,17 @@
 <!-- Trusted-device incoming transfer prompt — opens whenever an offer arrives. -->
 <IncomingOfferDialog />
 
-<!-- Ephemeral pairing notifications (accepted / declined / errors). -->
-<Toaster position="top-center" richColors />
+<!-- Ephemeral pairing notifications (accepted / declined / errors).
+     The offset clears the titlebar: sonner's default is 24px from the viewport
+     edge, which lands a toast on top of the window frame — over the drag region
+     and, on Windows, the min/max/close buttons. Sonner is fixed at a z-index far
+     above everything, so nothing else can win that overlap.
+     No richColors: it swaps in sonner's own green/red and drops the popover
+     tokens the Toaster wires up, so a toast stops matching the dialogs and cards
+     around it. Type is carried by the icon instead (see ui/sonner). -->
+<Toaster
+	position="top-center"
+	offset={{ top: 'calc(var(--header-height) + var(--spacing) * 2)' }}
+	mobileOffset={{ top: 'calc(var(--header-height) + var(--spacing) * 2)' }}
+	closeButton
+/>

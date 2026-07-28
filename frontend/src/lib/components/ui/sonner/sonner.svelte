@@ -22,13 +22,16 @@
 	{#snippet successIcon()}
 		<IconCircleCheck class="size-4" />
 	{/snippet}
+	<!-- The icon carries the toast's type, since the surface stays a popover for
+	     every one of them (no richColors) — same amber/destructive pairing the
+	     panels already use for warnings and failures. -->
 	{#snippet errorIcon()}
-		<IconAlertOctagon class="size-4" />
+		<IconAlertOctagon class="size-4 text-destructive" />
 	{/snippet}
 	{#snippet infoIcon()}
-		<IconInfoCircle class="size-4" />
+		<IconInfoCircle class="size-4 text-muted-foreground" />
 	{/snippet}
 	{#snippet warningIcon()}
-		<IconAlertTriangle class="size-4" />
+		<IconAlertTriangle class="size-4 text-amber-500" />
 	{/snippet}
 </Sonner>

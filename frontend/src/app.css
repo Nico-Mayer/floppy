@@ -175,6 +175,19 @@
 	}
 }
 
+/* Toasts. Sonner hardcodes a system font stack, 13px, an 8px radius and its own
+   drop shadow, so a toast reads as a different app pasted over this one — the
+   colours follow the theme but nothing else does.
+
+   Not done with classes on the toast: sonner's rules live in its own component
+   <style>, which is unlayered, and unlayered CSS beats anything in a layer — so
+   Tailwind utilities would lose no matter what order they land in. Two
+   attributes here clears sonner's single-attribute selectors without !important,
+   and @apply keeps the values on the theme's tokens. */
+[data-sonner-toaster] [data-sonner-toast] {
+	@apply rounded-2xl font-sans text-sm shadow-lg;
+}
+
 @layer base {
 	* {
 		@apply border-border outline-ring/50;

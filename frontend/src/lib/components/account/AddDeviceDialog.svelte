@@ -1,11 +1,11 @@
 <script lang="ts">
+	import type { PairingPreview } from '$bindings/floppy/internal/services/models'
 	import { Button } from '$lib/components/ui/button'
 	import * as Field from '$lib/components/ui/field'
 	import { Input } from '$lib/components/ui/input'
 	import * as ResponsiveDialog from '$lib/components/ui/responsive-dialog'
 	import { Textarea } from '$lib/components/ui/textarea'
 	import { pairing } from '$lib/pairing-app.svelte'
-	import type { PairingPreview } from '$bindings/floppy/internal/services/models'
 	import { IconShieldCheck } from '@tabler/icons-svelte'
 
 	let { open = $bindable() }: { open: boolean } = $props()
@@ -77,12 +77,16 @@
 				<Button variant="outline" onclick={() => (preview = null)}>Back</Button>
 				<Button onclick={confirmPairing}>
 					<IconShieldCheck data-icon="inline-start" />
-					They match — trust
+					Trust
 				</Button>
 			</ResponsiveDialog.Footer>
 		{:else}
 			<ResponsiveDialog.Body>
 				<Field.FieldGroup>
+					<Field.Field>
+						<Field.FieldLabel for="paste-name">Name</Field.FieldLabel>
+						<Input id="paste-name" bind:value={pasteName} placeholder="e.g. Bob's laptop" />
+					</Field.Field>
 					<Field.Field>
 						<Field.FieldLabel for="paste-blob">Pairing code</Field.FieldLabel>
 						<Textarea
@@ -93,10 +97,7 @@
 							rows={3}
 						/>
 					</Field.Field>
-					<Field.Field>
-						<Field.FieldLabel for="paste-name">Name</Field.FieldLabel>
-						<Input id="paste-name" bind:value={pasteName} placeholder="e.g. Bob's laptop" />
-					</Field.Field>
+
 					{#if previewError}
 						<Field.FieldDescription class="text-destructive">
 							{previewError}

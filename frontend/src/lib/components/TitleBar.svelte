@@ -9,8 +9,15 @@
 	const isMac = navigator.userAgent.includes('Mac')
 </script>
 
+<!-- pointer-events-auto: an open modal (the account sheet) locks body scroll,
+     which also sets `pointer-events: none` on <body> and re-enables it only on
+     the overlay and the panel. The window frame has to opt back in, or the
+     titlebar goes dead while the sheet is open — mousedown then lands on <html>
+     instead, so Wails reads no --wails-draggable and the window cannot be
+     dragged (this *is* dragging on frameless Windows; macOS moves natively),
+     and the Windows min/max/close buttons below stop responding too. -->
 <header
-	class="sticky top-0 z-60 flex w-full items-center border-b bg-background"
+	class="pointer-events-auto sticky top-0 z-60 flex w-full items-center border-b bg-background"
 	style="--wails-draggable:drag"
 >
 	<div class="flex h-(--header-height) w-full items-center gap-2 pr-2 pl-4">

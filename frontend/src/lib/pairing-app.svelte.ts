@@ -65,14 +65,19 @@ class PairingApp {
 
 	async accept() {
 		if (!this.incoming) return
-		const id = this.incoming.transferId
+		const offer = this.incoming
 		this.incoming = null
 		// Switch to the receive view and show it connecting — the transfer's
-		// progress and completion land there once the sender starts.
+		// progress and completion land there once the sender starts. The offer
+		// travels with it so the panel can say who is sending, and what.
 		app.mode = 'receive'
-		app.receive.beginTrusted()
+		app.receive.beginTrusted({
+			name: offer.fromName,
+			fileCount: offer.fileCount,
+			totalBytes: offer.totalBytes
+		})
 		try {
-			await Accept(id)
+			await Accept(offer.transferId)
 		} catch (e) {
 			app.receive.stop()
 			toast.error(String(e))
@@ -97,9 +102,13 @@ class PairingApp {
 	 */
 	async sendTo(fingerprint: string, paths: string[]) {
 		if (!paths.length) return
+		// The panel names the peer while it waits, so resolve it here — the
+		// device could be un-trusted mid-transfer and the list would forget it.
+		const device = this.devices.find((d) => d.fingerprint === fingerprint)
+		if (!device) return
 		app.error = null
 		app.mode = 'send'
-		app.send.beginTrusted()
+		app.send.beginTrusted({ fingerprint, name: device.name })
 		try {
 			// No toast here — the send panel already shows the connecting/waiting state.
 			await SendTo(fingerprint, paths)
