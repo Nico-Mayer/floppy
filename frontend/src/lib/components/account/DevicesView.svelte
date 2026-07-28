@@ -2,8 +2,8 @@
 	import { QRCode } from '$lib/components/spell/qrcode'
 	import { Button } from '$lib/components/ui/button'
 	import * as Empty from '$lib/components/ui/empty'
-	import * as Field from '$lib/components/ui/field'
 	import * as Item from '$lib/components/ui/item'
+	import { Separator } from '$lib/components/ui/separator'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import { cn } from '$lib/utils'
 	import {
@@ -19,19 +19,19 @@
 	import { Clipboard } from '@wailsio/runtime'
 	import AddDeviceDialog from './AddDeviceDialog.svelte'
 
-	// The QR is always mounted; a blur veils it by default so it isn't exposed
+	// The QR is always mounted; a veil hides it by default so it isn't exposed
 	// to onlookers or a screen-share until the user reveals it on purpose.
 	let qrHidden = $state(true)
 	let addOpen = $state(false)
+	let copied = $state(false)
+
+	let copyResetTimer: ReturnType<typeof setTimeout>
 
 	// Keep the list fresh whenever the panel is shown (and again once pairing
 	// comes up, since `available` flips when the identity loads).
 	$effect(() => {
 		if (pairing.available) pairing.refresh()
 	})
-
-	let copied = $state(false)
-	let copyResetTimer: ReturnType<typeof setTimeout>
 
 	async function copyIdentity() {
 		try {
@@ -60,14 +60,17 @@
 		</Empty.Header>
 	</Empty.Root>
 {:else}
-	<Field.FieldGroup>
-		<!-- This device's identity: QR + copyable blob for the peer to add. -->
-		<Field.FieldSet>
-			<Field.FieldLegend>This device</Field.FieldLegend>
+	<!-- Plain sections, not Field.FieldSet: nothing here is a form control, and a
+	     <fieldset>'s <legend> is laid out by the UA outside the normal flow (it is
+	     hoisted into the border box), which makes its spacing engine-dependent.
+	     Headings in a flex column keep the rhythm fully in our own CSS. -->
+	<div class="flex flex-col gap-6">
+		<section class="flex flex-col gap-3">
+			<h3 class="text-base font-medium">This device</h3>
 			<div class="flex flex-col items-center gap-3">
-				<!-- The QR is the toggle: click reveals/hides the blur. overflow-hidden
-				     clips the blur to a clean rounded edge (no white halo). An eye icon
-				     fades in on hover, reflecting the current state. -->
+				<!-- The QR is the toggle: click reveals/hides it. overflow-hidden clips
+				     the veil to a clean rounded edge, and an eye icon fades in on hover
+				     reflecting the current state. -->
 				<button
 					type="button"
 					onclick={() => (qrHidden = !qrHidden)}
@@ -79,8 +82,19 @@
 						value={pairing.identity}
 						fgColor="var(--qr-foreground)"
 						bgColor="var(--qr-background)"
-						class={cn('size-40 transition duration-200', qrHidden && 'blur-md select-none')}
+						class={cn('size-40', qrHidden && 'select-none')}
 					/>
+					<!-- The veil blurs, not the QR itself: a `filter` on the svg gets its
+					     own composited layer whose bounds are inflated by the blur radius,
+					     so it can paint past our overflow-hidden. backdrop-filter is
+					     clipped to this span's own box. -->
+					<span
+						aria-hidden="true"
+						class={cn(
+							'pointer-events-none absolute inset-0 backdrop-blur-md transition-opacity duration-200',
+							!qrHidden && 'opacity-0'
+						)}
+					></span>
 					<span
 						class="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-150 group-hover:opacity-100"
 					>
@@ -103,52 +117,58 @@
 					{/if}
 				</Button>
 			</div>
-		</Field.FieldSet>
+		</section>
 
-		<Field.FieldSeparator />
+		<Separator />
 
-		<Field.FieldSet>
-			<!-- Trusted list: send to, or un-trust. Adding is a modal, not inline. -->
-			<div>
-				<div class="mb-3 flex items-center justify-between gap-2">
-					<span class="font-medium">Trusted</span>
-					<Button variant="outline" size="sm" onclick={() => (addOpen = true)}>
-						<IconPlus data-icon="inline-start" />
-						Add
-					</Button>
-				</div>
-				{#if pairing.devices.length === 0}
-					<p class="px-1 py-2 text-sm text-muted-foreground">No trusted devices yet.</p>
-				{:else}
-					<Item.Group class="gap-1">
-						{#each pairing.devices as device (device.fingerprint)}
-							<Item.Root variant="outline" size="sm">
-								<Item.Media variant="icon">
-									<IconDeviceLaptop class="text-muted-foreground" />
-								</Item.Media>
-								<Item.Content>
-									<Item.Title class="truncate">{device.name}</Item.Title>
-									<Item.Description class="truncate font-mono text-[10px]">
-										{device.fingerprint.slice(0, 16)}
-									</Item.Description>
-								</Item.Content>
-								<Item.Actions>
-									<Button
-										variant="ghost"
-										size="icon-sm"
-										aria-label="Remove"
-										onclick={() => pairing.untrust(device.fingerprint)}
-									>
-										<IconTrash />
-									</Button>
-								</Item.Actions>
-							</Item.Root>
-						{/each}
-					</Item.Group>
-				{/if}
+		<!-- Trusted list: send to, or un-trust. Adding is a modal, not inline. -->
+		<section class="flex flex-col gap-3">
+			<div class="flex items-center justify-between gap-2">
+				<h3 class="text-base font-medium">Trusted</h3>
+				<Button variant="outline" size="sm" onclick={() => (addOpen = true)}>
+					<IconPlus data-icon="inline-start" />
+					Add
+				</Button>
 			</div>
-		</Field.FieldSet>
-	</Field.FieldGroup>
+			{#if pairing.devices.length === 0}
+				<Empty.Root class="border border-dashed py-8">
+					<Empty.Header>
+						<Empty.Media variant="icon">
+							<IconDevices />
+						</Empty.Media>
+						<Empty.Title>No trusted devices</Empty.Title>
+						<Empty.Description>Add a device to send to it without a code.</Empty.Description>
+					</Empty.Header>
+				</Empty.Root>
+			{:else}
+				<Item.Group>
+					{#each pairing.devices as device (device.fingerprint)}
+						<Item.Root variant="outline" size="sm">
+							<Item.Media variant="icon">
+								<IconDeviceLaptop />
+							</Item.Media>
+							<Item.Content>
+								<Item.Title class="truncate">{device.name}</Item.Title>
+								<Item.Description class="truncate font-mono text-[10px]">
+									{device.fingerprint.slice(0, 16)}
+								</Item.Description>
+							</Item.Content>
+							<Item.Actions>
+								<Button
+									variant="ghost"
+									size="icon-sm"
+									aria-label="Remove {device.name}"
+									onclick={() => pairing.untrust(device.fingerprint)}
+								>
+									<IconTrash />
+								</Button>
+							</Item.Actions>
+						</Item.Root>
+					{/each}
+				</Item.Group>
+			{/if}
+		</section>
+	</div>
 
 	<AddDeviceDialog bind:open={addOpen} />
 {/if}

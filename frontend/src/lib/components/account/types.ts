@@ -9,3 +9,15 @@ export const titles: Record<View, string> = {
 	settings: 'Settings',
 	devices: 'Trusted devices'
 }
+
+/**
+ * Screen-reader description for each view. A dialog needs an accessible
+ * description, and the sheet's own body is a whole view — so this is the one
+ * place that says out loud what the current screen is for.
+ */
+export const descriptions: Record<View, string> = {
+	menu: 'Account, app settings, and trusted devices.',
+	login: 'Sign in to sync your trusted devices.',
+	settings: 'Preferences for transfers, appearance, and the relay.',
+	devices: 'Pair devices to send files without sharing a code.'
+}

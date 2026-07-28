@@ -55,7 +55,7 @@
 				>
 					no cloud · peer to peer
 				</p>
-				<div class="flex shrink-0 items-center gap-1">
+				<div class="flex shrink-0 cursor-pointer items-center gap-1">
 					<AccountSheet />
 				</div>
 			</div>
