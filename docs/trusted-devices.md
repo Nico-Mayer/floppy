@@ -123,6 +123,34 @@ the SAS matches, Trust. Then in the Send panel, queue files and pick the device 
 Dev shortcut: `--seed-trust "<encoded-public-key>[,name]"` (or `FLOPPY_SEED_TRUST`) pre-trusts
 a peer at startup, skipping the paste step.
 
+## Deploying the broker (Railway)
+
+The broker is a tiny stateless WebSocket relay — one always-on instance that every
+client dials. `Dockerfile.broker` + `railway.json` at the repo root make it a
+push-button deploy:
+
+1. Railway → New Project → Deploy from this repo. `railway.json` points the build at
+   `Dockerfile.broker`, so Railway builds only `cmd/broker` (not the Wails app).
+2. Railway injects `PORT` and the broker listens on it automatically. Railway also
+   terminates TLS at its edge, so the process serves plain `ws` while clients connect
+   over `wss://`.
+3. Under Settings → Networking, generate a public domain. Your broker URL is then
+   `wss://<your-app>.up.railway.app/ws` (note the `/ws` path).
+4. Point clients at it: `FLOPPY_BROKER_URL=wss://<your-app>.up.railway.app/ws`
+   (or `--broker-url`). A shipped build would bake this in as the default.
+
+Verify it's up by opening the domain in a browser — the root path returns
+`floppy rendezvous broker ok`.
+
+Notes:
+- **Single instance only.** The broker keeps live connections in memory; do not scale
+  it to multiple replicas yet (clients on different replicas can't reach each other).
+- Still missing before real exposure: the register-nonce fix and sealed signal blobs
+  (see "What's not done"). TLS itself is handled by Railway.
+
+Run locally instead: `go run ./cmd/broker` (listens on `:8080`, clients use
+`ws://localhost:8080/ws`).
+
 ## What's not done (future arcs)
 
 Tracked in `openspec/changes/trusted-devices/design.md` (phases P3–P4):
