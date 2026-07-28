@@ -19,6 +19,10 @@ declare module "@wailsio/runtime" {
             "croc:send:progress": services$0.ProgressEvent;
             "croc:sent": services$0.DoneEvent;
             "files-dropped": string[] | null;
+            "pairing:accepted": services$0.PairingStatusEvent;
+            "pairing:declined": services$0.PairingStatusEvent;
+            "pairing:error": services$0.PairingErrorEvent;
+            "pairing:offer": services$0.PairingOfferEvent;
         }
     }
 }

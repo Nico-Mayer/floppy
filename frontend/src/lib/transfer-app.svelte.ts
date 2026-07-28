@@ -1,18 +1,21 @@
 import { CancelReceive, CancelSend, Receive, Send } from '$bindings/floppy/internal/services/crocservice'
-import { Describe, SelectFiles, SelectFolder } from '$bindings/floppy/internal/services/fileservice'
+import { Describe, SelectFiles } from '$bindings/floppy/internal/services/fileservice'
 import type { FileEntry, ProgressEvent } from '$bindings/floppy/internal/services/models'
 import { Events } from '@wailsio/runtime'
 import { describeError, type AppError } from './components/transfer/errors'
-import type { ReceiveStatus, SendStatus } from './components/transfer/types'
+import type { ReceiveStatus, ReceiveTarget, SendStatus, SendTarget } from './components/transfer/types'
 
 export type Mode = 'send' | 'receive'
 
 class SendTransfer {
 	status = $state<SendStatus>('idle')
 	files = $state<FileEntry[]>([])
+	/** croc's phrase for this send. Only ever shown for a `code` target. */
 	code = $state('')
 	progress = $state(0)
 	stats = $state<ProgressEvent | null>(null)
+	/** Where this send is going; set by start()/beginTrusted(), read by the UI. */
+	target = $state<SendTarget>({ kind: 'code' })
 
 	get busy() {
 		return this.status !== 'idle' && this.status !== 'done'
@@ -40,15 +43,9 @@ class SendTransfer {
 		this.add((await SelectFiles()) ?? [])
 	}
 
-	// Separate from pickFiles because Windows cannot offer both in one dialog
-	// (see FileService.SelectFiles) — the two entry points exist on every
-	// platform so the UI does not have to branch.
-	async pickFolder() {
-		this.add((await SelectFolder()) ?? [])
-	}
-
 	async start() {
 		app.error = null
+		this.target = { kind: 'code' }
 		this.progress = 0
 		this.stats = null
 		this.status = 'starting'
@@ -58,6 +55,21 @@ class SendTransfer {
 			app.error = describeError(String(e), 'send')
 			this.status = 'idle'
 		}
+	}
+
+	/**
+	 * Enter the connecting state for a trusted-device send. Unlike start() this
+	 * does not call croc — the pairing layer offers the files and the real send
+	 * begins only when the peer accepts, arriving as the usual croc:code event.
+	 * So for this target 'starting' means "waiting for them to accept" and
+	 * 'waiting' means "accepted, croc is connecting"; the panel says as much
+	 * instead of showing a code phrase nobody needs to read.
+	 */
+	beginTrusted(device: { fingerprint: string; name: string }) {
+		this.target = { kind: 'device', ...device }
+		this.progress = 0
+		this.stats = null
+		this.status = 'starting'
 	}
 
 	async cancel() {
@@ -81,6 +93,7 @@ class SendTransfer {
 
 	#clearTransfer() {
 		this.code = ''
+		this.target = { kind: 'code' }
 		this.progress = 0
 		this.stats = null
 		this.status = 'idle'
@@ -99,6 +112,8 @@ class ReceiveTransfer {
 	savedTo = $state('')
 	progress = $state<number | null>(null)
 	stats = $state<ProgressEvent | null>(null)
+	/** Where this receive came from; set by start()/beginTrusted(), read by the UI. */
+	target = $state<ReceiveTarget>({ kind: 'code' })
 	/** Set once the connect attempt has taken suspiciously long. */
 	tooSlow = $state(false)
 	#hintTimer: ReturnType<typeof setTimeout> | undefined
@@ -109,6 +124,7 @@ class ReceiveTransfer {
 
 	async start() {
 		app.error = null
+		this.target = { kind: 'code' }
 		this.progress = null
 		this.stats = null
 		this.tooSlow = false
@@ -120,6 +136,23 @@ class ReceiveTransfer {
 			app.error = describeError(String(e), 'receive')
 			this.stop()
 		}
+	}
+
+	/**
+	 * Enter the connecting state for an accepted trusted-device transfer. The
+	 * sender starts first; croc:recv:progress flips this to receiving once bytes
+	 * arrive. No mistyped-code hint — there was no code to mistype. The offer is
+	 * kept as the target so the panel can name the sender and what it is bringing
+	 * before a single byte has landed.
+	 */
+	beginTrusted(offer: { name: string; fileCount: number; totalBytes: number }) {
+		app.error = null
+		this.target = { kind: 'device', ...offer }
+		this.savedTo = ''
+		this.progress = null
+		this.stats = null
+		this.tooSlow = false
+		this.status = 'connecting'
 	}
 
 	/** True while progress events are still meaningful for this transfer. */
@@ -165,6 +198,7 @@ class ReceiveTransfer {
 	#clearTransfer() {
 		this.#clearHint()
 		this.savedTo = ''
+		this.target = { kind: 'code' }
 		this.progress = null
 		this.stats = null
 		this.status = 'idle'

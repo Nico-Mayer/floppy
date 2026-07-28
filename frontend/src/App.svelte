@@ -1,13 +1,16 @@
 <script lang="ts">
-	import AccountSheet from '$lib/components/AccountSheet.svelte'
+	import AccountSheet from '$lib/components/account/AccountSheet.svelte'
+	import IncomingOfferDialog from '$lib/components/IncomingOfferDialog.svelte'
 	import ModeSwitcher from '$lib/components/ModeSwitcher.svelte'
 	import TitleBar from '$lib/components/TitleBar.svelte'
-	import ReceivePanel from '$lib/components/transfer/ReceivePanel.svelte'
-	import SendPanel from '$lib/components/transfer/SendPanel.svelte'
+	import ReceivePanel from '$lib/components/transfer/receive/ReceivePanel.svelte'
+	import SendPanel from '$lib/components/transfer/send/SendPanel.svelte'
 	import * as Alert from '$lib/components/ui/alert'
 	import { Button } from '$lib/components/ui/button'
+	import { Toaster } from '$lib/components/ui/sonner'
 	import * as Tabs from '$lib/components/ui/tabs'
 	import { normal, shift } from '$lib/motion'
+	import { pairing } from '$lib/pairing-app.svelte'
 	import { app, type Mode } from '$lib/transfer-app.svelte'
 	import { IconAlertCircle, IconX } from '@tabler/icons-svelte'
 	import { ModeWatcher } from 'mode-watcher'
@@ -15,7 +18,15 @@
 	import { fly } from 'svelte/transition'
 	import './app.css'
 
-	onMount(() => app.listen())
+	onMount(() => {
+		const stopTransfer = app.listen()
+		let stopPairing: (() => void) | undefined
+		pairing.init().then((stop) => (stopPairing = stop))
+		return () => {
+			stopTransfer()
+			stopPairing?.()
+		}
+	})
 
 	// Dev-only escape hatch: lets the browser preview (no Wails bindings)
 	// drive app state from the console to debug UI in isolation.
@@ -44,7 +55,7 @@
 				>
 					no cloud · peer to peer
 				</p>
-				<div class="flex shrink-0 items-center gap-1">
+				<div class="flex shrink-0 cursor-pointer items-center gap-1">
 					<AccountSheet />
 				</div>
 			</div>
@@ -92,3 +103,21 @@
 		</div>
 	</main>
 </div>
+
+<!-- Trusted-device incoming transfer prompt — opens whenever an offer arrives. -->
+<IncomingOfferDialog />
+
+<!-- Ephemeral pairing notifications (accepted / declined / errors).
+     The offset clears the titlebar: sonner's default is 24px from the viewport
+     edge, which lands a toast on top of the window frame — over the drag region
+     and, on Windows, the min/max/close buttons. Sonner is fixed at a z-index far
+     above everything, so nothing else can win that overlap.
+     No richColors: it swaps in sonner's own green/red and drops the popover
+     tokens the Toaster wires up, so a toast stops matching the dialogs and cards
+     around it. Type is carried by the icon instead (see ui/sonner). -->
+<Toaster
+	position="top-center"
+	offset={{ top: 'calc(var(--header-height) + var(--spacing) * 2)' }}
+	mobileOffset={{ top: 'calc(var(--header-height) + var(--spacing) * 2)' }}
+	closeButton
+/>

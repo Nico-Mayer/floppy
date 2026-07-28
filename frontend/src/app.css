@@ -30,6 +30,9 @@
 	--send-foreground: #f79d3d;
 	--receive: #2c8be1;
 	--receive-foreground: #69b1f1;
+	/* QR follows the theme — it renders on the card surface, so it reuses the
+	   card fg/bg. Dark-on-light here; the .dark block flips it. Both pairings
+	   are high-contrast, so scanners read either. */
 	--qr-foreground: #0e1013;
 	--qr-background: #ffffff;
 	/* Window titlebar height. Global (not just on the app wrapper) so portaled
@@ -61,6 +64,8 @@
        variants lighten to hold contrast on dark surfaces. */
 	--send-foreground: #f79d3d;
 	--receive-foreground: #69b1f1;
+	--qr-foreground: #f2f4f6;
+	--qr-background: #16181b;
 }
 
 @theme inline {
@@ -168,6 +173,19 @@
 	.animate-slidein {
 		animation: fade-in 0.3s ease both;
 	}
+}
+
+/* Toasts. Sonner hardcodes a system font stack, 13px, an 8px radius and its own
+   drop shadow, so a toast reads as a different app pasted over this one — the
+   colours follow the theme but nothing else does.
+
+   Not done with classes on the toast: sonner's rules live in its own component
+   <style>, which is unlayered, and unlayered CSS beats anything in a layer — so
+   Tailwind utilities would lose no matter what order they land in. Two
+   attributes here clears sonner's single-attribute selectors without !important,
+   and @apply keeps the values on the theme's tokens. */
+[data-sonner-toaster] [data-sonner-toast] {
+	@apply rounded-2xl font-sans text-sm shadow-lg;
 }
 
 @layer base {

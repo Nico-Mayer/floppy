@@ -11,6 +11,14 @@ export interface CodeEvent {
 }
 
 /**
+ * DeviceInfo is a trusted device as shown to the frontend.
+ */
+export interface DeviceInfo {
+    "fingerprint": string;
+    "name": string;
+}
+
+/**
  * DoneEvent is the payload of croc:sent and croc:received; Dest is set for
  * receives only.
  */
@@ -43,6 +51,43 @@ export interface FileEntry {
      */
     "size": number;
     "isDir": boolean;
+}
+
+/**
+ * PairingErrorEvent is the payload of pairing:error.
+ */
+export interface PairingErrorEvent {
+    "transferId": string;
+    "code": string;
+    "message": string;
+}
+
+/**
+ * PairingOfferEvent is the payload of pairing:offer — everything the modal needs.
+ */
+export interface PairingOfferEvent {
+    "transferId": string;
+    "fromName": string;
+    "fromFingerprint": string;
+    "fileCount": number;
+    "totalBytes": number;
+}
+
+/**
+ * PairingPreview is what the pairing UI shows before a device is trusted: the
+ * peer's fingerprint and the SAS both screens must match. Computing the SAS
+ * needs the private key, so it lives here, never in the frontend.
+ */
+export interface PairingPreview {
+    "fingerprint": string;
+    "sas": string;
+}
+
+/**
+ * PairingStatusEvent is the payload of pairing:accepted and pairing:declined.
+ */
+export interface PairingStatusEvent {
+    "transferId": string;
 }
 
 /**

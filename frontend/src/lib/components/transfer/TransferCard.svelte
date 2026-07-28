@@ -9,6 +9,7 @@
 		title,
 		headline,
 		badge,
+		alert,
 		dropTarget = false,
 		children,
 		actions
@@ -17,6 +18,8 @@
 		title: string
 		headline: string
 		badge: string
+		/** Optional adornment shown left of the badge — e.g. a warning icon + tooltip. */
+		alert?: Snippet
 		/**
 		 * Marks the card as the window's file-drop target. Wails hit-tests the
 		 * drop point against `[data-file-drop-target]` and swallows the drop
@@ -50,7 +53,7 @@
 	<Card.Header>
 		<Card.Title class="flex items-center gap-2">
 			<div class="relative flex">
-				<span class="absolute size-3 animate-ping rounded-full bg-(--tint) [animation-duration:2s]"></span>
+				<span class="absolute size-3 animate-ping rounded-full bg-(--tint) animation-duration-[2s]"></span>
 				<span class="size-3 rounded-full bg-(--tint)"></span>
 			</div>
 			{title}
@@ -58,7 +61,8 @@
 		<Card.Description class="font-mono text-[10px] tracking-widest uppercase">
 			{headline}
 		</Card.Description>
-		<Card.Action>
+		<Card.Action class="flex items-center gap-1.5">
+			{@render alert?.()}
 			<Badge variant="outline" class="p-3 uppercase">
 				{badge}
 			</Badge>
@@ -76,7 +80,12 @@
 			{@render children()}
 		</div>
 		{#if actions}
-			<div class="flex shrink-0 flex-col gap-2">
+			<!-- Panels pass one actions snippet that branches on status, so it is
+			     always truthy but renders nothing in some states (no files yet,
+			     cancelling). :has(*) collapses the zone in exactly those states —
+			     display:none also takes it out of the flex flow, so the parent's
+			     gap stops painting a phantom margin under the content. -->
+			<div class="flex shrink-0 flex-col gap-2 [&:not(:has(*))]:hidden">
 				{@render actions()}
 			</div>
 		{/if}

@@ -37,9 +37,26 @@ export function Receive(code: string): $CancellablePromise<string> {
 }
 
 /**
+ * ReceiveCoded is Receive under a name that reads symmetrically with SendCoded
+ * at the trusted-device call site; the code is the derived phrase.
+ */
+export function ReceiveCoded(code: string): $CancellablePromise<string> {
+    return $Call.ByID(1338167108, code);
+}
+
+/**
  * Send starts a send transfer for the given paths and returns its transfer
  * ID; the code phrase follows as a croc:code event.
  */
 export function Send(paths: string[] | null): $CancellablePromise<string> {
     return $Call.ByID(3652812786, paths);
+}
+
+/**
+ * SendCoded starts a send with a caller-supplied code phrase instead of a
+ * random one — the trusted-device path, where both peers derive the same code
+ * from their pairing. Otherwise identical to Send.
+ */
+export function SendCoded(paths: string[] | null, code: string): $CancellablePromise<string> {
+    return $Call.ByID(3476837313, paths, code);
 }

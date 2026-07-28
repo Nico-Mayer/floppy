@@ -41,7 +41,7 @@
 	<Tabs.Trigger
 		value={mode}
 		class={[
-			'relative rounded-lg font-heading font-semibold tracking-wide uppercase max-sm:rounded-xl',
+			'relative rounded-lg font-heading font-semibold tracking-wide uppercase',
 			// not-focus-visible: keeps the card-style ring from shrinking the
 			// 3px keyboard focus ring (the active ring compiles later in the css).
 			'data-active:shadow-md data-active:not-focus-visible:ring-1 data-active:not-focus-visible:ring-foreground/5 dark:data-active:not-focus-visible:ring-foreground/10',

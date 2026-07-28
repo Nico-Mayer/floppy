@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button/index.js'
-	import { IconMinus, IconMoon, IconSquare, IconSun, IconX } from '@tabler/icons-svelte'
+	import { IconMinus, IconSquare, IconX } from '@tabler/icons-svelte'
 	import { Window } from '@wailsio/runtime'
-	import { toggleMode } from 'mode-watcher'
 
 	// On Windows the window is frameless (see main.go) and we render our own
 	// window controls; on macOS the native traffic lights need a spacer.
@@ -10,8 +9,15 @@
 	const isMac = navigator.userAgent.includes('Mac')
 </script>
 
+<!-- pointer-events-auto: an open modal (the account sheet) locks body scroll,
+     which also sets `pointer-events: none` on <body> and re-enables it only on
+     the overlay and the panel. The window frame has to opt back in, or the
+     titlebar goes dead while the sheet is open — mousedown then lands on <html>
+     instead, so Wails reads no --wails-draggable and the window cannot be
+     dragged (this *is* dragging on frameless Windows; macOS moves natively),
+     and the Windows min/max/close buttons below stop responding too. -->
 <header
-	class="sticky top-0 z-60 flex w-full items-center border-b bg-background"
+	class="pointer-events-auto sticky top-0 z-60 flex w-full items-center border-b bg-background"
 	style="--wails-draggable:drag"
 >
 	<div class="flex h-(--header-height) w-full items-center gap-2 pr-2 pl-4">
@@ -20,10 +26,6 @@
 		{/if}
 		<div class="flex-1"></div>
 		<div class="flex items-center gap-1" style="--wails-draggable:no-drag">
-			<Button class="size-8" variant="ghost" size="icon" onclick={toggleMode} aria-label="Toggle theme">
-				<IconSun class="block dark:hidden" />
-				<IconMoon class="hidden dark:block" />
-			</Button>
 			{#if isWindows}
 				<Button
 					class="size-8"

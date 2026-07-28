@@ -150,6 +150,22 @@ func (s *CrocService) Receive(code string) (string, error) {
 	return s.manager.Receive(code, transfer.ReceiveOptions{})
 }
 
+// SendCoded starts a send with a caller-supplied code phrase instead of a
+// random one — the trusted-device path, where both peers derive the same code
+// from their pairing. Otherwise identical to Send.
+func (s *CrocService) SendCoded(paths []string, code string) (string, error) {
+	if s.manager == nil {
+		return "", errNotStarted
+	}
+	return s.manager.Send(paths, transfer.SendOptions{Code: code})
+}
+
+// ReceiveCoded is Receive under a name that reads symmetrically with SendCoded
+// at the trusted-device call site; the code is the derived phrase.
+func (s *CrocService) ReceiveCoded(code string) (string, error) {
+	return s.Receive(code)
+}
+
 // CancelSend aborts the running send, returning immediately (the unwind is
 // absorbed by the next transfer).
 func (s *CrocService) CancelSend() {
