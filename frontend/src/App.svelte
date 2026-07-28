@@ -1,5 +1,7 @@
 <script lang="ts">
 	import ModeSwitcher from '$lib/components/ModeSwitcher.svelte'
+	import ProfileDialog from '$lib/components/ProfileDialog.svelte'
+	import SettingsSheet from '$lib/components/SettingsSheet.svelte'
 	import TitleBar from '$lib/components/TitleBar.svelte'
 	import ReceivePanel from '$lib/components/transfer/ReceivePanel.svelte'
 	import SendPanel from '$lib/components/transfer/SendPanel.svelte'
@@ -38,9 +40,15 @@
 		>
 			<div class="flex items-center gap-2.5 px-1">
 				<h1 class="font-heading text-xl font-black tracking-tight uppercase">Floppy</h1>
-				<p class="truncate font-mono text-[9px] tracking-wider text-muted-foreground uppercase">
+				<p
+					class="min-w-0 flex-1 truncate font-mono text-[9px] tracking-wider text-muted-foreground uppercase"
+				>
 					no cloud · peer to peer
 				</p>
+				<div class="flex shrink-0 items-center gap-1">
+					<SettingsSheet />
+					<ProfileDialog />
+				</div>
 			</div>
 
 			<Tabs.Root
