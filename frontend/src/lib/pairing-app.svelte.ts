@@ -10,9 +10,8 @@ import {
 	Untrust
 } from '$bindings/floppy/internal/services/pairingservice'
 import { Events } from '@wailsio/runtime'
+import { toast } from 'svelte-sonner'
 import { app } from './transfer-app.svelte'
-
-type Toast = { kind: 'info' | 'error'; message: string }
 
 /**
  * Frontend state for trusted devices. Mirrors the transfer-app pattern: a
@@ -26,8 +25,6 @@ class PairingApp {
 	devices = $state<DeviceInfo[]>([])
 	/** A verified incoming offer awaiting the user's accept/decline. */
 	incoming = $state<PairingOfferEvent | null>(null)
-	/** Transient status line for accepted/declined/error outcomes. */
-	toast = $state<Toast | null>(null)
 
 	/** Whether the pairing backend came up (broker reachable, identity loaded). */
 	get available() {
@@ -48,15 +45,15 @@ class PairingApp {
 				// On the sender the croc:code/progress events take the send panel
 				// from here; nothing to do but clear a lingering incoming prompt.
 				this.incoming = null
-				this.#say('info', 'Transfer accepted')
+				toast.success('Transfer accepted')
 			}),
 			Events.On('pairing:declined', () => {
 				this.#resetPendingSend()
-				this.#say('info', 'Offer declined')
+				toast.info('Offer declined')
 			}),
 			Events.On('pairing:error', (ev) => {
 				this.#resetPendingSend()
-				this.#say('error', ev.data.message)
+				toast.error(ev.data.message)
 			})
 		]
 		return () => unsubs.forEach((unsub) => unsub())
@@ -78,7 +75,7 @@ class PairingApp {
 			await Accept(id)
 		} catch (e) {
 			app.receive.stop()
-			this.#say('error', String(e))
+			toast.error(String(e))
 		}
 	}
 
@@ -89,7 +86,7 @@ class PairingApp {
 		try {
 			await Decline(id)
 		} catch (e) {
-			this.#say('error', String(e))
+			toast.error(String(e))
 		}
 	}
 
@@ -104,11 +101,11 @@ class PairingApp {
 		app.mode = 'send'
 		app.send.beginTrusted()
 		try {
+			// No toast here — the send panel already shows the connecting/waiting state.
 			await SendTo(fingerprint, paths)
-			this.#say('info', 'Waiting for the device to accept…')
 		} catch (e) {
 			app.send.reset()
-			this.#say('error', String(e))
+			toast.error(String(e))
 		}
 	}
 
@@ -125,14 +122,6 @@ class PairingApp {
 	async untrust(fingerprint: string) {
 		await Untrust(fingerprint)
 		await this.refresh()
-	}
-
-	dismissToast() {
-		this.toast = null
-	}
-
-	#say(kind: Toast['kind'], message: string) {
-		this.toast = { kind, message }
 	}
 
 	// A trusted send that never got past "connecting" (declined, or failed

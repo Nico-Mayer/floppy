@@ -7,6 +7,7 @@
 	import SendPanel from '$lib/components/transfer/SendPanel.svelte'
 	import * as Alert from '$lib/components/ui/alert'
 	import { Button } from '$lib/components/ui/button'
+	import { Toaster } from '$lib/components/ui/sonner'
 	import * as Tabs from '$lib/components/ui/tabs'
 	import { normal, shift } from '$lib/motion'
 	import { pairing } from '$lib/pairing-app.svelte'
@@ -32,14 +33,6 @@
 	if (import.meta.env.DEV) {
 		;(window as unknown as Record<string, unknown>).__app = app
 	}
-
-	// Pairing status toasts (accepted / declined / error) clear themselves — a
-	// pending decision lives in the dialog, not here.
-	$effect(() => {
-		if (!pairing.toast) return
-		const timer = setTimeout(() => pairing.dismissToast(), 4000)
-		return () => clearTimeout(timer)
-	})
 </script>
 
 <ModeWatcher />
@@ -114,24 +107,5 @@
 <!-- Trusted-device incoming transfer prompt — opens whenever an offer arrives. -->
 <IncomingOfferDialog />
 
-{#if pairing.toast}
-	<div
-		class="fixed inset-x-0 bottom-4 z-50 flex justify-center px-4"
-		transition:fly={{ y: shift(), duration: normal() }}
-	>
-		<div
-			class={[
-				'flex items-center gap-2 rounded-full border px-4 py-2 text-sm shadow-lg backdrop-blur',
-				pairing.toast.kind === 'error'
-					? 'border-destructive/30 bg-destructive/10 text-destructive'
-					: 'bg-background/90'
-			]}
-			role="status"
-		>
-			<span>{pairing.toast.message}</span>
-			<Button variant="ghost" size="icon-xs" onclick={() => pairing.dismissToast()} aria-label="Dismiss">
-				<IconX />
-			</Button>
-		</div>
-	</div>
-{/if}
+<!-- Ephemeral pairing notifications (accepted / declined / errors). -->
+<Toaster position="top-center" richColors />

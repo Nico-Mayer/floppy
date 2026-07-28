@@ -3,6 +3,7 @@
 	import { Button } from '$lib/components/ui/button'
 	import * as Empty from '$lib/components/ui/empty'
 	import * as Field from '$lib/components/ui/field'
+	import * as Item from '$lib/components/ui/item'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import {
 		IconCheck,
@@ -64,36 +65,43 @@
 		<Field.FieldSet>
 			<Field.FieldLegend>This device</Field.FieldLegend>
 			<div class="flex flex-col items-center gap-3">
-				<!-- overflow-hidden clips the blur so it fades to a clean rounded edge
-				     instead of a white halo bleeding past the SVG box. -->
-				<div class="overflow-hidden rounded-2xl border bg-qr-background p-4">
+				<!-- The QR is the toggle: click reveals/hides the blur. overflow-hidden
+				     clips the blur to a clean rounded edge (no white halo). An eye icon
+				     fades in on hover, reflecting the current state. -->
+				<button
+					type="button"
+					onclick={() => (qrHidden = !qrHidden)}
+					aria-label={qrHidden ? 'Show pairing code' : 'Hide pairing code'}
+					aria-pressed={!qrHidden}
+					class="group relative cursor-pointer overflow-hidden rounded-2xl border bg-qr-background p-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+				>
 					<QRCode
 						value={pairing.identity}
 						fgColor="var(--qr-foreground)"
 						bgColor="var(--qr-background)"
 						class={cn('size-40 transition duration-200', qrHidden && 'blur-md select-none')}
 					/>
-				</div>
-				<div class="flex gap-2">
-					<Button variant="outline" size="sm" onclick={() => (qrHidden = !qrHidden)}>
-						{#if qrHidden}
-							<IconEye data-icon="inline-start" />
-							Show pairing code
-						{:else}
-							<IconEyeOff data-icon="inline-start" />
-							Hide pairing code
-						{/if}
-					</Button>
-					<Button variant="outline" size="sm" onclick={copyIdentity}>
-						{#if copied}
-							<IconCheck data-icon="inline-start" />
-							Copied
-						{:else}
-							<IconCopy data-icon="inline-start" />
-							Copy
-						{/if}
-					</Button>
-				</div>
+					<span
+						class="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+					>
+						<span class="rounded-full bg-background/80 p-2.5 text-foreground shadow-sm backdrop-blur">
+							{#if qrHidden}
+								<IconEye class="size-5" />
+							{:else}
+								<IconEyeOff class="size-5" />
+							{/if}
+						</span>
+					</span>
+				</button>
+				<Button variant="outline" size="sm" onclick={copyIdentity}>
+					{#if copied}
+						<IconCheck data-icon="inline-start" />
+						Copied
+					{:else}
+						<IconCopy data-icon="inline-start" />
+						Copy
+					{/if}
+				</Button>
 			</div>
 		</Field.FieldSet>
 
@@ -111,27 +119,31 @@
 			{#if pairing.devices.length === 0}
 				<p class="px-1 py-2 text-sm text-muted-foreground">No trusted devices yet.</p>
 			{:else}
-				<div class="flex flex-col gap-1">
+				<Item.Group class="gap-1">
 					{#each pairing.devices as device (device.fingerprint)}
-						<div class="flex items-center gap-2 rounded-xl border px-3 py-2">
-							<IconDeviceLaptop class="size-5 shrink-0 text-muted-foreground" />
-							<div class="min-w-0 flex-1">
-								<p class="truncate text-sm font-medium">{device.name}</p>
-								<p class="truncate font-mono text-[10px] text-muted-foreground">
+						<Item.Root variant="outline" size="sm">
+							<Item.Media variant="icon">
+								<IconDeviceLaptop class="text-muted-foreground" />
+							</Item.Media>
+							<Item.Content>
+								<Item.Title class="truncate">{device.name}</Item.Title>
+								<Item.Description class="truncate font-mono text-[10px]">
 									{device.fingerprint.slice(0, 16)}
-								</p>
-							</div>
-							<Button
-								variant="ghost"
-								size="icon-sm"
-								aria-label="Remove"
-								onclick={() => pairing.untrust(device.fingerprint)}
-							>
-								<IconTrash />
-							</Button>
-						</div>
+								</Item.Description>
+							</Item.Content>
+							<Item.Actions>
+								<Button
+									variant="ghost"
+									size="icon-sm"
+									aria-label="Remove"
+									onclick={() => pairing.untrust(device.fingerprint)}
+								>
+									<IconTrash />
+								</Button>
+							</Item.Actions>
+						</Item.Root>
 					{/each}
-				</div>
+				</Item.Group>
 			{/if}
 		</div>
 	</Field.FieldGroup>

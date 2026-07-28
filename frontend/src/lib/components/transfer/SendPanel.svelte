@@ -5,11 +5,20 @@
 	import * as Empty from '$lib/components/ui/empty'
 	import * as InputGroup from '$lib/components/ui/input-group'
 	import * as Item from '$lib/components/ui/item'
+	import * as Select from '$lib/components/ui/select'
 	import { Spinner } from '$lib/components/ui/spinner'
 	import { fast, motionOK, normal } from '$lib/motion'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import { app } from '$lib/transfer-app.svelte'
-	import { IconCheck, IconCopy, IconFolderPlus, IconPlus, IconSend, IconX } from '@tabler/icons-svelte'
+	import {
+		IconCheck,
+		IconCopy,
+		IconDeviceLaptop,
+		IconPlus,
+		IconSend,
+		IconWorld,
+		IconX
+	} from '@tabler/icons-svelte'
 	import { Clipboard } from '@wailsio/runtime'
 	import { flip } from 'svelte/animate'
 	import { fade, scale } from 'svelte/transition'
@@ -68,6 +77,13 @@
 		}
 	})
 
+	// Label shown in the Select trigger for the current target.
+	const targetName = $derived(
+		target === 'code'
+			? 'Anyone with a code'
+			: (pairing.devices.find((d) => d.fingerprint === target)?.name ?? 'Anyone with a code')
+	)
+
 	function dispatchSend() {
 		if (target === 'code') {
 			send.start()
@@ -122,22 +138,6 @@
 						<Empty.Description>
 							or <span class="underline underline-offset-2"> browse </span>
 						</Empty.Description>
-						<!-- Folders need their own picker: Windows' dialog cannot
-						     offer files and folders at once (see
-						     FileService.SelectFiles). stopPropagation because the
-						     surface behind this button opens the file picker. -->
-						<!-- <Button
-							variant="outline"
-							size="sm"
-							class="mt-1"
-							onclick={(e) => {
-								e.stopPropagation()
-								send.pickFolder()
-							}}
-						>
-							<IconFolderPlus />
-							Choose folder
-						</Button> -->
 					</div>
 				</Empty.Header>
 				<Button class="absolute right-4 bottom-4 bg-send" size="icon-lg">
@@ -161,17 +161,32 @@
 				<!-- Trusted devices skip the code: pick one and it gets a prompt to
 				     accept. "Anyone with a code" is the classic phrase-based send. -->
 				<div class="flex items-center gap-2 px-1">
-					<label for="send-target" class="shrink-0 text-xs text-muted-foreground">Send to</label>
-					<select
-						id="send-target"
-						bind:value={target}
-						class="h-9 min-w-0 flex-1 rounded-md border bg-transparent px-2 text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-					>
-						<option value="code">Anyone with a code</option>
-						{#each pairing.devices as device (device.fingerprint)}
-							<option value={device.fingerprint}>{device.name}</option>
-						{/each}
-					</select>
+					<!-- <label for="send-target" class="shrink-0 text-xs text-muted-foreground">Send to</label> -->
+					<Select.Root type="single" bind:value={target}>
+						<Select.Trigger id="send-target" class="min-w-0 flex-1">
+							{#if target === 'code'}
+								<IconWorld class="size-4 text-muted-foreground" />
+							{:else}
+								<IconDeviceLaptop class="size-4 text-muted-foreground" />
+							{/if}
+							{targetName}
+						</Select.Trigger>
+						<Select.Content>
+							<Select.Item value="code" label="Anyone with a code">
+								<IconWorld class="size-4 text-muted-foreground" />
+								Anyone with a code
+							</Select.Item>
+							{#if pairing.devices.length > 0}
+								<Select.Separator />
+								{#each pairing.devices as device (device.fingerprint)}
+									<Select.Item value={device.fingerprint} label={device.name}>
+										<IconDeviceLaptop class="size-4 text-muted-foreground" />
+										{device.name}
+									</Select.Item>
+								{/each}
+							{/if}
+						</Select.Content>
+					</Select.Root>
 				</div>
 			{/if}
 		{/if}
@@ -269,15 +284,6 @@
 				<Button variant="outline" class="@max-md:min-h-11" onclick={() => send.pickFiles()}>
 					<IconPlus />
 					Add
-				</Button>
-				<Button
-					variant="outline"
-					size="icon"
-					class="@max-md:min-h-11 @max-md:min-w-11"
-					aria-label="Add folder"
-					onclick={() => send.pickFolder()}
-				>
-					<IconFolderPlus />
 				</Button>
 				<Button class="flex-1 @max-md:min-h-11" onclick={dispatchSend}>
 					<IconSend />

@@ -33,9 +33,9 @@
 		</Item.Media>
 		<Item.Content>
 			<Item.Title>{file.name}</Item.Title>
-			<Item.Description class="line-clamp-1 font-mono text-xs" title={file.path}>
+			<!-- <Item.Description class="line-clamp-1 font-mono text-xs" title={file.path}>
 				{file.path}
-			</Item.Description>
+			</Item.Description> -->
 		</Item.Content>
 		<Item.Actions>
 			<span class="font-mono text-xs text-muted-foreground tabular-nums">

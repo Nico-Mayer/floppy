@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button/index.js'
-	import { IconMinus, IconMoon, IconSquare, IconSun, IconX } from '@tabler/icons-svelte'
+	import { IconMinus, IconSquare, IconX } from '@tabler/icons-svelte'
 	import { Window } from '@wailsio/runtime'
-	import { toggleMode } from 'mode-watcher'
 
 	// On Windows the window is frameless (see main.go) and we render our own
 	// window controls; on macOS the native traffic lights need a spacer.
@@ -20,10 +19,6 @@
 		{/if}
 		<div class="flex-1"></div>
 		<div class="flex items-center gap-1" style="--wails-draggable:no-drag">
-			<Button class="size-8" variant="ghost" size="icon" onclick={toggleMode} aria-label="Toggle theme">
-				<IconSun class="block dark:hidden" />
-				<IconMoon class="hidden dark:block" />
-			</Button>
 			{#if isWindows}
 				<Button
 					class="size-8"
