@@ -1,18 +1,18 @@
 <script lang="ts">
-	import { invoke } from '@tauri-apps/api/core'
+	import { invoke } from '@tauri-apps/api/core';
 
-	let name = $state('')
-	let greetMsg = $state('')
+	let name = $state('');
+	let greetMsg = $state('');
 
 	async function greet(event: Event) {
-		event.preventDefault()
+		event.preventDefault();
 		// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-		greetMsg = await invoke('greet', { name })
+		greetMsg = await invoke('greet', { name });
 	}
 </script>
 
 <main class="container">
-	<h1>Welcome to Tauri + Svelte</h1>
+	<h1 class="animate-spin bg-red-500">Welcome to Tauri + Svelte</h1>
 
 	<div class="row">
 		<a href="https://vite.dev" target="_blank">
