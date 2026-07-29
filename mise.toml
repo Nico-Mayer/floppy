@@ -29,6 +29,7 @@ rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-andro
 # (PhaseScriptExecution failed). Pinning keeps a bare `rustc` working everywhere.
 rustup default "$RUSTUP_TOOLCHAIN"
 """ }
+"npm:@fission-ai/openspec" = "1.6.0"
 
 # ---- doctor: verify + self-heal the toolchain for the current OS ----
 # One task; mise picks `run_windows` on Windows, `run` elsewhere.
