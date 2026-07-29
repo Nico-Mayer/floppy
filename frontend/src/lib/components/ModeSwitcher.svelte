@@ -34,11 +34,6 @@
 <svelte:window onkeydown={handleKeys} />
 
 {#snippet trigger(mode: Mode, label: string, Icon: typeof SendIcon, shortcut: string)}
-	<!-- This bar is the app's primary control, so it gets more weight than
-	     shadcn's subtle default — but through neutral means: the active pill
-	     borrows the cards' elevation (shadow + ring) and the labels echo the
-	     FLOPPY wordmark's heading type. Mode color stays a hint on the icon
-	     only. -->
 	<Tabs.Trigger value={mode}>
 		<div class="flex items-center gap-1.5">
 			{#if app[mode].busy}

@@ -3,7 +3,6 @@
 	import * as Tooltip from '$lib/components/ui/tooltip'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import { app } from '$lib/transfer-app.svelte'
-	import PlusIcon from '@lucide/svelte/icons/plus'
 	import SendIcon from '@lucide/svelte/icons/send'
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert'
 	import XIcon from '@lucide/svelte/icons/x'
@@ -118,17 +117,14 @@
 	     already on its way to idle. -->
 	{#snippet actions()}
 		{#if send.status === 'idle' && send.files.length > 0}
+			<!-- Adding files moved into the queue grid itself (SendQueue's last tile),
+			     so this zone holds one primary action and nothing to weigh it against. -->
 			<div class="flex flex-col gap-3">
 				<SendTargetPicker bind:value={() => selection, (next) => (picked = next)} />
-				<div class="flex gap-2">
-					<Button variant="outline" size="icon" onclick={() => send.pickFiles()} aria-label="Add files">
-						<PlusIcon />
-					</Button>
-					<Button class="min-w-0 flex-1" onclick={dispatchSend}>
-						<SendIcon />
-						Send
-					</Button>
-				</div>
+				<Button class="w-full" onclick={dispatchSend}>
+					<SendIcon />
+					Send
+				</Button>
 			</div>
 		{:else if send.status === 'starting' || send.status === 'waiting' || send.status === 'sending'}
 			<!-- Cancelling an offer the peer has not answered yet only stops us

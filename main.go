@@ -78,6 +78,9 @@ func main() {
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
+			// Serves /localfile?path=… image previews for queued files straight
+			// off disk; every other path falls through to the embedded frontend.
+			Middleware: services.LocalFilePreviewMiddleware,
 		},
 		Mac: application.MacOptions{
 			ApplicationShouldTerminateAfterLastWindowClosed: true,

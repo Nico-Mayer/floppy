@@ -41,7 +41,7 @@
 		value,
 		size = 268,
 		fgColor = 'var(--foreground)',
-		bgColor = 'var(--background)',
+		bgColor = 'var(--card)',
 		errorCorrectionLevel = 'M',
 		class: className,
 		...restProps

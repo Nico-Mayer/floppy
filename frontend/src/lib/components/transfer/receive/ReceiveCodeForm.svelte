@@ -4,7 +4,7 @@
 	import { app } from '$lib/transfer-app.svelte'
 	import DownloadIcon from '@lucide/svelte/icons/download'
 	import XIcon from '@lucide/svelte/icons/x'
-	import { Clipboard } from '@wailsio/runtime'
+	import { Clipboard, Events } from '@wailsio/runtime'
 
 	const receive = app.receive
 
@@ -57,9 +57,23 @@
 
 	// An effect on purpose, and the only dependency is the status read below: the
 	// clipboard lives outside Svelte, so there is nothing to derive from. This
-	// covers the code screen appearing; <svelte:window> covers every focus after.
+	// covers the code screen appearing; the Wails events below cover every
+	// re-activation after.
 	$effect(() => {
 		if (receive.status === 'idle') void checkClipboard()
+	})
+
+	// Re-check when the app comes back to the front. The DOM window 'focus' event
+	// is unreliable in the webview — native re-activation does not always dispatch
+	// it, so a code copied elsewhere would only sometimes land. These Wails
+	// activation events fire reliably where DOM focus does not; both point at the
+	// same guard-protected check, so double delivery is a harmless no-op.
+	$effect(() => {
+		const offs = [
+			Events.On('common:WindowFocus', checkClipboard),
+			Events.On('mac:ApplicationDidBecomeActive', checkClipboard)
+		]
+		return () => offs.forEach((off) => off())
 	})
 </script>
 
