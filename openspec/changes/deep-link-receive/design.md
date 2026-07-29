@@ -29,14 +29,14 @@
 
 ## What Wails alpha2.117 provides (all confirmed in source)
 
-| Piece | Where | Notes |
-|---|---|---|
-| `protocols:` config key | `internal/commands/build-assets.go` (`ProtocolConfig`) | Sits next to the existing commented `fileAssociations` in `build/config.yml`; regenerate with `wails3 task common:update:build-assets` |
-| macOS registration | `Info.plist.tmpl` → `CFBundleURLTypes` | Generated from `protocols:` |
-| Linux registration | `desktop.tmpl` → `MimeType=x-scheme-handler/<scheme>;` | Generated from `protocols:` |
-| Windows registration | NSIS installer template | **Installer-only** — a portable exe never registers the scheme |
-| Launch event | `events.Common.ApplicationLaunchedWithUrl`, URL via `e.Context().URL()` | macOS: Apple event (`HandleOpenURL` in `application_darwin.go`), fires warm *and* cold. Windows: `os.Args` scan at startup (`application_windows.go:161`) — cold start only |
-| Warm start on Win/Linux | `SingleInstanceOptions{UniqueID, OnSecondInstanceLaunch}` | URL arrives in `SecondInstanceData.Args`. `main.go` currently sets **no** SingleInstance options — without them a link click spawns a second window |
+| Piece                   | Where                                                                   | Notes                                                                                                                                                                       |
+| ----------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `protocols:` config key | `internal/commands/build-assets.go` (`ProtocolConfig`)                  | Sits next to the existing commented `fileAssociations` in `build/config.yml`; regenerate with `wails3 task common:update:build-assets`                                      |
+| macOS registration      | `Info.plist.tmpl` → `CFBundleURLTypes`                                  | Generated from `protocols:`                                                                                                                                                 |
+| Linux registration      | `desktop.tmpl` → `MimeType=x-scheme-handler/<scheme>;`                  | Generated from `protocols:`                                                                                                                                                 |
+| Windows registration    | NSIS installer template                                                 | **Installer-only** — a portable exe never registers the scheme                                                                                                              |
+| Launch event            | `events.Common.ApplicationLaunchedWithUrl`, URL via `e.Context().URL()` | macOS: Apple event (`HandleOpenURL` in `application_darwin.go`), fires warm _and_ cold. Windows: `os.Args` scan at startup (`application_windows.go:161`) — cold start only |
+| Warm start on Win/Linux | `SingleInstanceOptions{UniqueID, OnSecondInstanceLaunch}`               | URL arrives in `SecondInstanceData.Args`. `main.go` currently sets **no** SingleInstance options — without them a link click spawns a second window                         |
 
 Canonical reference: `examples/single-instance-url-scheme/` in the Wails repo shows the
 exact two-listener pattern (launch event + second-instance callback).
@@ -57,7 +57,7 @@ exact two-listener pattern (launch event + second-instance callback).
    `floppy://receive?code=…` as dead text. Real click-through in chat needs an HTTPS
    wrapper page (e.g. GitHub Pages: `https://<user>.github.io/floppy/r#<code>`) that
    redirects to `floppy://` and shows install instructions as fallback. Use a URL
-   *fragment* for the code — fragments are not sent to the server, so codes stay out of
+   _fragment_ for the code — fragments are not sent to the server, so codes stay out of
    server logs. Phase 2; the raw scheme is still useful on its own (address bar, `open`
    command, QR via the existing `spell/qrcode` component).
 4. **Windows portable exe** — no installer means no registry entry. Options: ship NSIS

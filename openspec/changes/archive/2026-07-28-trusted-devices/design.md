@@ -2,6 +2,7 @@
 
 > Findings from the 2026-07-28 exploration. Framing constraints were fixed by the user during
 > the session:
+>
 > 1. Wake-from-closed is needed **only on mobile**.
 > 2. **Mobile-first** — mobile drives the design, desktop follows.
 > 3. **Always** an interactive notification with an Accept/Decline prompt — no auto-accept of
@@ -10,7 +11,7 @@
 
 ## The two subproblems croc does not solve
 
-Croc's whole model is a *shared secret both sides already hold* (the code phrase). It has no
+Croc's whole model is a _shared secret both sides already hold_ (the code phrase). It has no
 identity, no persistence, no accounts. Trusted devices needs two things croc gives you neither
 of:
 
@@ -20,7 +21,7 @@ B. RENDEZVOUS + WAKE    — "reach a (maybe closed) trusted device with no human
 ```
 
 The file transfer itself stays **100% croc + the existing `transfer.Manager`**. Everything new
-is a layer *above* the Manager that (a) authorizes, (b) wakes/notifies, and (c) manufactures a
+is a layer _above_ the Manager that (a) authorizes, (b) wakes/notifies, and (c) manufactures a
 croc code automatically, then calls `Send` / `Receive`. This respects the architecture rule
 that `internal/transfer` stays croc-only and Wails-free.
 
@@ -46,10 +47,10 @@ A (mobile, foreground)                          B (mobile, CLOSED)
         (both foreground now — croc transfer runs unchanged)
 ```
 
-**Key insight that avoids the hardest problem:** the transfer runs *only after* Accept brings
+**Key insight that avoids the hardest problem:** the transfer runs _only after_ Accept brings
 the app to the foreground. So there is **no** need for background execution, silent push, or
 background croc — iOS's severe background limits never bite. All you need from the platform is
-an *alert push with action buttons*, which the OS renders while the app is dead.
+an _alert push with action buttons_, which the OS renders while the app is dead.
 
 ## Pairing protocol (subproblem A)
 
@@ -70,7 +71,7 @@ PAIRING (in person, one time):
 ```
 
 SAS (short-authentication-string) compare is the standard defense (Signal safety numbers,
-Wormhole). It is the *only* manual step, and only once per device pair, ever.
+Wormhole). It is the _only_ manual step, and only once per device pair, ever.
 
 **Code derivation** — after pairing the two devices share a secret (the ECDH output, or a
 secret confirmed during pairing). Per transfer:
@@ -99,7 +100,7 @@ send_offer(signed offer, target pk)    # broker verifies target exists, pushes i
 ```
 
 The broker never sees file contents (that is croc, end-to-end between the devices). What it
-*does* see depends on the notification-privacy decision below.
+_does_ see depends on the notification-privacy decision below.
 
 ## Residual risk stack (ranked, mobile-first)
 

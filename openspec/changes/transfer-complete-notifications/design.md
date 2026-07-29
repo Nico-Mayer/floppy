@@ -16,12 +16,14 @@ Constraints: `internal/transfer` must stay Wails-free (injected `Emitter`); `go 
 ## Goals / Non-Goals
 
 **Goals:**
+
 - OS notification with platform default sound when a send or receive completes while the window is unfocused: "Sent 412 MB" / "Received 3 files".
 - Clicking a receive notification opens the destination folder.
 - App keeps working (silently) wherever OS notifications are unavailable — especially macOS unbundled dev builds.
 - All new logic unit-testable under `go test -race ./...` via injected fakes.
 
 **Non-Goals:**
+
 - Error/cancel notifications (errors show in-app; cancelled transfers emit no terminal event).
 - Custom sounds or frontend audio assets — the OS notification carries the sound.
 - In-app notification settings/toggle.
@@ -39,7 +41,7 @@ Wrap `*notifications.NotificationService` instead of registering it directly in 
 - Response handler: `result.Response.UserInfo["dest"].(string)` → open the folder.
 - `ServiceShutdown`: delegate if started; never block on the authorization goroutine.
 
-*Alternative rejected*: registering `notifications.New()` directly — breaks dev mode on macOS and is untestable.
+_Alternative rejected_: registering `notifications.New()` directly — breaks dev mode on macOS and is untestable.
 
 ### 2. Dispatch lives in `CrocService.forward`
 
@@ -52,13 +54,13 @@ Wrap `*notifications.NotificationService` instead of registering it directly in 
 - `EventFailed` clears the entry and never notifies. Cancelled transfers emit no terminal event, so they never notify.
 - Wiring via `CrocService.EnableNotifications(n Notifier, focused func() bool)` called from `main` before `app.Run()` — race-free because `forward` only runs once transfers start; nil notifier preserves existing behavior exactly.
 
-*Alternative rejected*: extending `transfer.Event`/`DoneEvent` with stats — touches the transfer core and the frontend event contract for data the service layer already receives.
+_Alternative rejected_: extending `transfer.Event`/`DoneEvent` with stats — touches the transfer core and the frontend event contract for data the service layer already receives.
 
 ### 3. Focus tracking: window events into an `atomic.Bool`
 
 `main.go` wires `events.Common.WindowFocus` / `WindowLostFocus` (mapped on darwin/windows/linux in `pkg/events/defaults.go`) into an `atomic.Bool` (initial `true`) and passes `focused.Load` to `EnableNotifications`.
 
-*Alternative rejected*: `win.IsFocused()` — it round-trips through the main thread (`InvokeSyncWithResult`) and would block the transfer goroutine calling `forward`.
+_Alternative rejected_: `win.IsFocused()` — it round-trips through the main thread (`InvokeSyncWithResult`) and would block the transfer goroutine calling `forward`.
 
 ### 4. Click-to-open reuses `OpenPath` via extraction
 

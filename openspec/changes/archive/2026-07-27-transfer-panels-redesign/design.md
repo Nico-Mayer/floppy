@@ -32,22 +32,22 @@ Both panels render inside `TransferCard` (Card shell with accent tint, `App.svel
 
 `TransferCard`'s content area becomes a size container (`@container`); panels use `@sm:`/`@md:` variants for compact→regular switches. SendPanel's existing viewport `sm:` responsive bits (QR row) migrate to container variants.
 
-- *Why*: the card is the layout unit. Viewport breakpoints lie the moment panels are composed differently (side-by-side desktop layout, mobile shell, wider tab area). Container queries make each panel self-sufficient.
-- *Alternative rejected*: keeping viewport `sm:` everywhere — cheaper today, but every future composition change re-breaks the panels.
+- _Why_: the card is the layout unit. Viewport breakpoints lie the moment panels are composed differently (side-by-side desktop layout, mobile shell, wider tab area). Container queries make each panel self-sufficient.
+- _Alternative rejected_: keeping viewport `sm:` everywhere — cheaper today, but every future composition change re-breaks the panels.
 
 ### 2. Touch sizing lives in the ui primitives via `pointer-coarse:`
 
 Add coarse-pointer bumps once, in the size variants of `ui/button` and `ui/input`(+`input-group`): e.g. `default` gains `pointer-coarse:h-11` (44px), `sm`/icon sizes bump proportionally (no interactive control below `pointer-coarse:min-h-11 / min-w-11` hit area), inputs gain `pointer-coarse:h-11 pointer-coarse:text-base` (16px also kills iOS focus-zoom).
 
-- *Why in the primitives*: one source of truth; panels stay free of sizing overrides (per shadcn rules, `class` is for layout). Edits to owned component source are expected in shadcn-svelte; kept as small appended utilities so registry `update` diffs stay readable.
-- *Alternative rejected*: per-usage `class` bumps — scattered, guaranteed to drift; a `size="touch"` variant — callers would have to branch, `pointer-coarse:` does it declaratively.
+- _Why in the primitives_: one source of truth; panels stay free of sizing overrides (per shadcn rules, `class` is for layout). Edits to owned component source are expected in shadcn-svelte; kept as small appended utilities so registry `update` diffs stay readable.
+- _Alternative rejected_: per-usage `class` bumps — scattered, guaranteed to drift; a `size="touch"` variant — callers would have to branch, `pointer-coarse:` does it declaratively.
 
 ### 3. Two-zone scaffold inside TransferCard
 
 `TransferCard` grows an optional `actions` snippet: content renders in a flexible, scrollable status zone; `actions` renders in a fixed bottom zone with consistent padding. Panels move their per-state buttons (Cancel, Receive files, Send…, Open folder/reset) into it.
 
-- *Why*: today each state re-invents the column and the buttons land at different heights — the reflow the user feels. Anchoring actions bottom also matches thumb reach on touch (HIG: primary actions in the reachable zone).
-- Entrance-only fades stay exactly as they are (they already prevent two states coexisting); the scaffold removes the *vertical drift* those fades can't hide.
+- _Why_: today each state re-invents the column and the buttons land at different heights — the reflow the user feels. Anchoring actions bottom also matches thumb reach on touch (HIG: primary actions in the reachable zone).
+- Entrance-only fades stay exactly as they are (they already prevent two states coexisting); the scaffold removes the _vertical drift_ those fades can't hide.
 
 ### 4. Mascot: hero row in regular, compact chip in compact
 
@@ -65,7 +65,7 @@ The code input + Receive button form one group in the action zone: input `text-c
 
 ### 6. Fill animation + inline clear instead of the provenance hint row
 
-*(Iteration after UX review — the text hint read as tiny and ignorable.)* The input becomes an `InputGroup` (shadcn): `InputGroup.Input` for the code, an `inline-end` `InputGroup.Addon` with an ✕ `InputGroup.Button` rendered whenever the input is non-empty — a general clear affordance, not a clipboard-specific one. Auto-fill provenance is signaled by replaying the app's existing `animate-pop` keyframe on the group at fill time (class toggled for ~400ms so later fills replay it; app.css already collapses keyframes to a fade under `prefers-reduced-motion`).
+_(Iteration after UX review — the text hint read as tiny and ignorable.)_ The input becomes an `InputGroup` (shadcn): `InputGroup.Input` for the code, an `inline-end` `InputGroup.Addon` with an ✕ `InputGroup.Button` rendered whenever the input is non-empty — a general clear affordance, not a clipboard-specific one. Auto-fill provenance is signaled by replaying the app's existing `animate-pop` keyframe on the group at fill time (class toggled for ~400ms so later fills replay it; app.css already collapses keyframes to a fade under `prefers-reduced-motion`).
 
 - Clearing an auto-filled value still records it as dismissed for the session — without that, the next window focus would instantly re-fill what the user just deleted.
 - Captured as a `MODIFIED` delta on the `receive-clipboard-detect` main spec (provenance requirement rewritten).

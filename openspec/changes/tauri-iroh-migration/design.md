@@ -4,14 +4,14 @@
 
 Both are Rust-native P2P transports that could replace croc. iroh is chosen.
 
-| Factor | magic-wormhole.rs | **iroh + iroh-blobs (chosen)** |
-| --- | --- | --- |
-| Human code phrase | built in | layered (see rendezvous) |
-| Resume | weak / none | BLAKE3 content-addressed, resume-by-hash |
-| Progress | callback/stream | stream — no polling race |
-| Transport | transit relay + direct | QUIC, hole-punching, relay fallback |
-| Mobile | portable Rust, desktop-tested (Warp/GTK) | built for mobile, shipped in mobile apps |
-| Fit with trusted-devices | separate model | node identity **is** a keypair — same model |
+| Factor                   | magic-wormhole.rs                        | **iroh + iroh-blobs (chosen)**              |
+| ------------------------ | ---------------------------------------- | ------------------------------------------- |
+| Human code phrase        | built in                                 | layered (see rendezvous)                    |
+| Resume                   | weak / none                              | BLAKE3 content-addressed, resume-by-hash    |
+| Progress                 | callback/stream                          | stream — no polling race                    |
+| Transport                | transit relay + direct                   | QUIC, hole-punching, relay fallback         |
+| Mobile                   | portable Rust, desktop-tested (Warp/GTK) | built for mobile, shipped in mobile apps    |
+| Fit with trusted-devices | separate model                           | node identity **is** a keypair — same model |
 
 The one thing magic-wormhole gives for free (human codes) is exactly the thing floppy already has infrastructure for (the broker + a keypair identity). iroh's resume and mobile story are decisive, and its key-based node identity unifies cleanly with the trusted-device design. croc interop is not required, so there is no reason to stay protocol-compatible with either croc or wormhole.
 
@@ -49,7 +49,7 @@ Layers:
 
 ## Security: NodeId binding (load-bearing)
 
-The broker is a dumb relay and is not trusted. An iroh QUIC connection is authenticated by the dialed NodeId, but that only helps if the receiver knows the *correct* NodeId. So the sender's NodeId must be authenticated by the flow that carries it:
+The broker is a dumb relay and is not trusted. An iroh QUIC connection is authenticated by the dialed NodeId, but that only helps if the receiver knows the _correct_ NodeId. So the sender's NodeId must be authenticated by the flow that carries it:
 
 - **Trusted path**: the NodeId is inside the Ed25519-signed offer; the receiver verifies the signature against the trusted device's key before dialing.
 - **Quick path**: the NodeId is folded into the SPAKE2 transcript (or the AEAD-encrypted payload keyed by `K`), so only a party that knows the code can present a NodeId the receiver will accept.
@@ -68,25 +68,25 @@ iroh-blobs is content-addressed by BLAKE3; the ticket carries the root hash. Re-
 
 The frontend keeps speaking the existing vocabulary; the Rust core emits it:
 
-| Event | Payload (unchanged shape) |
-| --- | --- |
-| `croc:code` | `{id, kind, code}` — the code/ticket to display |
-| `croc:send:progress` / `croc:recv:progress` | `{id, kind, done, total, file, index, count}` |
-| `croc:sent` / `croc:received` | `{id, kind, dest?, ...}` |
-| `croc:error` | `{id, kind, code, message}` |
+| Event                                       | Payload (unchanged shape)                       |
+| ------------------------------------------- | ----------------------------------------------- |
+| `croc:code`                                 | `{id, kind, code}` — the code/ticket to display |
+| `croc:send:progress` / `croc:recv:progress` | `{id, kind, done, total, file, index, count}`   |
+| `croc:sent` / `croc:received`               | `{id, kind, dest?, ...}`                        |
+| `croc:error`                                | `{id, kind, code, message}`                     |
 
 Cancelled transfers still emit **no** terminal event. Sentinel error message text (`ErrBusy`-equivalents) stays stable as a frontend contract. (The `croc:` prefix is now a legacy name, kept to avoid churning the UI; it may be renamed in a later cleanup change.)
 
 ## Plugins replacing bespoke services
 
-| Old (Go/Wails) | New (Tauri plugin) |
-| --- | --- |
-| `transfer-complete-notifications` change | `tauri-plugin-notification` |
-| `deep-link-receive` change | `tauri-plugin-deep-link` |
-| `FileService` picker / drag-drop | `tauri-plugin-dialog` (+ `EnableFileDrop` → Tauri drag-drop events) |
-| `FileService.OpenPath` | `tauri-plugin-opener` |
-| `preview.go` (`image/*` stdlib) | Rust `image` crate behind the same `/localfile` route |
-| `stdio.SilenceUnusableStderr` (Win/Wails hack) | dropped — not needed on Tauri |
+| Old (Go/Wails)                                 | New (Tauri plugin)                                                  |
+| ---------------------------------------------- | ------------------------------------------------------------------- |
+| `transfer-complete-notifications` change       | `tauri-plugin-notification`                                         |
+| `deep-link-receive` change                     | `tauri-plugin-deep-link`                                            |
+| `FileService` picker / drag-drop               | `tauri-plugin-dialog` (+ `EnableFileDrop` → Tauri drag-drop events) |
+| `FileService.OpenPath`                         | `tauri-plugin-opener`                                               |
+| `preview.go` (`image/*` stdlib)                | Rust `image` crate behind the same `/localfile` route               |
+| `stdio.SilenceUnusableStderr` (Win/Wails hack) | dropped — not needed on Tauri                                       |
 
 ## Mobile notes
 
