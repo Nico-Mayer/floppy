@@ -12,7 +12,8 @@
 	import { normal, shift } from '$lib/motion'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import { app, type Mode } from '$lib/transfer-app.svelte'
-	import { IconAlertCircle, IconX } from '@tabler/icons-svelte'
+	import CircleAlertIcon from '@lucide/svelte/icons/circle-alert'
+	import XIcon from '@lucide/svelte/icons/x'
 	import { ModeWatcher } from 'mode-watcher'
 	import { onMount } from 'svelte'
 	import { fly } from 'svelte/transition'
@@ -70,7 +71,7 @@
 				{#if app.error}
 					<div transition:fly={{ y: -shift(), duration: normal() }}>
 						<Alert.Root variant="destructive" class="animate-shake">
-							<IconAlertCircle />
+							<CircleAlertIcon />
 							<Alert.Title>{app.error.title}</Alert.Title>
 							<!-- detail holds croc's original wording whenever we replaced
 							     it with something friendlier; surface it on hover rather
@@ -85,7 +86,7 @@
 									onclick={() => (app.error = null)}
 									aria-label="Dismiss"
 								>
-									<IconX />
+									<XIcon />
 								</Button>
 							</Alert.Action>
 						</Alert.Root>

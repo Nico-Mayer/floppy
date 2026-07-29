@@ -3,7 +3,10 @@
 	import * as Tooltip from '$lib/components/ui/tooltip'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import { app } from '$lib/transfer-app.svelte'
-	import { IconAlertTriangle, IconPlus, IconSend, IconX } from '@tabler/icons-svelte'
+	import PlusIcon from '@lucide/svelte/icons/plus'
+	import SendIcon from '@lucide/svelte/icons/send'
+	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert'
+	import XIcon from '@lucide/svelte/icons/x'
 	import { currentFile } from '../format'
 	import TransferCard from '../TransferCard.svelte'
 	import TransferProgress from '../TransferProgress.svelte'
@@ -59,7 +62,7 @@
 		<Tooltip.Provider delayDuration={150}>
 			<Tooltip.Root>
 				<Tooltip.Trigger aria-label="Large transfer warning" class="flex text-amber-500">
-					<IconAlertTriangle class="size-4" />
+					<TriangleAlertIcon class="size-4" />
 				</Tooltip.Trigger>
 				<Tooltip.Content class="max-w-56 text-center">
 					Large transfer — keep both devices awake with the app open until it finishes.
@@ -119,10 +122,10 @@
 				<SendTargetPicker bind:value={() => selection, (next) => (picked = next)} />
 				<div class="flex gap-2">
 					<Button variant="outline" size="icon" onclick={() => send.pickFiles()} aria-label="Add files">
-						<IconPlus />
+						<PlusIcon />
 					</Button>
 					<Button class="min-w-0 flex-1" onclick={dispatchSend}>
-						<IconSend />
+						<SendIcon />
 						Send
 					</Button>
 				</div>
@@ -132,7 +135,7 @@
 			     waiting: recalling it needs a broker signal that does not exist, so
 			     an accept that lands afterwards still starts the transfer. -->
 			<Button variant="destructive" size="sm" class="@max-md:min-h-11" onclick={() => send.cancel()}>
-				<IconX />
+				<XIcon />
 				Cancel
 			</Button>
 		{:else if send.status === 'done'}

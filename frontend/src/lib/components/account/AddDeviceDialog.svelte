@@ -6,7 +6,7 @@
 	import * as ResponsiveDialog from '$lib/components/ui/responsive-dialog'
 	import { Textarea } from '$lib/components/ui/textarea'
 	import { pairing } from '$lib/pairing-app.svelte'
-	import { IconShieldCheck } from '@tabler/icons-svelte'
+	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check'
 	import { toast } from 'svelte-sonner'
 
 	let { open = $bindable() }: { open: boolean } = $props()
@@ -67,7 +67,7 @@
 		{#if preview}
 			<ResponsiveDialog.Body>
 				<div class="flex flex-col items-center gap-2 text-center">
-					<IconShieldCheck class="size-8 text-muted-foreground" />
+					<ShieldCheckIcon class="size-8 text-muted-foreground" />
 					<p class="text-sm text-muted-foreground">
 						This code also shows on
 						<span class="font-medium">{pasteName.trim() || 'the other device'}</span>
@@ -85,7 +85,7 @@
 			<ResponsiveDialog.Footer>
 				<Button variant="outline" onclick={() => (preview = null)}>Back</Button>
 				<Button onclick={confirmPairing}>
-					<IconShieldCheck data-icon="inline-start" />
+					<ShieldCheckIcon data-icon="inline-start" />
 					Trust
 				</Button>
 			</ResponsiveDialog.Footer>

@@ -3,7 +3,8 @@
 	import * as Field from '$lib/components/ui/field'
 	import * as Select from '$lib/components/ui/select'
 	import { pairing } from '$lib/pairing-app.svelte'
-	import { IconDeviceLaptop, IconWorld } from '@tabler/icons-svelte'
+	import GlobeIcon from '@lucide/svelte/icons/globe'
+	import LaptopIcon from '@lucide/svelte/icons/laptop'
 
 	/** 'code' for the classic phrase send, otherwise a trusted device's fingerprint. */
 	let { value = $bindable() }: { value: string } = $props()
@@ -37,16 +38,16 @@
 		<Select.Root type="single" bind:value>
 			<Select.Trigger id="send-target" class="w-full">
 				{#if value === 'code'}
-					<IconWorld class="text-muted-foreground" />
+					<GlobeIcon class="text-muted-foreground" />
 				{:else}
-					<IconDeviceLaptop class="text-muted-foreground" />
+					<LaptopIcon class="text-muted-foreground" />
 				{/if}
 				{label}
 			</Select.Trigger>
 			<Select.Content>
 				<Select.Group>
 					<Select.Item value="code" label={CODE_LABEL}>
-						<IconWorld class="text-muted-foreground" />
+						<GlobeIcon class="text-muted-foreground" />
 						{CODE_LABEL}
 					</Select.Item>
 				</Select.Group>
@@ -55,7 +56,7 @@
 					<Select.GroupHeading>Trusted devices</Select.GroupHeading>
 					{#each pairing.devices as device (device.fingerprint)}
 						<Select.Item value={device.fingerprint} label={device.name}>
-							<IconDeviceLaptop class="text-muted-foreground" />
+							<LaptopIcon class="text-muted-foreground" />
 							{device.name}
 						</Select.Item>
 					{/each}

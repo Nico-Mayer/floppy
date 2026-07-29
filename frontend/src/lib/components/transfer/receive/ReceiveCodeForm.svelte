@@ -2,7 +2,8 @@
 	import { Button } from '$lib/components/ui/button'
 	import * as InputGroup from '$lib/components/ui/input-group'
 	import { app } from '$lib/transfer-app.svelte'
-	import { IconDownload, IconX } from '@tabler/icons-svelte'
+	import DownloadIcon from '@lucide/svelte/icons/download'
+	import XIcon from '@lucide/svelte/icons/x'
 	import { Clipboard } from '@wailsio/runtime'
 
 	const receive = app.receive
@@ -79,13 +80,13 @@
 		{#if receive.code}
 			<InputGroup.Addon align="inline-end">
 				<InputGroup.Button size="icon-xs" onclick={clearInput} aria-label="Clear code">
-					<IconX />
+					<XIcon />
 				</InputGroup.Button>
 			</InputGroup.Addon>
 		{/if}
 	</InputGroup.Root>
 	<Button class="w-full" onclick={() => receive.start()} disabled={!receive.code.trim()}>
-		<IconDownload />
+		<DownloadIcon />
 		Receive files
 	</Button>
 </div>

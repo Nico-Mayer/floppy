@@ -3,7 +3,8 @@
 	import { Spinner } from '$lib/components/ui/spinner'
 	import * as Tabs from '$lib/components/ui/tabs'
 	import { app, type Mode } from '$lib/transfer-app.svelte'
-	import { IconDownload, IconSend } from '@tabler/icons-svelte'
+	import DownloadIcon from '@lucide/svelte/icons/download'
+	import SendIcon from '@lucide/svelte/icons/send'
 
 	// macOS shows ⌘, everything else Ctrl. The handler already accepts either
 	// modifier — this only picks the label. userAgentData.platform is the
@@ -32,24 +33,13 @@
 
 <svelte:window onkeydown={handleKeys} />
 
-{#snippet trigger(mode: Mode, label: string, Icon: typeof IconSend, shortcut: string)}
+{#snippet trigger(mode: Mode, label: string, Icon: typeof SendIcon, shortcut: string)}
 	<!-- This bar is the app's primary control, so it gets more weight than
 	     shadcn's subtle default — but through neutral means: the active pill
 	     borrows the cards' elevation (shadow + ring) and the labels echo the
 	     FLOPPY wordmark's heading type. Mode color stays a hint on the icon
 	     only. -->
-	<Tabs.Trigger
-		value={mode}
-		class={[
-			'relative rounded-lg font-heading font-semibold tracking-wide uppercase',
-			// not-focus-visible: keeps the card-style ring from shrinking the
-			// 3px keyboard focus ring (the active ring compiles later in the css).
-			'data-active:shadow-md data-active:not-focus-visible:ring-1 data-active:not-focus-visible:ring-foreground/5 dark:data-active:not-focus-visible:ring-foreground/10',
-			mode === 'send'
-				? 'data-active:[&_svg]:text-send dark:data-active:[&_svg]:text-send-foreground'
-				: 'data-active:[&_svg]:text-receive dark:data-active:[&_svg]:text-receive-foreground'
-		]}
-	>
+	<Tabs.Trigger value={mode}>
 		<div class="flex items-center gap-1.5">
 			{#if app[mode].busy}
 				<Spinner class="size-5" />
@@ -62,12 +52,7 @@
 	</Tabs.Trigger>
 {/snippet}
 
-<!-- Must be rendered inside a Tabs.Root — it provides the tabs context.
-
-     Corners follow the card radius scale instead of shadcn's pill default;
-     triggers sit one radius step inside (outer radius minus the list's p-1).
-     h-13 keeps the triggers at a comfortable touch size. -->
-<Tabs.List class="h-12! w-full gap-1 rounded-xl max-sm:order-last">
-	{@render trigger('send', 'Send', IconSend, `${modKey}1`)}
-	{@render trigger('receive', 'Receive', IconDownload, `${modKey}2`)}
+<Tabs.List class="h-12! w-full max-sm:order-last">
+	{@render trigger('send', 'Send', SendIcon, `${modKey}1`)}
+	{@render trigger('receive', 'Receive', DownloadIcon, `${modKey}2`)}
 </Tabs.List>

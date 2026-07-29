@@ -2,7 +2,6 @@
 	import { Button } from '$lib/components/ui/button'
 	import * as Field from '$lib/components/ui/field'
 	import { Input } from '$lib/components/ui/input'
-	import { IconBrandGoogle } from '@tabler/icons-svelte'
 </script>
 
 <!-- UI stub — no submit handler. -->
@@ -17,10 +16,11 @@
 	</Field.Field>
 	<Button class="w-full" disabled>Sign in</Button>
 	<Field.FieldSeparator>or</Field.FieldSeparator>
-	<Button variant="outline" class="w-full" disabled>
-		<IconBrandGoogle data-icon="inline-start" />
-		Continue with Google
-	</Button>
+	<!-- No glyph: lucide carries no brand marks, and a Google button wearing a
+	     generic icon is worse than one wearing none. A real logo would have to be
+	     an inline SVG under Google's branding rules — worth doing when sign-in is
+	     real rather than a disabled stub. -->
+	<Button variant="outline" class="w-full" disabled>Continue with Google</Button>
 	<Field.FieldDescription class="text-center">
 		Accounts aren't available yet — this is a preview.
 	</Field.FieldDescription>

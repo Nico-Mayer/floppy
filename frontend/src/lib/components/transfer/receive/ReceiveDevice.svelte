@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Spinner } from '$lib/components/ui/spinner'
 	import { normal } from '$lib/motion'
-	import { IconDeviceLaptop } from '@tabler/icons-svelte'
+	import LaptopIcon from '@lucide/svelte/icons/laptop'
 	import { fade } from 'svelte/transition'
 	import { formatBytes } from '../format'
 	import { fileCount } from './labels'
@@ -22,7 +22,7 @@
      sender is named and the manifest is known before any bytes arrive. -->
 <div class="flex flex-1 flex-col items-center justify-center gap-6" in:fade={{ duration: normal() }}>
 	<div class="flex size-20 items-center justify-center rounded-2xl border bg-muted/40">
-		<IconDeviceLaptop class="size-9 text-(--tint-fg)" />
+		<LaptopIcon class="size-9 text-(--tint-fg)" />
 	</div>
 
 	<div class="flex flex-col items-center gap-1.5 text-center">

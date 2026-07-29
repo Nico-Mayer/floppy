@@ -4,16 +4,14 @@
 	import { Spinner } from '$lib/components/ui/spinner'
 	import { formatBytes } from '$lib/components/transfer/format'
 	import { cn } from '$lib/utils'
-	import {
-		IconAlertTriangle,
-		IconCheck,
-		IconClockHour3,
-		IconDeviceLaptop,
-		IconDownload,
-		IconSend,
-		IconWorld,
-		IconX
-	} from '@tabler/icons-svelte'
+	import CheckIcon from '@lucide/svelte/icons/check'
+	import Clock3Icon from '@lucide/svelte/icons/clock-3'
+	import DownloadIcon from '@lucide/svelte/icons/download'
+	import GlobeIcon from '@lucide/svelte/icons/globe'
+	import LaptopIcon from '@lucide/svelte/icons/laptop'
+	import SendIcon from '@lucide/svelte/icons/send'
+	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert'
+	import XIcon from '@lucide/svelte/icons/x'
 	import { onMount } from 'svelte'
 	import { formatTime, groupByDay, loadActivity, type ActivityEntry, type ActivityStatus } from './activity'
 
@@ -68,7 +66,7 @@
 	<Empty.Root class="border border-dashed py-8">
 		<Empty.Header>
 			<Empty.Media variant="icon">
-				<IconClockHour3 />
+				<Clock3Icon />
 			</Empty.Media>
 			<Empty.Title>No transfers yet</Empty.Title>
 			<Empty.Description>Sent and received files show up here.</Empty.Description>
@@ -101,9 +99,9 @@
 								)}
 							>
 								{#if entry.kind === 'send'}
-									<IconSend class="size-4" />
+									<SendIcon class="size-4" />
 								{:else}
-									<IconDownload class="size-4" />
+									<DownloadIcon class="size-4" />
 								{/if}
 							</span>
 
@@ -124,27 +122,27 @@
 									<!-- How the peer was found: a paired device, or a code phrase. -->
 									<Badge variant="outline" class="text-muted-foreground">
 										{#if entry.via === 'device'}
-											<IconDeviceLaptop data-icon="inline-start" />
+											<LaptopIcon data-icon="inline-start" />
 											Device
 										{:else}
-											<IconWorld data-icon="inline-start" />
+											<GlobeIcon data-icon="inline-start" />
 											Code
 										{/if}
 									</Badge>
 
 									{#if entry.status === 'failed'}
 										<Badge variant="destructive">
-											<IconAlertTriangle data-icon="inline-start" />
+											<TriangleAlertIcon data-icon="inline-start" />
 											{statusLabels.failed}
 										</Badge>
 									{:else if entry.status === 'cancelled'}
 										<Badge variant="secondary">
-											<IconX data-icon="inline-start" />
+											<XIcon data-icon="inline-start" />
 											{statusLabels.cancelled}
 										</Badge>
 									{:else}
 										<Badge variant="secondary" class="text-muted-foreground">
-											<IconCheck data-icon="inline-start" />
+											<CheckIcon data-icon="inline-start" />
 											{statusLabels.completed}
 										</Badge>
 									{/if}

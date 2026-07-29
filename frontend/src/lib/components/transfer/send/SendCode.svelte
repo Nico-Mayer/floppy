@@ -4,7 +4,8 @@
 	import * as InputGroup from '$lib/components/ui/input-group'
 	import { Spinner } from '$lib/components/ui/spinner'
 	import { fast, motionOK, normal } from '$lib/motion'
-	import { IconCheck, IconCopy } from '@tabler/icons-svelte'
+	import CheckIcon from '@lucide/svelte/icons/check'
+	import CopyIcon from '@lucide/svelte/icons/copy'
 	import { Clipboard } from '@wailsio/runtime'
 	import { fade, scale } from 'svelte/transition'
 
@@ -49,12 +50,7 @@
 		     the "still waiting for your peer" tell — it stops the moment this
 		     screen is replaced. -->
 		<div class="relative shrink-0 rounded-2xl border bg-qr-background p-4 @md:p-3">
-			<QRCode
-				value={code}
-				fgColor="var(--qr-foreground)"
-				bgColor="var(--qr-background)"
-				class="size-44 @md:size-32"
-			/>
+			<QRCode value={code} class="size-44 @md:size-32" />
 			{#if motionOK()}
 				<BorderBeam size={70} duration={5} colorFrom="var(--tint)" colorTo="var(--tint-fg)" />
 			{/if}
@@ -66,11 +62,11 @@
 					<InputGroup.Button size="icon-xs" onclick={copyCode} aria-label="Copy code">
 						{#if copied}
 							<span in:scale={{ start: 0.6, duration: fast() }}>
-								<IconCheck class="text-(--tint-fg)" />
+								<CheckIcon class="text-(--tint-fg)" />
 							</span>
 						{:else}
 							<span in:scale={{ start: 0.6, duration: fast() }}>
-								<IconCopy />
+								<CopyIcon />
 							</span>
 						{/if}
 					</InputGroup.Button>

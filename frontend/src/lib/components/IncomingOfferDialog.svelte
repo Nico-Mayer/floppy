@@ -3,7 +3,8 @@
 	import * as ResponsiveDialog from '$lib/components/ui/responsive-dialog'
 	import { formatBytes } from '$lib/components/transfer/format'
 	import { pairing } from '$lib/pairing-app.svelte'
-	import { IconDownload, IconX } from '@tabler/icons-svelte'
+	import DownloadIcon from '@lucide/svelte/icons/download'
+	import XIcon from '@lucide/svelte/icons/x'
 
 	// Driven entirely by pairing.incoming: an offer arrives → the prompt opens;
 	// accept/decline clears it. Closing by any other means (esc, overlay, swipe)
@@ -39,11 +40,11 @@
 
 		<ResponsiveDialog.Footer>
 			<Button variant="outline" onclick={() => pairing.decline()}>
-				<IconX data-icon="inline-start" />
+				<XIcon data-icon="inline-start" />
 				Decline
 			</Button>
 			<Button onclick={() => pairing.accept()}>
-				<IconDownload data-icon="inline-start" />
+				<DownloadIcon data-icon="inline-start" />
 				Accept
 			</Button>
 		</ResponsiveDialog.Footer>

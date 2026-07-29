@@ -3,7 +3,9 @@
 	import { Input } from '$lib/components/ui/input'
 	import { Switch } from '$lib/components/ui/switch'
 	import * as ToggleGroup from '$lib/components/ui/toggle-group'
-	import { IconDeviceLaptop, IconMoon, IconSun } from '@tabler/icons-svelte'
+	import LaptopIcon from '@lucide/svelte/icons/laptop'
+	import MoonIcon from '@lucide/svelte/icons/moon'
+	import SunIcon from '@lucide/svelte/icons/sun'
 	import { setMode, userPrefersMode } from 'mode-watcher'
 
 	// UI stub — settings controls are local-only, wired to nothing yet.
@@ -13,9 +15,9 @@
 	// Theme is real: mode-watcher persists the preference and resolves `system`
 	// against the OS. userPrefersMode holds the stored choice, setMode writes it.
 	const themes = [
-		{ value: 'light', label: 'Light', icon: IconSun },
-		{ value: 'system', label: 'System', icon: IconDeviceLaptop },
-		{ value: 'dark', label: 'Dark', icon: IconMoon }
+		{ value: 'light', label: 'Light', icon: SunIcon },
+		{ value: 'system', label: 'System', icon: LaptopIcon },
+		{ value: 'dark', label: 'Dark', icon: MoonIcon }
 	] as const
 
 	type Theme = (typeof themes)[number]['value']

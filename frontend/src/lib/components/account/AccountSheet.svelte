@@ -2,7 +2,8 @@
 	import * as Avatar from '$lib/components/ui/avatar'
 	import { Button } from '$lib/components/ui/button'
 	import * as Sheet from '$lib/components/ui/sheet'
-	import { IconChevronLeft, IconUser } from '@tabler/icons-svelte'
+	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left'
+	import UserIcon from '@lucide/svelte/icons/user'
 	import ActivityView from './ActivityView.svelte'
 	import DevicesView from './DevicesView.svelte'
 	import LoginView from './LoginView.svelte'
@@ -30,7 +31,7 @@
 		<Avatar.Root class="size-8 ring ring-accent ring-offset-1">
 			<!-- Decorative: the trigger's aria-label already names the control. -->
 			<Avatar.Image src="https://api.dicebear.com/10.x/initial-face/svg?seed=Nico" alt="" />
-			<Avatar.Fallback><IconUser class="size-4" /></Avatar.Fallback>
+			<Avatar.Fallback><UserIcon class="size-4" /></Avatar.Fallback>
 		</Avatar.Root>
 	</Sheet.Trigger>
 
@@ -71,7 +72,7 @@
 					onclick={() => (view = 'menu')}
 					aria-label="Back"
 				>
-					<IconChevronLeft />
+					<ChevronLeftIcon />
 				</Button>
 			{/if}
 			<Sheet.Title>{titles[view]}</Sheet.Title>

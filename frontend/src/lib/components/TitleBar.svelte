@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button/index.js'
-	import { IconMinus, IconSquare, IconX } from '@tabler/icons-svelte'
+	import MinusIcon from '@lucide/svelte/icons/minus'
+	import SquareIcon from '@lucide/svelte/icons/square'
+	import XIcon from '@lucide/svelte/icons/x'
 	import { Window } from '@wailsio/runtime'
 
 	// On Windows the window is frameless (see main.go) and we render our own
@@ -34,7 +36,7 @@
 					onclick={() => Window.Minimise()}
 					aria-label="Minimize"
 				>
-					<IconMinus />
+					<MinusIcon />
 				</Button>
 				<Button
 					class="size-8"
@@ -43,7 +45,7 @@
 					onclick={() => Window.ToggleMaximise()}
 					aria-label="Maximize"
 				>
-					<IconSquare />
+					<SquareIcon />
 				</Button>
 				<Button
 					class="size-8 hover:bg-destructive hover:text-white"
@@ -52,7 +54,7 @@
 					onclick={() => Window.Close()}
 					aria-label="Close"
 				>
-					<IconX />
+					<XIcon />
 				</Button>
 			{/if}
 		</div>

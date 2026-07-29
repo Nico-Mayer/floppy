@@ -3,7 +3,8 @@
 	import { Button } from '$lib/components/ui/button'
 	import * as Item from '$lib/components/ui/item'
 	import { fast, shift } from '$lib/motion'
-	import { IconFolder, IconX } from '@tabler/icons-svelte'
+	import FolderIcon from '@lucide/svelte/icons/folder'
+	import XIcon from '@lucide/svelte/icons/x'
 	import { fly, scale } from 'svelte/transition'
 	import { ext } from './files'
 	import { formatBytes } from './format'
@@ -26,7 +27,7 @@
 	     icon needs its own size. -->
 		<Item.Media variant="image" class="border bg-muted font-mono text-[10px] font-bold">
 			{#if file.isDir}
-				<IconFolder class="size-4" />
+				<FolderIcon class="size-4" />
 			{:else}
 				{ext(file.path)}
 			{/if}
@@ -48,7 +49,7 @@
 				onclick={onremove}
 				aria-label="Remove file"
 			>
-				<IconX />
+				<XIcon />
 			</Button>
 		</Item.Actions>
 	</Item.Root>

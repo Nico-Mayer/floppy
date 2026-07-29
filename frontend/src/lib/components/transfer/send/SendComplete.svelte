@@ -1,7 +1,7 @@
 <script lang="ts">
 	import * as Empty from '$lib/components/ui/empty'
 	import { normal } from '$lib/motion'
-	import { IconCheck } from '@tabler/icons-svelte'
+	import CheckIcon from '@lucide/svelte/icons/check'
 	import { fade } from 'svelte/transition'
 	import type { SendTarget } from '../types'
 
@@ -12,7 +12,7 @@
 	<Empty.Root>
 		<Empty.Header>
 			<Empty.Media variant="icon" class="animate-pop">
-				<IconCheck class="text-(--tint-fg)" />
+				<CheckIcon class="text-(--tint-fg)" />
 			</Empty.Media>
 			<Empty.Title>Sent {summary}</Empty.Title>
 			{#if target.kind === 'device'}

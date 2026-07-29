@@ -2,7 +2,8 @@
 	import { OpenPath } from '$bindings/floppy/internal/services/fileservice'
 	import { Button } from '$lib/components/ui/button'
 	import { app } from '$lib/transfer-app.svelte'
-	import { IconFolderOpen, IconX } from '@tabler/icons-svelte'
+	import FolderOpenIcon from '@lucide/svelte/icons/folder-open'
+	import XIcon from '@lucide/svelte/icons/x'
 	import { currentFile } from '../format'
 	import TransferCard from '../TransferCard.svelte'
 	import TransferProgress from '../TransferProgress.svelte'
@@ -52,7 +53,7 @@
 	{#snippet actions()}
 		{#if receive.status === 'done'}
 			<Button class="@max-md:min-h-11" onclick={() => OpenPath(receive.savedTo)}>
-				<IconFolderOpen />
+				<FolderOpenIcon />
 				Open folder
 			</Button>
 			<Button variant="outline" size="sm" class="@max-md:min-h-11" onclick={() => receive.reset()}>
@@ -60,7 +61,7 @@
 			</Button>
 		{:else if receive.status === 'connecting' || receive.status === 'receiving'}
 			<Button variant="destructive" size="sm" class="@max-md:min-h-11" onclick={() => receive.cancel()}>
-				<IconX />
+				<XIcon />
 				Cancel
 			</Button>
 		{:else if receive.status === 'idle'}

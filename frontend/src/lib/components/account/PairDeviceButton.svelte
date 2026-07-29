@@ -2,7 +2,7 @@
 	import { Button } from '$lib/components/ui/button'
 	import * as Tooltip from '$lib/components/ui/tooltip'
 	import { pairing } from '$lib/pairing-app.svelte'
-	import { IconDevicesPlus } from '@tabler/icons-svelte'
+	import ShieldPlusIcon from '@lucide/svelte/icons/shield-plus'
 	import AddDeviceDialog from './AddDeviceDialog.svelte'
 
 	/**
@@ -41,7 +41,7 @@
 							aria-label={label}
 							onclick={() => (open = true)}
 						>
-							<IconDevicesPlus />
+							<ShieldPlusIcon />
 						</Button>
 					{/snippet}
 				</Tooltip.Trigger>
@@ -50,7 +50,7 @@
 		</Tooltip.Provider>
 	{:else}
 		<Button variant="link" size="sm" class={className} onclick={() => (open = true)}>
-			<IconDevicesPlus data-icon="inline-start" />
+			<ShieldPlusIcon data-icon="inline-start" />
 			{label}
 		</Button>
 	{/if}

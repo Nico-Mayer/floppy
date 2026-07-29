@@ -6,16 +6,14 @@
 	import { Separator } from '$lib/components/ui/separator'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import { cn } from '$lib/utils'
-	import {
-		IconCheck,
-		IconCopy,
-		IconDeviceLaptop,
-		IconDevices,
-		IconEye,
-		IconEyeOff,
-		IconPlus,
-		IconTrash
-	} from '@tabler/icons-svelte'
+	import CheckIcon from '@lucide/svelte/icons/check'
+	import CopyIcon from '@lucide/svelte/icons/copy'
+	import EyeIcon from '@lucide/svelte/icons/eye'
+	import EyeOffIcon from '@lucide/svelte/icons/eye-off'
+	import LaptopIcon from '@lucide/svelte/icons/laptop'
+	import MonitorSmartphoneIcon from '@lucide/svelte/icons/monitor-smartphone'
+	import PlusIcon from '@lucide/svelte/icons/plus'
+	import Trash2Icon from '@lucide/svelte/icons/trash-2'
 	import { Clipboard } from '@wailsio/runtime'
 	import AddDeviceDialog from './AddDeviceDialog.svelte'
 
@@ -51,7 +49,7 @@
 	<Empty.Root>
 		<Empty.Header>
 			<Empty.Media variant="icon">
-				<IconDevices />
+				<MonitorSmartphoneIcon />
 			</Empty.Media>
 			<Empty.Title>Pairing unavailable</Empty.Title>
 			<Empty.Description>
@@ -78,12 +76,7 @@
 					aria-pressed={!qrHidden}
 					class="group relative cursor-pointer overflow-hidden rounded-2xl border bg-qr-background p-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
 				>
-					<QRCode
-						value={pairing.identity}
-						fgColor="var(--qr-foreground)"
-						bgColor="var(--qr-background)"
-						class={cn('size-40', qrHidden && 'select-none')}
-					/>
+					<QRCode value={pairing.identity} class={cn('size-40', qrHidden && 'select-none')} />
 					<!-- The veil blurs, not the QR itself: a `filter` on the svg gets its
 					     own composited layer whose bounds are inflated by the blur radius,
 					     so it can paint past our overflow-hidden. backdrop-filter is
@@ -100,19 +93,19 @@
 					>
 						<span class="rounded-full bg-background/80 p-2.5 text-foreground shadow-sm backdrop-blur">
 							{#if qrHidden}
-								<IconEye class="size-5" />
+								<EyeIcon class="size-5" />
 							{:else}
-								<IconEyeOff class="size-5" />
+								<EyeOffIcon class="size-5" />
 							{/if}
 						</span>
 					</span>
 				</button>
 				<Button variant="outline" size="sm" onclick={copyIdentity}>
 					{#if copied}
-						<IconCheck data-icon="inline-start" />
+						<CheckIcon data-icon="inline-start" />
 						Copied
 					{:else}
-						<IconCopy data-icon="inline-start" />
+						<CopyIcon data-icon="inline-start" />
 						Copy
 					{/if}
 				</Button>
@@ -126,7 +119,7 @@
 			<div class="flex items-center justify-between gap-2">
 				<h3 class="text-base font-medium">Trusted</h3>
 				<Button variant="outline" size="sm" onclick={() => (addOpen = true)}>
-					<IconPlus data-icon="inline-start" />
+					<PlusIcon data-icon="inline-start" />
 					Add
 				</Button>
 			</div>
@@ -134,7 +127,7 @@
 				<Empty.Root class="border border-dashed py-8">
 					<Empty.Header>
 						<Empty.Media variant="icon">
-							<IconDevices />
+							<MonitorSmartphoneIcon />
 						</Empty.Media>
 						<Empty.Title>No trusted devices</Empty.Title>
 						<Empty.Description>Add a device to send to it without a code.</Empty.Description>
@@ -144,7 +137,7 @@
 					     list rather than as the thing to press when the list is bare. -->
 					<Empty.Content>
 						<Button variant="outline" size="sm" onclick={() => (addOpen = true)}>
-							<IconPlus data-icon="inline-start" />
+							<PlusIcon data-icon="inline-start" />
 							Add a device
 						</Button>
 					</Empty.Content>
@@ -154,7 +147,7 @@
 					{#each pairing.devices as device (device.fingerprint)}
 						<Item.Root variant="outline" size="sm">
 							<Item.Media variant="icon">
-								<IconDeviceLaptop />
+								<LaptopIcon />
 							</Item.Media>
 							<Item.Content>
 								<Item.Title class="truncate">{device.name}</Item.Title>
@@ -169,7 +162,7 @@
 									aria-label="Remove {device.name}"
 									onclick={() => pairing.untrust(device.fingerprint)}
 								>
-									<IconTrash />
+									<Trash2Icon />
 								</Button>
 							</Item.Actions>
 						</Item.Root>

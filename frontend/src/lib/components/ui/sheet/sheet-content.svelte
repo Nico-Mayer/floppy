@@ -8,10 +8,17 @@
 	import SheetPortal from "./sheet-portal.svelte";
 	import SheetOverlay from "./sheet-overlay.svelte";
 	import { Button } from "$lib/components/ui/button/index.js";
-	import { IconX } from '@tabler/icons-svelte';
+	import XIcon from '@lucide/svelte/icons/x';
 	import { cn, type WithoutChildrenOrChild } from "$lib/utils.js";
 	import type { ComponentProps } from "svelte";
 
+	// LOCAL PATCHES — `shadcn-svelte update sheet` drops these; re-apply:
+	//   1. overlayProps, so a caller can reach the overlay it never renders itself
+	//      (AccountSheet offsets it below the Wails titlebar and closes on its
+	//      click). Without it the overlay covers the window controls.
+	//   2. slide distances are *-full, not *-10, and the fade is dropped: the panel
+	//      travels in from the window edge instead of drifting 10px while fading.
+	// The overlay's own fade lives in sheet-overlay.svelte, patched the same way.
 	let {
 		ref = $bindable(null),
 		class: className,
@@ -47,7 +54,7 @@
 			<SheetPrimitive.Close data-slot="sheet-close">
 				{#snippet child({ props })}
 					<Button variant="ghost" class="bg-secondary absolute top-4 right-4" size="icon-sm" {...props}>
-						<IconX  />
+						<XIcon  />
 						<span class="sr-only">Close</span>
 					</Button>
 				{/snippet}

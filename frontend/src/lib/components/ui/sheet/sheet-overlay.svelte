@@ -9,6 +9,8 @@
 	}: SheetPrimitive.OverlayProps = $props();
 </script>
 
+<!-- LOCAL PATCH — `shadcn-svelte update sheet` drops this; re-apply: the overlay
+     fades with the panel, where the registry file pops it in with no transition. -->
 <SheetPrimitive.Overlay
 	bind:ref
 	data-slot="sheet-overlay"

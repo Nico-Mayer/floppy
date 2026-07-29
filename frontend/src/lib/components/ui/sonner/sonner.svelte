@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { Toaster as Sonner, type ToasterProps as SonnerProps } from "svelte-sonner";
 	import { mode } from "mode-watcher";
-	import { IconLoader } from '@tabler/icons-svelte';
-	import { IconCircleCheck } from '@tabler/icons-svelte';
-	import { IconAlertOctagon } from '@tabler/icons-svelte';
-	import { IconInfoCircle } from '@tabler/icons-svelte';
-	import { IconAlertTriangle } from '@tabler/icons-svelte';
+	import Loader2Icon from '@lucide/svelte/icons/loader-2';
+	import CircleCheckIcon from '@lucide/svelte/icons/circle-check';
+	import OctagonXIcon from '@lucide/svelte/icons/octagon-x';
+	import InfoIcon from '@lucide/svelte/icons/info';
+	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 
 	let { ...restProps }: SonnerProps = $props();
 </script>
@@ -17,21 +17,18 @@
 	{...restProps}
 >
 	{#snippet loadingIcon()}
-		<IconLoader class="size-4 animate-spin" />
+		<Loader2Icon class="size-4 animate-spin" />
 	{/snippet}
 	{#snippet successIcon()}
-		<IconCircleCheck class="size-4" />
+		<CircleCheckIcon class="size-4" />
 	{/snippet}
-	<!-- The icon carries the toast's type, since the surface stays a popover for
-	     every one of them (no richColors) — same amber/destructive pairing the
-	     panels already use for warnings and failures. -->
 	{#snippet errorIcon()}
-		<IconAlertOctagon class="size-4 text-destructive" />
+		<OctagonXIcon class="size-4" />
 	{/snippet}
 	{#snippet infoIcon()}
-		<IconInfoCircle class="size-4 text-muted-foreground" />
+		<InfoIcon class="size-4" />
 	{/snippet}
 	{#snippet warningIcon()}
-		<IconAlertTriangle class="size-4 text-amber-500" />
+		<TriangleAlertIcon class="size-4" />
 	{/snippet}
 </Sonner>
