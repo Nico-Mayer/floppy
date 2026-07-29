@@ -121,7 +121,7 @@
 					<Button variant="outline" size="icon" onclick={() => send.pickFiles()} aria-label="Add files">
 						<IconPlus />
 					</Button>
-					<Button class="min-w-0 flex-1 @max-md:min-h-11" onclick={dispatchSend}>
+					<Button class="min-w-0 flex-1" onclick={dispatchSend}>
 						<IconSend />
 						Send
 					</Button>

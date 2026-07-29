@@ -164,8 +164,8 @@
 							</Item.Content>
 							<Item.Actions>
 								<Button
-									variant="ghost"
-									size="icon-sm"
+									variant="destructive"
+									size="icon"
 									aria-label="Remove {device.name}"
 									onclick={() => pairing.untrust(device.fingerprint)}
 								>

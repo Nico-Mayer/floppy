@@ -66,7 +66,7 @@
 			{#if view !== 'menu'}
 				<Button
 					variant="ghost"
-					size="icon-sm"
+					size="icon"
 					class="-ml-1 shrink-0"
 					onclick={() => (view = 'menu')}
 					aria-label="Back"
