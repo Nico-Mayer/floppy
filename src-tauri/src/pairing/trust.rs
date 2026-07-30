@@ -16,7 +16,10 @@ use crate::pairing::identity::{write_file_atomic, PublicKey};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TrustedDevice {
     pub key: PublicKey,
-    /// The peer's most-recently-advertised self-name.
+    /// The peer's most-recently-advertised self-name. `alias = "name"` migrates
+    /// stores written before the field was renamed, so an old `trust.json` loads
+    /// instead of crashing startup.
+    #[serde(alias = "name")]
     pub advertised_name: String,
     /// A local rename. When set it wins over the advertised name and is never
     /// sent to the peer.
@@ -203,6 +206,18 @@ mod tests {
         // since refresh skipped the overridden entry).
         store.rename(&fp, "  ").unwrap();
         assert_eq!(store.get(&fp).unwrap().label(), "NicoPC");
+    }
+
+    #[test]
+    fn loads_pre_rename_store_via_alias() {
+        // A trust.json written before the `name` → `advertised_name` rename must
+        // still load (this crashed startup on an existing install).
+        let dir = tempfile::tempdir().unwrap();
+        let peer = Identity::load_or_create(tempfile::tempdir().unwrap().path()).unwrap().public();
+        let old = serde_json::json!([{ "key": peer, "name": "OldLaptop" }]);
+        std::fs::write(dir.path().join(TRUST_FILE), serde_json::to_vec(&old).unwrap()).unwrap();
+        let store = TrustStore::load(dir.path()).unwrap();
+        assert_eq!(store.get(&peer.fingerprint()).unwrap().label(), "OldLaptop");
     }
 
     #[test]

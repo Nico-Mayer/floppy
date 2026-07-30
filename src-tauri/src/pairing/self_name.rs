@@ -97,13 +97,22 @@ const ANIMALS: &[&str] = &[
     "puffin", "badger", "marten", "beaver", "ferret", "raven", "mole", "shrew", "stoat", "wombat",
 ];
 
-/// A random `adjective-animal` self-name, e.g. `brave-otter`.
+/// A random `AdjectiveAnimal` self-name in PascalCase, e.g. `BraveOtter`.
 pub fn generate() -> Result<String, String> {
     let mut buf = [0u8; 2];
     getrandom::fill(&mut buf).map_err(|e| format!("rng: {e}"))?;
     let adjective = ADJECTIVES[buf[0] as usize % ADJECTIVES.len()];
     let animal = ANIMALS[buf[1] as usize % ANIMALS.len()];
-    Ok(format!("{adjective}-{animal}"))
+    Ok(format!("{}{}", capitalize(adjective), capitalize(animal)))
+}
+
+/// Uppercase the first letter of a lowercase wordlist entry.
+fn capitalize(word: &str) -> String {
+    let mut chars = word.chars();
+    match chars.next() {
+        Some(first) => first.to_ascii_uppercase().to_string() + chars.as_str(),
+        None => String::new(),
+    }
 }
 
 #[cfg(test)]
@@ -114,7 +123,10 @@ mod tests {
     fn generated_once_and_stable_across_restart() {
         let dir = tempfile::tempdir().unwrap();
         let first = SelfName::load_or_create(dir.path()).unwrap().get();
-        assert!(first.contains('-'), "generated name looks like adjective-animal");
+        assert!(
+            first.chars().next().is_some_and(|c| c.is_ascii_uppercase()),
+            "generated name is PascalCase (e.g. BraveOtter)"
+        );
         // A second load against the same dir yields the identical name.
         let second = SelfName::load_or_create(dir.path()).unwrap().get();
         assert_eq!(first, second);
