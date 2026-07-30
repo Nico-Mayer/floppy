@@ -49,11 +49,11 @@ class PairingApp {
 				// On the sender the code/progress events take the send panel from
 				// here; nothing to do but clear a lingering incoming prompt.
 				this.incoming = null
-				toast.success('Transfer accepted')
+				toast.success('They said yes')
 			}),
 			events.pairingDeclined.listen(() => {
 				this.#resetPendingSend()
-				toast.info('Offer declined')
+				toast.info('They turned it down')
 			}),
 			events.pairingError.listen((e) => {
 				this.#resetPendingSend()
@@ -85,7 +85,7 @@ class PairingApp {
 		try {
 			await OpenPairLink(link)
 		} catch (e) {
-			toast.error(`Could not pair: ${e}`)
+			toast.error(`Pairing did not work: ${e}`)
 		}
 	}
 
@@ -164,7 +164,7 @@ class PairingApp {
 		try {
 			await Untrust(fingerprint)
 		} catch (e) {
-			toast.error(`Could not remove the device: ${e}`)
+			toast.error(`Could not remove that device: ${e}`)
 		}
 		// Refresh either way: on success it drops the row, on failure it restores
 		// the one the list already believes is gone.

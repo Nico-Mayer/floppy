@@ -51,9 +51,9 @@
 			<Empty.Media variant="icon">
 				<MonitorSmartphoneIcon />
 			</Empty.Media>
-			<Empty.Title>Pairing unavailable</Empty.Title>
+			<Empty.Title>Pairing is not ready</Empty.Title>
 			<Empty.Description>
-				Could not reach the rendezvous. Start the broker and reopen Floppy to pair devices.
+				Floppy cannot reach the pairing service right now. Check your internet and reopen the app.
 			</Empty.Description>
 		</Empty.Header>
 	</Empty.Root>
@@ -72,7 +72,7 @@
 				<button
 					type="button"
 					onclick={() => (qrHidden = !qrHidden)}
-					aria-label={qrHidden ? 'Show pairing code' : 'Hide pairing code'}
+					aria-label={qrHidden ? 'Show my pairing code' : 'Hide my pairing code'}
 					aria-pressed={!qrHidden}
 					class="group bg-qr-background relative cursor-pointer overflow-hidden rounded-2xl border p-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
 				>
@@ -117,7 +117,7 @@
 		<!-- Trusted list: send to, or un-trust. Adding is a modal, not inline. -->
 		<section class="flex flex-col gap-3">
 			<div class="flex items-center justify-between gap-2">
-				<h3 class="text-base font-medium">Trusted</h3>
+				<h3 class="text-base font-medium">Paired</h3>
 				<Button variant="outline" size="sm" onclick={() => (addOpen = true)}>
 					<PlusIcon data-icon="inline-start" />
 					Add
@@ -129,8 +129,8 @@
 						<Empty.Media variant="icon">
 							<MonitorSmartphoneIcon />
 						</Empty.Media>
-						<Empty.Title>No trusted devices</Empty.Title>
-						<Empty.Description>Add a device to send to it without a code.</Empty.Description>
+						<Empty.Title>No devices yet</Empty.Title>
+						<Empty.Description>Add one and you can send to it without a code.</Empty.Description>
 					</Empty.Header>
 					<!-- The way out of the empty state, in the empty state. The Add button
 					     in the section heading above is easy to read as decoration of the

@@ -14,8 +14,8 @@
 	<!-- The only clue the user ever gets that they mistyped. It arrives on a
 	     delay, so it slides in rather than blinking into place. -->
 	<p class="text-center text-xs text-muted-foreground" transition:fly={{ y: shift(), duration: normal() }}>
-		Still nothing. Check that
+		Still nothing. Make sure
 		<span class="font-mono text-foreground">{receive.code}</span>
-		matches the sender's code, and that they are still waiting.
+		is exactly what the sender has, and that they have not closed the app.
 	</p>
 {/if}

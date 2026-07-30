@@ -80,6 +80,28 @@ context: |
   - Live cross-language E2E is `#[ignore]`d; run with a real Go broker at
     `FLOPPY_TEST_BROKER` (e.g. `ws://127.0.0.1:8799/ws`).
 
+  UI copy voice (applies to every user-visible string):
+  - Write for a normal person, not an engineer. Say "the other device", not
+    "the peer"; "code", not "code phrase"; "no connection", not "could not
+    reach the relay".
+  - Short, warm, everyday words. Contractions are fine. Read it out loud; if it
+    sounds like a manual, rewrite it.
+  - Never use an em dash (—) in UI text. Use a full stop, a comma, or two
+    sentences. The same goes for semicolons.
+  - No stiff or formal phrasing: no "in order to", "please ensure", "is
+    unavailable", "has been completed", "prior to". Prefer "so you can",
+    "make sure", "not ready", "all done", "before".
+  - Tell the person what to do next, in one line. Errors say what happened and
+    the one thing to try, with no blame and no jargon.
+  - Aim for the tone of Duolingo or Things: plain, friendly, a little playful.
+    Do not overdo it. No exclamation-mark spam, no emoji, no mascot voice in
+    error text.
+  - Keep status words lowercase and tiny where the design already does that
+    (card headlines, badges); keep them everyday words too ("stopping", not
+    "cancelling"; "all done", not "complete").
+  - This rule covers UI strings only: aria-labels, placeholders, toasts, and
+    error copy included. Code comments are for developers and are exempt.
+
   Dev:
   - `mise run dev` (= `npm run tauri dev`); Vite on port 1420.
   - `mise run doctor` checks the per-OS mobile toolchain (Android SDK/NDK, iOS).

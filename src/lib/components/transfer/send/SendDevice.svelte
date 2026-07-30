@@ -24,19 +24,20 @@
 
 	<div class="flex flex-col items-center gap-1.5 text-center">
 		<p class="animate-pop text-lg font-bold tracking-tight">
-			{accepted ? 'Accepted' : 'Waiting for approval'}
+			{accepted ? 'They said yes' : 'Waiting for a yes'}
 		</p>
 		<p class="max-w-64 text-xs text-muted-foreground">
 			{#if accepted}
-				Connecting to <span class="font-medium text-foreground">{name}</span> — the transfer starts on its own.
+				Connecting to <span class="font-medium text-foreground">{name}</span>. Your files start moving on
+				their own.
 			{:else}
-				<span class="font-medium text-foreground">{name}</span> has to accept before anything leaves this device.
+				<span class="font-medium text-foreground">{name}</span> has to say yes before anything leaves this device.
 			{/if}
 		</p>
 	</div>
 
 	<div class="flex items-center gap-2 font-mono text-[11px] tracking-wider text-muted-foreground uppercase">
 		<Spinner class="size-3.5" />
-		{accepted ? 'connecting' : 'awaiting accept'}
+		{accepted ? 'connecting' : 'waiting for a yes'}
 	</div>
 </div>

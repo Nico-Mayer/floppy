@@ -17,7 +17,7 @@
 				<CheckIcon class="text-(--tint-fg)" />
 			</Empty.Media>
 			<Empty.Title>
-				{target.kind === 'device' ? `Received from ${target.name}` : 'Transfer complete'}
+				{target.kind === 'device' ? `Got them from ${target.name}` : 'All done'}
 			</Empty.Title>
 			<Empty.Description class="w-full truncate font-mono text-xs" title={savedTo}>
 				{savedTo}

@@ -20,15 +20,15 @@ import type { ReceiveStatus, ReceiveTarget } from '../types'
 export function receiveHeadline(status: ReceiveStatus, target: ReceiveTarget): string {
 	switch (status) {
 		case 'cancelling':
-			return 'cancelling'
+			return 'stopping'
 		case 'connecting':
 			return target.kind === 'device' ? 'incoming' : 'connecting'
 		case 'receiving':
-			return 'receiving'
+			return 'getting files'
 		case 'done':
-			return 'complete'
+			return 'all done'
 		default:
-			return 'enter code'
+			return 'type your code'
 	}
 }
 
@@ -43,9 +43,9 @@ export function receiveBadge(status: ReceiveStatus, target: ReceiveTarget, progr
 			// A receiver has no byte counts until the sender's manifest lands.
 			return progress === null ? '…' : `${progress}%`
 		case 'done':
-			return 'complete'
+			return 'done'
 		default:
-			return 'idle'
+			return 'waiting'
 	}
 }
 

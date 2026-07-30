@@ -46,18 +46,29 @@ class SendTransfer {
 		this.files = this.files.filter((file) => file.path !== path)
 	}
 
+	/** True while the native picker is open, so a second click is ignored. */
+	#picking = false
+
 	async pickFiles() {
-		// Open the native picker from the frontend (not a Rust command): it
-		// returns the selected paths directly in this JS context, so the files
-		// are added immediately — no cross-thread callback round-trip, which on
-		// macOS left the webview showing a stray "Paste" menu as an extra step.
-		const selected = await open({ multiple: true, title: 'Add files' })
-		if (selected) await this.addPaths(Array.isArray(selected) ? selected : [selected])
+		// The empty state is a big click target; one panel at a time.
+		if (this.#picking) return
+		this.#picking = true
+		try {
+			const selected = await open({ multiple: true, title: 'Add files' })
+			if (selected) await this.addPaths(Array.isArray(selected) ? selected : [selected])
+		} finally {
+			this.#picking = false
+		}
 	}
 
-	/** Add paths — bare strings from a drop or the picker — resolved to entries. */
+	/**
+	 * Add paths — bare strings from a drop or the picker — resolved to entries.
+	 * Folders are dropped: the picker only offers files, and the transport sends
+	 * files, so a dragged-in folder must not reach the queue.
+	 */
 	async addPaths(paths: string[]) {
-		if (paths.length) this.add((await Describe(paths)) ?? [])
+		if (!paths.length) return
+		this.add(((await Describe(paths)) ?? []).filter((entry) => !entry.isDir))
 	}
 
 	async start() {

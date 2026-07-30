@@ -35,7 +35,7 @@
 	<div class="flex flex-col items-center gap-1.5 text-center">
 		<p class="animate-pop text-lg font-bold tracking-tight">Ready to share</p>
 		<p class="max-w-64 text-xs text-muted-foreground">
-			Scan the code with the other device, or pass the phrase along yourself.
+			Scan this on the other device, or just read the words out to them.
 		</p>
 	</div>
 
@@ -72,12 +72,12 @@
 					</InputGroup.Button>
 				</InputGroup.Addon>
 			</InputGroup.Root>
-			<p class="text-center text-xs text-muted-foreground @md:text-left">Expires when you quit the app.</p>
+			<p class="text-center text-xs text-muted-foreground @md:text-left">Works until you close Floppy.</p>
 		</div>
 	</div>
 
 	<div class="flex items-center gap-2 font-mono text-[11px] tracking-wider text-muted-foreground uppercase">
 		<Spinner class="size-3.5" />
-		awaiting peer
+		waiting for them
 	</div>
 </div>

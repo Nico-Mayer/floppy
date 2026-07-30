@@ -27,9 +27,9 @@
 	<Field.FieldSet>
 		<Field.FieldLegend>General</Field.FieldLegend>
 		<Field.Field>
-			<Field.FieldLabel for="download-dir">Download location</Field.FieldLabel>
+			<Field.FieldLabel for="download-dir">Save files to</Field.FieldLabel>
 			<Input id="download-dir" value="~/Downloads" readonly />
-			<Field.FieldDescription>Where received files are saved.</Field.FieldDescription>
+			<Field.FieldDescription>This is where your files land.</Field.FieldDescription>
 		</Field.Field>
 	</Field.FieldSet>
 
@@ -37,7 +37,7 @@
 
 	<Field.FieldSet>
 		<Field.FieldLegend>Appearance</Field.FieldLegend>
-		<Field.FieldDescription>Follow the system, or hold one theme.</Field.FieldDescription>
+		<Field.FieldDescription>Match your system, or pick one and stick with it.</Field.FieldDescription>
 		<!-- Three mutually exclusive options, so a segmented control rather than a
 		     Select: every state is visible and one tap away.
 		     mode-watcher owns the value — the getter reads the stored choice back
@@ -66,14 +66,14 @@
 		<Field.FieldLegend>Transfers</Field.FieldLegend>
 		<Field.Field orientation="horizontal">
 			<Field.FieldContent>
-				<Field.FieldLabel for="notify">Notify when a transfer completes</Field.FieldLabel>
+				<Field.FieldLabel for="notify">Tell me when a transfer finishes</Field.FieldLabel>
 			</Field.FieldContent>
 			<Switch id="notify" bind:checked={notifyOnComplete} />
 		</Field.Field>
 		<Field.Field orientation="horizontal">
 			<Field.FieldContent>
-				<Field.FieldLabel for="folder-per-code">Folder per code</Field.FieldLabel>
-				<Field.FieldDescription>Save each transfer under its own code.</Field.FieldDescription>
+				<Field.FieldLabel for="folder-per-code">Give each transfer its own folder</Field.FieldLabel>
+				<Field.FieldDescription>Keeps things tidy when you receive a lot.</Field.FieldDescription>
 			</Field.FieldContent>
 			<Switch id="folder-per-code" bind:checked={folderPerCode} />
 		</Field.Field>
@@ -84,7 +84,7 @@
 	<Field.FieldSet>
 		<Field.FieldLegend>Network</Field.FieldLegend>
 		<Field.Field>
-			<Field.FieldLabel for="relay">Relay address</Field.FieldLabel>
+			<Field.FieldLabel for="relay">Your own relay</Field.FieldLabel>
 			<!-- A host, not prose: no autocorrect, no autocapitalise, and a URL
 			     keyboard on touch. -->
 			<Input
@@ -95,7 +95,7 @@
 				autocapitalize="none"
 				spellcheck="false"
 			/>
-			<Field.FieldDescription>Leave blank to use the default relay.</Field.FieldDescription>
+			<Field.FieldDescription>Leave this empty unless you know you need it.</Field.FieldDescription>
 		</Field.Field>
 	</Field.FieldSet>
 </Field.FieldGroup>

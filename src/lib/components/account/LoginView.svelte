@@ -22,6 +22,6 @@
 	     real rather than a disabled stub. -->
 	<Button variant="outline" class="w-full" disabled>Continue with Google</Button>
 	<Field.FieldDescription class="text-center">
-		Accounts aren't available yet — this is a preview.
+		Accounts are not ready yet. This is just a preview.
 	</Field.FieldDescription>
 </Field.FieldGroup>

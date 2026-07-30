@@ -443,7 +443,7 @@ async fn build_endpoint(relay: &RelayConfig, bind_addr: Option<&str>) -> anyhow:
 /// total content bytes, and the temp tags that pin all imported content against
 /// GC — the caller holds these for the send's lifetime so the store keeps
 /// serving until the transfer finishes or is cancelled. Directories are not
-/// expanded in slice 2 — the picker yields files.
+/// expanded — the picker and the queue only ever yield files.
 async fn build_collection(
     store: &Store,
     paths: &[PathBuf],

@@ -7,7 +7,7 @@ export const titles: Record<View, string> = {
 	menu: 'Account',
 	login: 'Sign in',
 	settings: 'Settings',
-	devices: 'Trusted devices',
+	devices: 'Paired devices',
 	activity: 'Activity'
 }
 
@@ -17,9 +17,9 @@ export const titles: Record<View, string> = {
  * place that says out loud what the current screen is for.
  */
 export const descriptions: Record<View, string> = {
-	menu: 'Account, app settings, and trusted devices.',
-	login: 'Sign in to sync your trusted devices.',
-	settings: 'Preferences for transfers, appearance, and the relay.',
-	devices: 'Pair devices to send files without sharing a code.',
-	activity: 'Recent transfers, newest first, with what was sent and how it ended.'
+	menu: 'Your account, settings, and paired devices.',
+	login: 'Sign in to keep your paired devices in sync.',
+	settings: 'Change how transfers, colours, and the relay work.',
+	devices: 'Pair a device so you can send to it without a code.',
+	activity: 'Your recent transfers, newest first.'
 }

@@ -17,8 +17,8 @@
 				<Mascot accent="receive" class="size-20 @md:size-24" />
 			</Empty.Media>
 			<div class="flex min-w-0 flex-col items-center gap-2">
-				<Empty.Title>Enter transfer code</Empty.Title>
-				<Empty.Description>Paste the code given by the transmitter.</Empty.Description>
+				<Empty.Title>Got a code?</Empty.Title>
+				<Empty.Description>Type or paste the code the sender gave you.</Empty.Description>
 			</div>
 		</Empty.Header>
 	</Empty.Root>

@@ -3,6 +3,7 @@
 // by tauri-specta) — this file is only the handful of Tauri runtime APIs the UI
 // touches directly.
 
+import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 
 export const Window = {
@@ -11,9 +12,16 @@ export const Window = {
 	Close: () => getCurrentWindow().close()
 }
 
+/**
+ * The OS clipboard, via the clipboard-manager plugin rather than
+ * `navigator.clipboard`. WebKit puts a native "Paste" button in front of any
+ * scripted read no user gesture asked for — which is exactly what the receive
+ * tab's focus check is — and the user has to click it before anything happens.
+ * The plugin reads the pasteboard natively, so no prompt appears.
+ */
 export const Clipboard = {
-	Text: () => navigator.clipboard.readText(),
-	SetText: (text: string) => navigator.clipboard.writeText(text)
+	Text: async () => (await readText()) ?? '',
+	SetText: (text: string) => writeText(text)
 }
 
 /**

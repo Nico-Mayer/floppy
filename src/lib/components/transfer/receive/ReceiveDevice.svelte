@@ -26,7 +26,7 @@
 	</div>
 
 	<div class="flex flex-col items-center gap-1.5 text-center">
-		<p class="animate-pop text-lg font-bold tracking-tight">Incoming transfer</p>
+		<p class="animate-pop text-lg font-bold tracking-tight">Files on the way</p>
 		<p class="max-w-64 text-xs text-muted-foreground">
 			<span class="font-medium text-foreground">{name}</span>
 			is sending {fileCount(files)}{#if totalBytes > 0}&nbsp;· {formatBytes(totalBytes)}{/if}.

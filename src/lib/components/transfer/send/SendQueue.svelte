@@ -27,7 +27,7 @@
 				<Mascot accent="send" class="size-20 @md:size-24" />
 			</Empty.Media>
 			<div class="flex min-w-0 flex-col items-center gap-2">
-				<Empty.Title>Drag files here</Empty.Title>
+				<Empty.Title>Drop your files here</Empty.Title>
 				<Empty.Description>
 					or <span class="underline underline-offset-2"> browse </span>
 				</Empty.Description>

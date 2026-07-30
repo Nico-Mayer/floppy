@@ -24,7 +24,7 @@
 	<!-- One screen per state of the receive flow — see ./labels.ts for the table
 	     the branches follow. Only 'connecting' differs by target. -->
 	{#if receive.status === 'cancelling'}
-		<TransferProgress label="Cancelling…" />
+		<TransferProgress label="Stopping…" />
 	{:else if receive.status === 'connecting'}
 		{#if receive.target.kind === 'device'}
 			<ReceiveDevice
@@ -39,7 +39,7 @@
 		<TransferProgress
 			progress={receive.progress}
 			stats={receive.stats}
-			label={currentFile(receive.stats) || 'Receiving…'}
+			label={currentFile(receive.stats) || 'Getting your files…'}
 		/>
 	{:else if receive.status === 'done'}
 		<ReceiveComplete savedTo={receive.savedTo} target={receive.target} />
@@ -57,7 +57,7 @@
 				Open folder
 			</Button>
 			<Button variant="outline" size="sm" class="@max-md:min-h-11" onclick={() => receive.reset()}>
-				Receive more
+				Get more files
 			</Button>
 		{:else if receive.status === 'connecting' || receive.status === 'receiving'}
 			<Button variant="destructive" size="sm" class="@max-md:min-h-11" onclick={() => receive.cancel()}>

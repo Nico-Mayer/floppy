@@ -85,21 +85,19 @@ impl TransferErrorCode {
     pub fn default_message(&self) -> &'static str {
         match self {
             TransferErrorCode::Connect => {
-                "Could not reach the other device. Check your internet connection and try again."
+                "Could not reach the other device. Check your internet, then try again."
             }
             TransferErrorCode::Disconnected => {
-                "The connection dropped. Partly transferred files are kept — reconnect to resume."
+                "The connection broke. Whatever arrived is saved, so you can pick up where it stopped."
             }
             TransferErrorCode::Timeout => {
-                "The other device did not respond in time. It may be offline, or the code may be wrong."
+                "The other device never answered. It might be offline, or the code might be wrong."
             }
-            TransferErrorCode::BadTicket => {
-                "That transfer code is not valid. Check it and try again."
-            }
+            TransferErrorCode::BadTicket => "That code does not work. Check it and try again.",
             TransferErrorCode::Storage => {
-                "Could not save the received files. Check the destination folder's space and permissions."
+                "Could not save the files. Check that the folder has room and that Floppy is allowed to write to it."
             }
-            TransferErrorCode::Other => "The transfer failed.",
+            TransferErrorCode::Other => "That did not work.",
         }
     }
 }

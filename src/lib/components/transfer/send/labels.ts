@@ -21,17 +21,17 @@ import { formatBytes } from '../format'
 export function sendHeadline(status: SendStatus, target: SendTarget, fileCount: number): string {
 	switch (status) {
 		case 'cancelling':
-			return 'cancelling'
+			return 'stopping'
 		case 'starting':
-			return target.kind === 'device' ? 'awaiting accept' : 'connecting'
+			return target.kind === 'device' ? 'waiting for a yes' : 'connecting'
 		case 'waiting':
-			return target.kind === 'device' ? 'connecting' : 'awaiting peer'
+			return target.kind === 'device' ? 'connecting' : 'waiting for pickup'
 		case 'sending':
-			return 'transferring'
+			return 'sending'
 		case 'done':
-			return 'complete'
+			return 'all done'
 		default:
-			return fileCount ? 'review' : 'select files'
+			return fileCount ? 'ready to send' : 'pick your files'
 	}
 }
 
@@ -46,7 +46,7 @@ export function sendBadge(
 		case 'cancelling':
 			return 'stopping'
 		case 'starting':
-			return target.kind === 'device' ? 'offered' : '…'
+			return target.kind === 'device' ? 'asked' : '…'
 		case 'waiting':
 			return target.kind === 'device' ? 'accepted' : 'ready'
 		case 'sending':
@@ -54,6 +54,6 @@ export function sendBadge(
 		case 'done':
 			return 'sent'
 		default:
-			return files.count ? formatBytes(files.totalSize) : '0 selected'
+			return files.count ? formatBytes(files.totalSize) : 'nothing yet'
 	}
 }

@@ -25,7 +25,7 @@
 <ResponsiveDialog.Root {open} {onOpenChange}>
 	<ResponsiveDialog.Content class="sm:max-w-sm">
 		<ResponsiveDialog.Header>
-			<ResponsiveDialog.Title>Incoming transfer</ResponsiveDialog.Title>
+			<ResponsiveDialog.Title>Incoming files</ResponsiveDialog.Title>
 			{#if pairing.incoming}
 				<ResponsiveDialog.Description>
 					<span class="font-medium text-foreground">{pairing.incoming.fromName}</span>
@@ -41,7 +41,7 @@
 		<ResponsiveDialog.Footer>
 			<Button variant="outline" onclick={() => pairing.decline()}>
 				<XIcon data-icon="inline-start" />
-				Decline
+				No thanks
 			</Button>
 			<Button onclick={() => pairing.accept()}>
 				<DownloadIcon data-icon="inline-start" />

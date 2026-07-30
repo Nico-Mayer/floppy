@@ -19,14 +19,27 @@
 	import { onMount } from 'svelte'
 	import { fly } from 'svelte/transition'
 
-	// Native file drag-drop. Tauri captures OS drops (HTML5 drag events give no
-	// real paths), reporting enter/over/leave/drop with absolute paths. A card
-	// opts in with [data-file-drop-target] (see TransferCard); while a drag is
-	// over the window we tint every such target, and a drop adds the files —
-	// only if a target is mounted (the send panel), so the receive tab rejects.
-	function highlightDropTargets(active: boolean) {
+	// Native file drag-drop. OS drops never reach the DOM's drag events (the
+	// native window layer takes them first), so Tauri reports enter/over/leave/
+	// drop with absolute paths instead — window-wide, with no hit-testing of its
+	// own. That last part is ours: a card opts in with [data-file-drop-target]
+	// (see TransferCard), and only a drop landing inside one is accepted — so
+	// the receive tab and a running transfer ignore files instead of taking them.
+
+	/** The drop target under a drop point, or null if the point missed them all. */
+	function targetAt(position: { x: number; y: number }): Element | null {
+		// Tauri reports physical pixels; elementFromPoint wants CSS pixels.
+		// (With devtools attached these coordinates are known to be off — a Tauri
+		// limitation, not worth working around.)
+		const ratio = window.devicePixelRatio || 1
+		const el = document.elementFromPoint(position.x / ratio, position.y / ratio)
+		return el?.closest('[data-file-drop-target]') ?? null
+	}
+
+	/** Tint the hovered target only, so the cursor position means something. */
+	function highlightDropTarget(hovered: Element | null) {
 		for (const el of document.querySelectorAll('[data-file-drop-target]')) {
-			el.classList.toggle('file-drop-target-active', active)
+			el.classList.toggle('file-drop-target-active', el === hovered)
 		}
 	}
 
@@ -36,8 +49,7 @@
 		pairing.init().then((stop) => (stopPairing = stop))
 
 		// Suppress the webview's native right-click menu (Cut/Copy/Paste). A
-		// file-transfer app has no use for it, and on macOS it otherwise showed
-		// up as a stray step around the file picker.
+		// file-transfer app has no use for it.
 		const noContextMenu = (e: Event) => e.preventDefault()
 		document.addEventListener('contextmenu', noContextMenu)
 
@@ -45,13 +57,14 @@
 		getCurrentWebview()
 			.onDragDropEvent(async (event) => {
 				const p = event.payload
-				if (p.type === 'over' || p.type === 'enter') {
-					highlightDropTargets(true)
-					return
-				}
-				highlightDropTargets(false)
-				if (p.type === 'drop' && document.querySelector('[data-file-drop-target]')) {
-					await app.send.addPaths(p.paths)
+				if (p.type === 'enter' || p.type === 'over') {
+					highlightDropTarget(targetAt(p.position))
+				} else if (p.type === 'leave') {
+					highlightDropTarget(null)
+				} else if (p.type === 'drop') {
+					const target = targetAt(p.position)
+					highlightDropTarget(null)
+					if (target) await app.send.addPaths(p.paths)
 				}
 			})
 			.then((un) => (stopDrag = un))
@@ -89,7 +102,7 @@
 				<p
 					class="min-w-0 flex-1 truncate font-mono text-[9px] tracking-wider text-muted-foreground uppercase"
 				>
-					no cloud · peer to peer
+					no cloud · straight to their device
 				</p>
 				<div class="flex shrink-0 cursor-pointer items-center gap-1">
 					<AccountSheet />

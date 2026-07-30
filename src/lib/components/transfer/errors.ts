@@ -29,56 +29,56 @@ const RULES: Rule[] = [
 	{
 		match: /no files selected/i,
 		title: 'Nothing to send',
-		message: 'Add at least one file before starting a transfer.'
+		message: 'Pick at least one file first.'
 	},
 	{
 		match: /transfer already running/i,
-		title: 'Already running',
-		message: 'Cancel the transfer in progress before starting another one.'
+		title: 'One at a time',
+		message: 'Stop the transfer that is running, then start this one.'
 	},
 	{
 		match: /previous transfer still stopping/i,
-		title: 'Still stopping',
-		message: 'The last transfer has not finished stopping yet. Try again in a moment.'
+		title: 'Hang on a second',
+		message: 'The last transfer is still wrapping up. Try again in a moment.'
 	},
 	{
 		match: /invalid code phrase/i,
-		title: 'Check the code',
-		message: 'Transfer codes are at least 6 characters, like 4821-mirror-tundra-basil.'
+		title: 'That code looks off',
+		message: 'Codes look like 4821-mirror-tundra-basil. Give yours another look.'
 	},
 	// --- croc's own errors. Wording is croc's, so match loosely. ---
 	{
 		match: /could not connect|i\/o timeout|no such host|connection refused|dial tcp/i,
-		title: 'Could not reach the relay',
-		message: 'Check your internet connection, then try again.'
+		title: 'No connection',
+		message: 'Check your internet, then try again.'
 	},
 	{
 		match: /refusing files|transfer disconnected|connection reset|broken pipe|EOF/i,
-		title: 'The other device stopped',
+		title: 'The other device dropped out',
 		message:
-			'The transfer was cancelled or the connection dropped. Partly received files are kept, so the same code resumes where it left off.'
+			'Someone hit cancel, or the connection broke. Whatever arrived is saved, so the same code picks up where it stopped.'
 	},
 	{
 		match: /incorrect password|pake|failed to authenticate|bad key/i,
-		title: 'Codes did not match',
-		message: 'That code does not match the sender. Check it and try again.'
+		title: 'The codes do not match',
+		message: 'That is not the code the sender has. Check it and try again.'
 	},
 	{
 		match: /no space left|disk full/i,
-		title: 'Out of disk space',
-		message: 'Free up some space and start the transfer again.'
+		title: 'No space left',
+		message: 'Free up some room, then start again.'
 	},
 	{
 		match: /permission denied|access is denied/i,
-		title: 'Permission denied',
-		message: 'The app is not allowed to write there. Check the folder’s permissions.'
+		title: 'Cannot save there',
+		message: 'Floppy is not allowed to write to that folder. Check its permissions.'
 	}
 ]
 
 /** Fallback headline when nothing matches, based on which side failed. */
 function fallbackTitle(kind?: string): string {
-	if (kind === 'send') return 'Send failed'
-	if (kind === 'receive') return 'Receive failed'
+	if (kind === 'send') return 'Could not send'
+	if (kind === 'receive') return 'Could not receive'
 	return 'Something went wrong'
 }
 
@@ -90,7 +90,7 @@ function fallbackTitle(kind?: string): string {
 export function describeError(raw: string, kind?: string): AppError {
 	// Binding rejections stringify as "Error: <message>"; the prefix is noise.
 	const text = raw.replace(/^Error:\s*/i, '').trim()
-	if (!text) return { title: fallbackTitle(kind), message: 'No further detail was reported.' }
+	if (!text) return { title: fallbackTitle(kind), message: 'No details came back with it.' }
 
 	for (const rule of RULES) {
 		if (rule.match.test(text)) {

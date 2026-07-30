@@ -6,6 +6,9 @@ mr = "mise run"
 JAVA_HOME = "{% if os() == 'windows' %}C:\\Program Files\\Android\\Android Studio\\jbr{% else %}/Applications/Android Studio.app/Contents/jbr/Contents/Home{% endif %}"
 ANDROID_HOME = "{% if os() == 'windows' %}{{env.LOCALAPPDATA}}\\Android\\Sdk{% else %}{{env.HOME}}/Library/Android/sdk{% endif %}"
 NDK_HOME = "{% if os() == 'windows' %}{{env.LOCALAPPDATA}}\\Android\\Sdk\\ndk\\30.0.15729638{% else %}{{env.HOME}}/Library/Android/sdk/ndk/30.0.15729638{% endif %}"
+FLOPPY_BROKER_URL = "{{ env.FLOPPY_BROKER_URL | default(value='ws://127.0.0.1:8787/ws') }}"
+FLOPPY_BROKER_ADDR = "{{ env.FLOPPY_BROKER_ADDR | default(value=':8787') }}"
+FLOPPY_TEST_BROKER = "{{ env.FLOPPY_TEST_BROKER | default(value='ws://127.0.0.1:8787/ws') }}"
 
 [tools]
 node = "26.5.0"
@@ -25,8 +28,88 @@ rustup default "$RUSTUP_TOOLCHAIN"
 "npm:@fission-ai/openspec" = "1.6.0"
 go = "latest"
 
+# --- dev ---
+
 [tasks.dev]
+description = "Tauri desktop dev (Vite on :1420)"
 run = "npm run tauri dev"
+
+[tasks."dev:android"]
+description = "Tauri Android dev on a connected device/emulator"
+run = "npm run tauri android dev"
+
+[tasks."dev:ios"]
+description = "Tauri iOS dev on a connected device/simulator"
+run = "npm run tauri ios dev"
+
+[tasks.broker]
+description = "Run the Go rendezvous broker locally (FLOPPY_BROKER_ADDR)"
+dir = "broker"
+run = "go run ."
+
+[tasks."kill-port"]
+description = "Free the Vite dev port when a dev run leaks it"
+run = "lsof -ti tcp:1420 | xargs kill -9"
+run_windows = "Stop-Process -Id (Get-NetTCPConnection -LocalPort 1420 -State Listen).OwningProcess -Force"
+
+# --- build ---
+
+[tasks.build]
+description = "Bundle the desktop app for this OS"
+run = "npm run tauri build"
+
+[tasks."build:android"]
+description = "Build the Android APK/AAB"
+run = "npm run tauri android build"
+
+[tasks."build:ios"]
+description = "Build the iOS app"
+run = "npm run tauri ios build"
+
+# --- check ---
+
+[tasks.fmt]
+description = "Format the frontend with Prettier"
+run = "npm run format"
+
+[tasks.lint]
+description = "Prettier check + ESLint + clippy"
+run = [
+  "npm run lint",
+  "cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets"
+]
+
+[tasks.check]
+description = "svelte-check against tsconfig"
+run = "npm run check"
+
+[tasks.bindings]
+description = "Regenerate src/lib/ipc/bindings.ts from the Rust command/event surface"
+dir = "src-tauri"
+run = "cargo test export_bindings"
+
+# --- test ---
+
+[tasks."test:rust"]
+description = "Rust unit + hermetic transport tests"
+dir = "src-tauri"
+run = "cargo test"
+
+[tasks."test:go"]
+description = "Broker tests"
+dir = "broker"
+run = "go test -race ./..."
+
+[tasks.test]
+description = "Full offline gate: Rust + broker"
+depends = ["test:rust", "test:go"]
+
+[tasks."test:live"]
+description = "Live cross-language E2E; needs `mise run broker` running (FLOPPY_TEST_BROKER)"
+dir = "src-tauri"
+run = "cargo test -- --ignored"
+
+# --- toolchain ---
 
 [tasks.doctor]
 description = "Verify the Tauri dev toolchain for this OS"

@@ -60,11 +60,11 @@
 	{#if send.status === 'idle' && send.totalSize > LARGE_TRANSFER}
 		<Tooltip.Provider delayDuration={150}>
 			<Tooltip.Root>
-				<Tooltip.Trigger aria-label="Large transfer warning" class="flex text-amber-500">
+				<Tooltip.Trigger aria-label="Big transfer warning" class="flex text-amber-500">
 					<TriangleAlertIcon class="size-4" />
 				</Tooltip.Trigger>
 				<Tooltip.Content class="max-w-56 text-center">
-					Large transfer — keep both devices awake with the app open until it finishes.
+					This one is big. Keep both devices awake and Floppy open until it finishes.
 				</Tooltip.Content>
 			</Tooltip.Root>
 		</Tooltip.Provider>
@@ -72,10 +72,9 @@
 {/snippet}
 
 <!-- Only this card accepts dropped files, and only while the queue is still
-     editable: Wails resolves a drop against the innermost
-     [data-file-drop-target] under the cursor and drops it on the floor when
-     there is none, so dropping onto the rest of the window (or onto a running
-     transfer) is refused with a no-drop cursor instead of silently appending. -->
+     editable. +page.svelte resolves a drop against the [data-file-drop-target]
+     under the cursor, so dropping onto the rest of the window (or onto a
+     running transfer) is refused with a toast instead of silently appending. -->
 <TransferCard
 	accent="send"
 	title="Send"
@@ -89,12 +88,12 @@
 	{#if send.status === 'idle'}
 		<SendQueue />
 	{:else if send.status === 'cancelling'}
-		<TransferProgress label="Cancelling…" />
+		<TransferProgress label="Stopping…" />
 	{:else if send.status === 'starting'}
 		{#if send.target.kind === 'device'}
 			<SendDevice name={send.target.name} accepted={false} />
 		{:else}
-			<TransferProgress label="Connecting to peer…" />
+			<TransferProgress label="Getting things ready…" />
 		{/if}
 	{:else if send.status === 'waiting'}
 		{#if send.target.kind === 'device'}
@@ -106,7 +105,7 @@
 		<TransferProgress
 			progress={send.progress}
 			stats={send.stats}
-			label="Encrypted · direct peer · {currentFile(send.stats) || summary}"
+			label="Encrypted · device to device · {currentFile(send.stats) || summary}"
 		/>
 	{:else}
 		<SendComplete {summary} target={send.target} />
@@ -136,7 +135,7 @@
 			</Button>
 		{:else if send.status === 'done'}
 			<Button variant="outline" size="sm" class="@max-md:min-h-11" onclick={() => send.reset()}>
-				New transfer
+				Send something else
 			</Button>
 		{/if}
 	{/snippet}

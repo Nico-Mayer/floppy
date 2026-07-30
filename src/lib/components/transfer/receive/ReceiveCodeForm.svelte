@@ -95,6 +95,6 @@
 	</InputGroup.Root>
 	<Button class="w-full" onclick={() => receive.start()} disabled={!receive.code.trim()}>
 		<DownloadIcon />
-		Receive files
+		Get the files
 	</Button>
 </div>

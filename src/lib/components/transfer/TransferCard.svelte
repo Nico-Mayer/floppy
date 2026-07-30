@@ -21,11 +21,11 @@
 		/** Optional adornment shown left of the badge — e.g. a warning icon + tooltip. */
 		alert?: Snippet
 		/**
-		 * Marks the card as the window's file-drop target. Wails hit-tests the
-		 * drop point against `[data-file-drop-target]` and swallows the drop
-		 * when nothing matches, so a card that omits this rejects files
-		 * outright — the attribute is the whole opt-in, not a hint. While a
-		 * drag hovers, the runtime toggles `file-drop-target-active` on us.
+		 * Marks the card as a file-drop target. Tauri reports drops for the whole
+		 * window, so +page.svelte hit-tests the drop point against
+		 * `[data-file-drop-target]` and refuses anything that misses — the
+		 * attribute is the whole opt-in, not a hint. While a drag hovers this
+		 * card, that handler toggles `file-drop-target-active` on us.
 		 */
 		dropTarget?: boolean
 		children: Snippet

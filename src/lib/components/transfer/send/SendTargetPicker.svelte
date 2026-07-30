@@ -28,7 +28,7 @@
      With nothing paired the Select would be a one-option control, so the link
      stands alone and carries the explanation instead. -->
 {#if pairing.devices.length === 0}
-	<PairDeviceButton class="self-start" label="Pair a device to skip codes" />
+	<PairDeviceButton class="self-start" label="Pair a device and skip the code" />
 {:else}
 	<Field.Field class="gap-2">
 		<div class="flex items-center justify-between gap-2">
@@ -53,7 +53,7 @@
 				</Select.Group>
 				<Select.Separator />
 				<Select.Group>
-					<Select.GroupHeading>Trusted devices</Select.GroupHeading>
+					<Select.GroupHeading>Your devices</Select.GroupHeading>
 					{#each pairing.devices as device (device.fingerprint)}
 						<Select.Item value={device.fingerprint} label={device.name}>
 							<LaptopIcon class="text-muted-foreground" />

@@ -2,6 +2,7 @@
 	import * as Avatar from '$lib/components/ui/avatar'
 	import { Button, buttonVariants } from '$lib/components/ui/button'
 	import * as Field from '$lib/components/ui/field'
+	import { pairing } from '$lib/pairing-app.svelte'
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right'
 	import Clock3Icon from '@lucide/svelte/icons/clock-3'
 	import InfoIcon from '@lucide/svelte/icons/info'
@@ -9,7 +10,6 @@
 	import MonitorSmartphoneIcon from '@lucide/svelte/icons/monitor-smartphone'
 	import SettingsIcon from '@lucide/svelte/icons/settings'
 	import UserIcon from '@lucide/svelte/icons/user'
-	import { pairing } from '$lib/pairing-app.svelte'
 	import type { View } from './types'
 
 	let { navigate }: { navigate: (v: View) => void } = $props()
@@ -19,7 +19,7 @@
 	// a number, it is also how anyone finds their way back to add the next one.
 	const deviceHint = $derived(
 		!pairing.available
-			? 'Unavailable'
+			? 'Not ready'
 			: pairing.devices.length === 0
 				? 'None yet'
 				: `${pairing.devices.length} paired`
@@ -51,7 +51,7 @@
 	</Avatar.Root>
 	<div class="flex flex-col gap-0.5">
 		<p class="font-medium">Not signed in</p>
-		<p class="text-sm text-muted-foreground">Sign in to sync your trusted devices.</p>
+		<p class="text-sm text-muted-foreground">Sign in to keep your paired devices in sync.</p>
 	</div>
 	<Button onclick={() => navigate('login')}>
 		<LogInIcon data-icon="inline-start" />
@@ -64,12 +64,12 @@
 <nav class="flex flex-col gap-0.5">
 	{@render row('Activity', Clock3Icon, 'activity')}
 	{@render row('Settings', SettingsIcon, 'settings')}
-	{@render row('Trusted devices', MonitorSmartphoneIcon, 'devices', deviceHint)}
+	{@render row('Paired devices', MonitorSmartphoneIcon, 'devices', deviceHint)}
 </nav>
 
 <Field.FieldSeparator />
 
-<div class="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
+<div class="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
 	<InfoIcon class="size-4" />
-	<span>Floppy — no cloud, peer to peer.</span>
+	<span>No cloud.</span>
 </div>

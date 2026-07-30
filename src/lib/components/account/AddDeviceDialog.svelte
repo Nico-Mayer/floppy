@@ -29,7 +29,7 @@
 		try {
 			link = await pairing.createLink()
 		} catch (e) {
-			toast.error(`Could not create a link: ${e}`)
+			toast.error(`That did not work: ${e}`)
 			mode = 'choose'
 		}
 	}
@@ -39,7 +39,7 @@
 			await Clipboard.SetText(link)
 			toast.success('Link copied')
 		} catch {
-			toast.error('Could not copy')
+			toast.error('Could not copy that')
 		}
 	}
 
@@ -73,7 +73,7 @@
 		<ResponsiveDialog.Header>
 			<ResponsiveDialog.Title>Pair a device</ResponsiveDialog.Title>
 			<ResponsiveDialog.Description>
-				Link two devices once — then send with no code. Pair from either side.
+				Link two devices once and you can send without a code. Either side can start.
 			</ResponsiveDialog.Description>
 		</ResponsiveDialog.Header>
 
@@ -83,7 +83,7 @@
 					<Button variant="outline" class="h-auto justify-start gap-3 py-3" onclick={showLink}>
 						<QrCodeIcon class="size-5 shrink-0" />
 						<span class="flex flex-col items-start text-left">
-							<span class="font-medium">Show a pairing link</span>
+							<span class="font-medium">Show a link</span>
 							<span class="text-xs text-muted-foreground">Open it on your other device</span>
 						</span>
 					</Button>
@@ -102,14 +102,14 @@
 					{#if link}
 						<QRCode value={link} class="size-48" />
 						<p class="text-sm text-muted-foreground">
-							Scan this on your other device, or copy the link and open it there. You'll both be paired.
+							Scan this on your other device, or copy the link and open it there. That pairs you both.
 						</p>
 						<Button variant="secondary" size="sm" onclick={copyLink}>
 							<CopyIcon data-icon="inline-start" />
 							Copy link
 						</Button>
 					{:else}
-						<p class="text-sm text-muted-foreground">Creating a link…</p>
+						<p class="text-sm text-muted-foreground">Making a link…</p>
 					{/if}
 				</div>
 			</ResponsiveDialog.Body>
@@ -120,7 +120,7 @@
 			<ResponsiveDialog.Body>
 				<Field.FieldGroup>
 					<Field.Field>
-						<Field.FieldLabel for="pair-link">Pairing link</Field.FieldLabel>
+						<Field.FieldLabel for="pair-link">Your link</Field.FieldLabel>
 						<Textarea
 							id="pair-link"
 							bind:value={pasted}

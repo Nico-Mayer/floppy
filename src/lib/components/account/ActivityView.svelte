@@ -27,9 +27,9 @@
 	let days = $derived(entries ? groupByDay(entries) : [])
 
 	const statusLabels: Record<ActivityStatus, string> = {
-		completed: 'Completed',
-		failed: 'Failed',
-		cancelled: 'Cancelled'
+		completed: 'Done',
+		failed: 'Went wrong',
+		cancelled: 'Stopped'
 	}
 
 	/**
@@ -60,7 +60,7 @@
 {#if entries === null}
 	<div class="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
 		<Spinner />
-		Loading activity
+		Loading your transfers
 	</div>
 {:else if entries.length === 0}
 	<Empty.Root class="border border-dashed py-8">
@@ -68,8 +68,8 @@
 			<Empty.Media variant="icon">
 				<Clock3Icon />
 			</Empty.Media>
-			<Empty.Title>No transfers yet</Empty.Title>
-			<Empty.Description>Sent and received files show up here.</Empty.Description>
+			<Empty.Title>Nothing here yet</Empty.Title>
+			<Empty.Description>Everything you send and get shows up here.</Empty.Description>
 		</Empty.Header>
 	</Empty.Root>
 {:else}
@@ -108,7 +108,7 @@
 							<div class="flex min-w-0 flex-1 flex-col gap-0.5 pt-1">
 								<div class="flex items-baseline gap-2">
 									<p class="truncate text-sm font-medium">
-										{entry.kind === 'send' ? 'Sent to' : 'Received from'}
+										{entry.kind === 'send' ? 'Sent to' : 'Got from'}
 										{entry.peer}
 									</p>
 									<span class="ml-auto shrink-0 text-xs text-muted-foreground tabular-nums">
