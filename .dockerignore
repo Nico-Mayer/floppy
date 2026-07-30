@@ -1,0 +1,5 @@
+# The only image built from this repo is broker/Dockerfile, whose context is the
+# repo root (Railway). Ship it the broker module and nothing else — the Tauri
+# app, node_modules and Rust target dirs would otherwise bloat every upload.
+*
+!broker
