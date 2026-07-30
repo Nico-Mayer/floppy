@@ -14,7 +14,7 @@
 	import MonitorSmartphoneIcon from '@lucide/svelte/icons/monitor-smartphone'
 	import PlusIcon from '@lucide/svelte/icons/plus'
 	import Trash2Icon from '@lucide/svelte/icons/trash-2'
-	import { Clipboard } from '@wailsio/runtime'
+	import { Clipboard } from '$lib/ipc'
 	import AddDeviceDialog from './AddDeviceDialog.svelte'
 
 	// The QR is always mounted; a veil hides it by default so it isn't exposed

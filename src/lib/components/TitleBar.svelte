@@ -3,7 +3,7 @@
 	import MinusIcon from '@lucide/svelte/icons/minus'
 	import SquareIcon from '@lucide/svelte/icons/square'
 	import XIcon from '@lucide/svelte/icons/x'
-	import { Window } from '@wailsio/runtime'
+	import { Window } from '$lib/ipc'
 
 	// On Windows the window is frameless (see main.go) and we render our own
 	// window controls; on macOS the native traffic lights need a spacer.
@@ -15,19 +15,21 @@
      which also sets `pointer-events: none` on <body> and re-enables it only on
      the overlay and the panel. The window frame has to opt back in, or the
      titlebar goes dead while the sheet is open — mousedown then lands on <html>
-     instead, so Wails reads no --wails-draggable and the window cannot be
-     dragged (this *is* dragging on frameless Windows; macOS moves natively),
-     and the Windows min/max/close buttons below stop responding too. -->
+     instead, so Tauri sees no drag region and the window cannot be dragged
+     (this *is* dragging on frameless Windows; macOS moves natively), and the
+     Windows min/max/close buttons below stop responding too.
+     data-tauri-drag-region: only the element the mousedown hits drags, so it
+     goes on the empty zones (spacers), never on the buttons. -->
 <header
 	class="pointer-events-auto sticky top-0 z-60 flex w-full items-center border-b bg-background"
-	style="--wails-draggable:drag"
+	data-tauri-drag-region
 >
-	<div class="flex h-(--header-height) w-full items-center gap-2 pr-2 pl-4">
+	<div class="flex h-(--header-height) w-full items-center gap-2 pr-2 pl-4" data-tauri-drag-region>
 		{#if isMac}
-			<div class="w-20"></div>
+			<div class="w-20" data-tauri-drag-region></div>
 		{/if}
-		<div class="flex-1"></div>
-		<div class="flex items-center gap-1" style="--wails-draggable:no-drag">
+		<div class="flex-1" data-tauri-drag-region></div>
+		<div class="flex items-center gap-1">
 			{#if isWindows}
 				<Button
 					class="size-8"

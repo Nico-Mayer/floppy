@@ -5,10 +5,9 @@ export function ext(path: string): string {
 	return dot > 0 ? name.slice(dot + 1, dot + 5).toUpperCase() : 'FILE'
 }
 
-// Image types the webview renders inline as a queue thumbnail. Must stay in
-// step with previewExts in internal/services/preview.go (the server-side gate);
-// a mismatch just means a request the middleware refuses and the tile keeps its
-// glyph, so drift degrades quietly rather than breaking.
+// Image types the webview renders inline as a queue thumbnail (served via the
+// asset protocol, see previewURL). A type the webview can't decode just fails
+// the <img> and the tile keeps its glyph, so this list degrades quietly.
 const PREVIEW_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'bmp', 'svg', 'ico'])
 
 /** Whether this file can be shown as an inline image preview in its tile. */
@@ -18,7 +17,14 @@ export function isPreviewable(path: string): boolean {
 	return dot > 0 && PREVIEW_EXTS.has(name.slice(dot + 1).toLowerCase())
 }
 
-/** Asset-server URL that streams the local file to the webview for previewing. */
+import { convertFileSrc } from '@tauri-apps/api/core'
+
+/**
+ * URL the webview can load to preview a local file. Uses Tauri's asset protocol
+ * (gated by `assetProtocol.scope` in tauri.conf), which serves the file
+ * directly — no round-trip through a dev/asset server. Full-resolution for now;
+ * server-side downscaling behind this same call is slice 5.5.
+ */
 export function previewURL(path: string): string {
-	return `/localfile?path=${encodeURIComponent(path)}`
+	return convertFileSrc(path)
 }

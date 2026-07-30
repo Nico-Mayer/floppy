@@ -1,15 +1,19 @@
-import type { DeviceInfo, PairingOfferEvent, PairingPreview } from '$bindings/floppy/internal/services/models'
 import {
 	Accept,
+	CreatePairLink,
 	Decline,
 	Identity,
+	OpenPairLink,
 	PreviewPairing,
 	SendTo,
 	Trust,
 	TrustedDevices,
-	Untrust
-} from '$bindings/floppy/internal/services/pairingservice'
-import { Events } from '@wailsio/runtime'
+	Untrust,
+	events,
+	type DeviceInfo,
+	type PairingOfferEvent,
+	type PairingPreview
+} from '$lib/ipc'
 import { toast } from 'svelte-sonner'
 import { app } from './transfer-app.svelte'
 
@@ -39,28 +43,50 @@ class PairingApp {
 		} catch {
 			// Pairing unavailable (service not started) — the panel shows a hint.
 		}
-		const unsubs = [
-			Events.On('pairing:offer', (ev) => (this.incoming = ev.data)),
-			Events.On('pairing:accepted', () => {
-				// On the sender the croc:code/progress events take the send panel
-				// from here; nothing to do but clear a lingering incoming prompt.
+		const subs = [
+			events.pairingOfferEvent.listen((e) => (this.incoming = e.payload)),
+			events.pairingAccepted.listen(() => {
+				// On the sender the code/progress events take the send panel from
+				// here; nothing to do but clear a lingering incoming prompt.
 				this.incoming = null
 				toast.success('Transfer accepted')
 			}),
-			Events.On('pairing:declined', () => {
+			events.pairingDeclined.listen(() => {
 				this.#resetPendingSend()
 				toast.info('Offer declined')
 			}),
-			Events.On('pairing:error', (ev) => {
+			events.pairingError.listen((e) => {
 				this.#resetPendingSend()
-				toast.error(ev.data.message)
+				toast.error(e.payload.message)
+			}),
+			// One-sided pairing completed on this device (either side).
+			events.pairingPaired.listen((e) => {
+				void this.refresh()
+				toast.success(`Paired with ${e.payload.name}`)
 			})
 		]
-		return () => unsubs.forEach((unsub) => unsub())
+		return () => subs.forEach((sub) => sub.then((unlisten) => unlisten()))
 	}
 
 	async refresh() {
 		this.devices = (await TrustedDevices()) ?? []
+	}
+
+	/**
+	 * One-sided pairing. `createLink` returns a link to show (text/QR); the other
+	 * device passes it to `openLink`, after which both trust each other — the
+	 * `pairing:paired` event refreshes the list and toasts on each side.
+	 */
+	createLink(): Promise<string> {
+		return CreatePairLink()
+	}
+
+	async openLink(link: string) {
+		try {
+			await OpenPairLink(link)
+		} catch (e) {
+			toast.error(`Could not pair: ${e}`)
+		}
 	}
 
 	async accept() {

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { OpenPath } from '$bindings/floppy/internal/services/fileservice'
+	import { OpenPath } from '$lib/ipc'
 	import { Button } from '$lib/components/ui/button'
 	import { app } from '$lib/transfer-app.svelte'
 	import FolderOpenIcon from '@lucide/svelte/icons/folder-open'

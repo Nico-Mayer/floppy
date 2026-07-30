@@ -6,7 +6,7 @@
 	import { fast, motionOK, normal } from '$lib/motion'
 	import CheckIcon from '@lucide/svelte/icons/check'
 	import CopyIcon from '@lucide/svelte/icons/copy'
-	import { Clipboard } from '@wailsio/runtime'
+	import { Clipboard } from '$lib/ipc'
 	import { fade, scale } from 'svelte/transition'
 
 	let { code }: { code: string } = $props()

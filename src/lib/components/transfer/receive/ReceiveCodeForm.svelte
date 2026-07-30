@@ -4,7 +4,7 @@
 	import { app } from '$lib/transfer-app.svelte'
 	import DownloadIcon from '@lucide/svelte/icons/download'
 	import XIcon from '@lucide/svelte/icons/x'
-	import { Clipboard, Events } from '@wailsio/runtime'
+	import { Clipboard, onWindowFocus } from '$lib/ipc'
 
 	const receive = app.receive
 
@@ -25,9 +25,9 @@
 		if (receive.status !== 'idle') return
 		let text: string
 		try {
-			// Native clipboard via the Go side — reliable in every webview, unlike
-			// navigator.clipboard. Rejects in the browser preview (no Wails
-			// runtime); staying empty is the correct degradation.
+			// Reading the clipboard can reject (no permission, or the browser
+			// preview outside the Tauri webview); staying empty is the correct
+			// degradation.
 			text = (await Clipboard.Text()).trim()
 		} catch {
 			return
@@ -65,16 +65,10 @@
 
 	// Re-check when the app comes back to the front. The DOM window 'focus' event
 	// is unreliable in the webview — native re-activation does not always dispatch
-	// it, so a code copied elsewhere would only sometimes land. These Wails
-	// activation events fire reliably where DOM focus does not; both point at the
-	// same guard-protected check, so double delivery is a harmless no-op.
-	$effect(() => {
-		const offs = [
-			Events.On('common:WindowFocus', checkClipboard),
-			Events.On('mac:ApplicationDidBecomeActive', checkClipboard)
-		]
-		return () => offs.forEach((off) => off())
-	})
+	// it, so a code copied elsewhere would only sometimes land. Tauri's window
+	// focus signal fires reliably where DOM focus does not; it shares the same
+	// guard-protected check, so double delivery is a harmless no-op.
+	$effect(() => onWindowFocus(checkClipboard))
 </script>
 
 <svelte:window onfocus={checkClipboard} />

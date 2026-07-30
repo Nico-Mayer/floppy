@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { FileEntry } from '$bindings/floppy/internal/services/models'
+	import type { FileEntry } from '$lib/ipc'
 	import { Button } from '$lib/components/ui/button'
 	import FolderIcon from '@lucide/svelte/icons/folder'
 	import XIcon from '@lucide/svelte/icons/x'

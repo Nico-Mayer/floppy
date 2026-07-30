@@ -1,8 +1,9 @@
 @import 'tailwindcss';
-@import "tw-animate-css";
-@import "shadcn-svelte/tailwind.css";
-@import "@fontsource-variable/inter";
-@import "@fontsource-variable/geist";
+@import 'tw-animate-css';
+@import 'shadcn-svelte/tailwind.css';
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/geist-mono';
+@import '@fontsource-variable/inter';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -25,12 +26,20 @@
 	--border: oklch(0.925 0.005 214.3);
 	--input: oklch(0.925 0.005 214.3);
 	--ring: oklch(0.723 0.014 214.4);
+	--radius: 0.625rem;
+	--send: #e3711c;
+	--send-foreground: #f79d3d;
+	--receive: #2c8be1;
+	--receive-foreground: #69b1f1;
+	/* Window titlebar height. Global (not just on the app wrapper) so portaled
+	   overlays — the account sheet mounts on <body> — can offset below it and
+	   never cover the window controls / macOS traffic lights. */
+	--header-height: calc(var(--spacing) * 13);
 	--chart-1: oklch(0.855 0.138 181.071);
 	--chart-2: oklch(0.704 0.14 182.503);
 	--chart-3: oklch(0.6 0.118 184.704);
 	--chart-4: oklch(0.511 0.096 186.391);
 	--chart-5: oklch(0.437 0.078 188.216);
-	--radius: 0.625rem;
 	--sidebar: oklch(0.987 0.002 197.1);
 	--sidebar-foreground: oklch(0.148 0.004 228.8);
 	--sidebar-primary: oklch(0.218 0.008 223.9);
@@ -60,6 +69,10 @@
 	--border: oklch(1 0 0 / 10%);
 	--input: oklch(1 0 0 / 15%);
 	--ring: oklch(0.56 0.021 213.5);
+	/* Accent fills stay identical in dark mode; only the text-usable
+       variants lighten to hold contrast on dark surfaces. */
+	--send-foreground: #f79d3d;
+	--receive-foreground: #69b1f1;
 	--chart-1: oklch(0.855 0.138 181.071);
 	--chart-2: oklch(0.704 0.14 182.503);
 	--chart-3: oklch(0.6 0.118 184.704);
@@ -78,19 +91,6 @@
 @theme inline {
 	--font-sans: 'Inter Variable', sans-serif;
 	--font-heading: 'Geist Variable', sans-serif;
-	--color-sidebar-ring: var(--sidebar-ring);
-	--color-sidebar-border: var(--sidebar-border);
-	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-	--color-sidebar-accent: var(--sidebar-accent);
-	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-	--color-sidebar-primary: var(--sidebar-primary);
-	--color-sidebar-foreground: var(--sidebar-foreground);
-	--color-sidebar: var(--sidebar);
-	--color-chart-5: var(--chart-5);
-	--color-chart-4: var(--chart-4);
-	--color-chart-3: var(--chart-3);
-	--color-chart-2: var(--chart-2);
-	--color-chart-1: var(--chart-1);
 	--color-ring: var(--ring);
 	--color-input: var(--input);
 	--color-border: var(--border);
@@ -116,6 +116,95 @@
 	--radius-2xl: calc(var(--radius) * 1.8);
 	--radius-3xl: calc(var(--radius) * 2.2);
 	--radius-4xl: calc(var(--radius) * 2.6);
+	--color-send: var(--send);
+	--color-send-foreground: var(--send-foreground);
+	--color-receive: var(--receive);
+	--color-receive-foreground: var(--receive-foreground);
+	--animate-bob: bob 5s ease-in-out infinite;
+	--animate-pop: pop 0.3s ease both;
+	--animate-shake: shake 0.4s ease both;
+	--animate-slidein: slidein 0.26s ease both;
+	--color-sidebar-ring: var(--sidebar-ring);
+	--color-sidebar-border: var(--sidebar-border);
+	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+	--color-sidebar-accent: var(--sidebar-accent);
+	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+	--color-sidebar-primary: var(--sidebar-primary);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+	--color-sidebar: var(--sidebar);
+	--color-chart-5: var(--chart-5);
+	--color-chart-4: var(--chart-4);
+	--color-chart-3: var(--chart-3);
+	--color-chart-2: var(--chart-2);
+	--color-chart-1: var(--chart-1);
+	@keyframes bob {
+		0%,
+		100% {
+			transform: translateY(0) rotate(-2deg);
+		}
+		50% {
+			transform: translateY(-5px) rotate(1.5deg);
+		}
+	}
+	@keyframes pop {
+		0% {
+			transform: scale(0.7);
+			opacity: 0;
+		}
+		60% {
+			transform: scale(1.04);
+		}
+		100% {
+			transform: scale(1);
+			opacity: 1;
+		}
+	}
+	@keyframes shake {
+		0%,
+		100% {
+			transform: translateX(0);
+		}
+		20%,
+		60% {
+			transform: translateX(-5px);
+		}
+		40%,
+		80% {
+			transform: translateX(5px);
+		}
+	}
+	@keyframes slidein {
+		from {
+			transform: translateY(14px);
+			opacity: 0;
+		}
+		to {
+			transform: translateY(0);
+			opacity: 1;
+		}
+	}
+}
+
+@keyframes fade-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+/* Loops stop, the pop becomes a fade, shake goes away entirely.
+   Progress width transitions stay — that is information, not decoration. */
+@media (prefers-reduced-motion: reduce) {
+	.animate-bob,
+	.animate-shake {
+		animation: none;
+	}
+	.animate-pop,
+	.animate-slidein {
+		animation: fade-in 0.3s ease both;
+	}
 }
 
 @layer base {
@@ -126,6 +215,7 @@
 		@apply bg-background text-foreground;
 	}
 	html {
+		overscroll-behavior: none;
 		@apply font-sans;
 	}
 }

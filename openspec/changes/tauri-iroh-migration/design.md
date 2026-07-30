@@ -64,18 +64,24 @@ Keep the croc-style shape: leading digits + hyphen-joined words (e.g. `7-crayon-
 
 iroh-blobs is content-addressed by BLAKE3; the ticket carries the root hash. Re-initiating the same transfer (same code / same trusted offer) resolves to the same hash and resumes from the local partial store automatically. This retires croc's `DestRoot/<code>/` folder-as-resume-state scheme, the Manager's CWD ownership/parking, and the "always leave before cleanup (Windows)" rule. Destination is chosen when the blob is exported to the filesystem, not by the working directory.
 
-## Event contract (preserved)
+## Event contract (typed, generated)
 
-The frontend keeps speaking the existing vocabulary; the Rust core emits it:
+The command surface, event vocabulary, and shared types are defined once in Rust and exported to `src/lib/ipc/bindings.ts` by **tauri-specta** — the frontend never hand-writes the contract (the Wails-bindings equivalent). Bindings regenerate on every `tauri dev` (debug-only export) and via `cargo test export_bindings` (headless, checked in).
 
-| Event                                       | Payload (unchanged shape)                       |
-| ------------------------------------------- | ----------------------------------------------- |
-| `croc:code`                                 | `{id, kind, code}` — the code/ticket to display |
-| `croc:send:progress` / `croc:recv:progress` | `{id, kind, done, total, file, index, count}`   |
-| `croc:sent` / `croc:received`               | `{id, kind, dest?, ...}`                        |
-| `croc:error`                                | `{id, kind, code, message}`                     |
+The `croc:*` names are **dropped** (croc is gone). Events are typed structs (`events.rs`); each derives `tauri_specta::Event`, so the wire name and the TS listener are generated from the struct name (`CodeEvent` → wire `code-event` → `events.codeEvent.listen(...)`). Send and receive share one event each, distinguished by a `kind: "send" | "receive"` field, instead of the old split `send`/`recv` names:
 
-Cancelled transfers still emit **no** terminal event. Sentinel error message text (`ErrBusy`-equivalents) stays stable as a frontend contract. (The `croc:` prefix is now a legacy name, kept to avoid churning the UI; it may be renamed in a later cleanup change.)
+| Event struct        | Frontend accessor        | Payload                                                            |
+| ------------------- | ------------------------ | ------------------------------------------------------------------ |
+| `CodeEvent`         | `events.codeEvent`       | `{id, kind, code}` — the code/ticket to display                    |
+| `ProgressEvent`     | `events.progressEvent`   | `{id, kind, percent, file, fileIndex, fileCount, sent, total, bps, eta}` |
+| `DoneEvent`         | `events.doneEvent`       | `{id, kind, dest}` (dest empty on a send)                          |
+| `ErrorEvent`        | `events.errorEvent`      | `{id, kind, code, message}`                                        |
+| `FilesDropped`      | `events.filesDropped`    | `string[]`                                                         |
+| `PairingOfferEvent` | `events.pairingOfferEvent` | `{transferId, fromName, fileCount, totalBytes}`                  |
+| `PairingAccepted` / `PairingDeclined` | `events.pairingAccepted` / `.pairingDeclined` | (empty) |
+| `PairingError`      | `events.pairingError`    | `{message}`                                                        |
+
+Commands return `Result<T, String>`; tauri-specta represents that as a `{status:"ok"} | {status:"error"}` union, wrapped by thin `$lib/ipc` helpers that throw the error string so the UI's existing try/catch + `describeError` flow is unchanged. Cancelled transfers still emit **no** terminal event. Sentinel error message text stays stable as a frontend contract.
 
 ## Plugins replacing bespoke services
 

@@ -1,7 +1,14 @@
-import { CancelReceive, CancelSend, Receive, Send } from '$bindings/floppy/internal/services/crocservice'
-import { Describe, SelectFiles } from '$bindings/floppy/internal/services/fileservice'
-import type { FileEntry, ProgressEvent } from '$bindings/floppy/internal/services/models'
-import { Events } from '@wailsio/runtime'
+import { open } from '@tauri-apps/plugin-dialog'
+import {
+	CancelReceive,
+	CancelSend,
+	Describe,
+	QuickShare,
+	Receive,
+	events,
+	type FileEntry,
+	type ProgressEvent
+} from '$lib/ipc'
 import { describeError, type AppError } from './components/transfer/errors'
 import type { ReceiveStatus, ReceiveTarget, SendStatus, SendTarget } from './components/transfer/types'
 
@@ -40,7 +47,17 @@ class SendTransfer {
 	}
 
 	async pickFiles() {
-		this.add((await SelectFiles()) ?? [])
+		// Open the native picker from the frontend (not a Rust command): it
+		// returns the selected paths directly in this JS context, so the files
+		// are added immediately — no cross-thread callback round-trip, which on
+		// macOS left the webview showing a stray "Paste" menu as an extra step.
+		const selected = await open({ multiple: true, title: 'Add files' })
+		if (selected) await this.addPaths(Array.isArray(selected) ? selected : [selected])
+	}
+
+	/** Add paths — bare strings from a drop or the picker — resolved to entries. */
+	async addPaths(paths: string[]) {
+		if (paths.length) this.add((await Describe(paths)) ?? [])
 	}
 
 	async start() {
@@ -50,7 +67,9 @@ class SendTransfer {
 		this.stats = null
 		this.status = 'starting'
 		try {
-			await Send(this.files.map((file) => file.path))
+			// Quick share: the core generates a human code phrase and runs the
+			// PAKE'd exchange over the broker; the phrase arrives as the code event.
+			await QuickShare(this.files.map((file) => file.path))
 		} catch (e) {
 			app.error = describeError(String(e), 'send')
 			this.status = 'idle'
@@ -218,62 +237,59 @@ class TransferApp {
 	receive = new ReceiveTransfer()
 
 	/**
-	 * Subscribe to croc events; returns the cleanup for onMount. Handler
-	 * payloads are inferred from the generated CustomEvents map — every croc
-	 * event carries the transfer `id` and `kind` alongside its own fields.
+	 * Subscribe to transfer events; returns the cleanup for onMount. Payloads
+	 * are typed by the generated bindings (events.rs). Send and receive share
+	 * one progress/done/error event each, told apart by `kind`.
 	 */
 	listen() {
-		const unsubs = [
-			Events.On('files-dropped', async (ev) => {
-				// Drops arrive as bare paths; the Go side turns them into entries
-				// with sizes, the same shape the picker returns.
-				this.send.add((await Describe(ev.data ?? [])) ?? [])
-			}),
-			Events.On('croc:code', (ev) => {
-				this.send.code = ev.data.code
+		// events.*.listen resolves an unlisten asynchronously; collect the
+		// promises and tear them all down on cleanup. File drops come from
+		// Tauri's native webview drag-drop, wired in +page.svelte.
+		const subs = [
+			events.codeEvent.listen((e) => {
+				this.send.code = e.payload.code
 				this.send.status = 'waiting'
 			}),
-			Events.On('croc:send:progress', (ev) => {
-				// Progress only makes sense once the code phrase exists — never
-				// let a stray progress line hide the code screen.
-				if (this.send.status === 'waiting' || this.send.status === 'sending') {
-					this.send.stats = ev.data
-					this.send.progress = ev.data.percent
-					this.send.status = 'sending'
+			events.progressEvent.listen((e) => {
+				const p = e.payload
+				if (p.kind === 'send') {
+					// Progress only makes sense once the code phrase exists —
+					// never let a stray progress line hide the code screen.
+					if (this.send.status === 'waiting' || this.send.status === 'sending') {
+						this.send.stats = p
+						this.send.progress = p.percent
+						this.send.status = 'sending'
+					}
+				} else {
+					// Ignore progress once the transfer is over: a tick can still
+					// be in flight when the done event lands, and acting on it
+					// would pull the panel back off its completion screen.
+					if (!this.receive.transferring) return
+					// A receiver has no byte counts until the peer answers, so the
+					// first progress event doubles as the "connected" signal.
+					this.receive.connected()
+					this.receive.stats = p
+					this.receive.progress = p.percent
 				}
 			}),
-			Events.On('croc:recv:progress', (ev) => {
-				// Ignore progress once the transfer is over: a poll tick can
-				// still be in flight when croc:received lands, and acting on it
-				// would pull the panel back off its completion screen.
-				if (!this.receive.transferring) return
-				// A receiver has no byte counts until the peer answers, so the
-				// first progress event doubles as the "connected" signal.
-				this.receive.connected()
-				this.receive.stats = ev.data
-				this.receive.progress = ev.data.percent
+			events.doneEvent.listen((e) => {
+				if (e.payload.kind === 'send') this.send.status = 'done'
+				else this.receive.complete(e.payload.dest)
 			}),
-			Events.On('croc:sent', () => {
-				this.send.status = 'done'
-			}),
-			Events.On('croc:received', (ev) => {
-				this.receive.complete(ev.data.dest ?? '')
-			}),
-			Events.On('croc:error', (ev) => {
-				// The backend reports which side failed and a machine-readable
-				// code; the raw message is croc's and needs translating.
-				this.error = describeError(ev.data.message, ev.data.kind)
-				// Only the side that actually failed resets: a send and a
-				// receive can run at once, and one failing must not wipe the
-				// other's panel.
-				if (ev.data.kind === 'send') {
+			events.errorEvent.listen((e) => {
+				// The core reports which side failed and a machine-readable code;
+				// the raw message still needs translating for the user.
+				this.error = describeError(e.payload.message, e.payload.kind)
+				// Only the side that actually failed resets: a send and a receive
+				// can run at once, and one failing must not wipe the other's panel.
+				if (e.payload.kind === 'send') {
 					if (this.send.status !== 'done') this.send.status = 'idle'
 				} else if (this.receive.status !== 'done') {
 					this.receive.stop()
 				}
 			})
 		]
-		return () => unsubs.forEach((unsub) => unsub())
+		return () => subs.forEach((sub) => sub.then((unlisten) => unlisten()))
 	}
 }
 

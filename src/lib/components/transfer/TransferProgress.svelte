@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ProgressEvent } from '$bindings/floppy/internal/services/models'
+	import type { ProgressEvent } from '$lib/ipc'
 	import { Progress } from '$lib/components/ui/progress'
 	import { Spinner } from '$lib/components/ui/spinner'
 	import { normal } from '$lib/motion'

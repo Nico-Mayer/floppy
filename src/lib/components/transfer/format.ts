@@ -1,4 +1,4 @@
-import type { ProgressEvent } from '$bindings/floppy/internal/services/models'
+import type { ProgressEvent } from '$lib/ipc'
 
 /** Decimal byte sizes, matching what croc itself reports. */
 export function formatBytes(bytes: number): string {
