@@ -37,12 +37,7 @@
 							{app.error.message}
 						</Alert.Description>
 						<Alert.Action>
-							<Button
-								variant="ghost"
-								size="icon-xs"
-								onclick={() => (app.error = null)}
-								aria-label="Dismiss"
-							>
+							<Button variant="ghost" size="icon-xs" onclick={() => (app.error = null)} aria-label="Dismiss">
 								<XIcon />
 							</Button>
 						</Alert.Action>

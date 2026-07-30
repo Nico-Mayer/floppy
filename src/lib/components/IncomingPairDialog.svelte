@@ -37,18 +37,28 @@
 		<ResponsiveDialog.Header>
 			<ResponsiveDialog.Title>Add this device?</ResponsiveDialog.Title>
 			<ResponsiveDialog.Description>
-				A device paired using your link. Give it a name you'll recognize, then add it to trust it for
-				code-free transfers.
+				A device used your code to link. It's called
+				<span class="font-medium text-foreground">{pairing.request?.suggestedName}</span>. Add it to send
+				without a code, or rename it below.
 			</ResponsiveDialog.Description>
 		</ResponsiveDialog.Header>
 
-		<ResponsiveDialog.Body>
+		<ResponsiveDialog.Body class="flex flex-col gap-3">
 			<Input
 				bind:value={name}
 				placeholder="Device name"
 				aria-label="Device name"
 				onkeydown={(e: KeyboardEvent) => e.key === 'Enter' && confirm()}
 			/>
+			<!-- A typed code carries less entropy than a scanned QR, so show the SAS
+			     to compare. A scanned QR delivered the secret out of band, so there's
+			     nothing left to check. -->
+			{#if pairing.request?.via === 'code' && pairing.request?.sas}
+				<p class="text-center text-sm text-muted-foreground">
+					Make sure both devices show
+					<span class="font-mono font-medium text-foreground">{pairing.request.sas}</span>
+				</p>
+			{/if}
 		</ResponsiveDialog.Body>
 
 		<ResponsiveDialog.Footer>

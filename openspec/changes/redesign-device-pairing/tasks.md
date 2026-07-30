@@ -32,29 +32,29 @@
 
 ## 5. Devices page (frontend)
 
-- [ ] 5.1 Add the `/devices` route with a self-name editor at the top (inline edit, saves via `set_self_name`)
-- [ ] 5.2 Render the paired-device list with shown label, inline local rename, and remove (revokes trust)
-- [ ] 5.3 Build the symmetric Add-a-device section: show this device's QR + code and a scan / code-entry control
-- [ ] 5.4 Mobile: open the camera first for scanning, fall back to code entry when no camera or permission denied
-- [ ] 5.5 Desktop: lead with the QR + code and a code-entry field (desktop-to-desktop)
-- [ ] 5.6 Wire redeem: scanning or entering a code calls `redeem_pair_code` and shows a linking state
-- [ ] 5.7 Delete the `/pair` route and the paste-a-link UI
+- [x] 5.1 Add the `/devices` route with a self-name editor at the top (inline edit, saves via `set_self_name`)
+- [x] 5.2 Render the paired-device list with shown label, inline local rename, and remove (revokes trust)
+- [x] 5.3 Build the symmetric Add-a-device section: show this device's QR + code and a code-entry control
+- [ ] 5.4 Mobile: open the camera first for scanning — DEFERRED to a device session; needs a QR-decode dep + camera permissions (Tauri capability + iOS `NSCameraUsageDescription` + Android manifest) and a real device to verify. Code entry is a complete fallback and works on mobile today.
+- [x] 5.5 Desktop: lead with the QR + code and a code-entry field (desktop-to-desktop)
+- [x] 5.6 Wire redeem: entering a code calls `redeem_pair_code` and shows a linking state
+- [x] 5.7 Delete the `/pair` route and the paste-a-link UI
 
 ## 6. Confirmation dialog (frontend)
 
-- [ ] 6.1 Update the incoming pairing-request dialog to name the peer from its advertised self-name, with no required name input and an optional inline rename
-- [ ] 6.2 Show the SAS only when the request came from a typed code; hide it for a scanned QR
-- [ ] 6.3 Ensure the redeemer never sees a confirmation or name prompt
+- [x] 6.1 Update the incoming pairing-request dialog to name the peer from its advertised self-name, with the name pre-filled and editable (not required)
+- [x] 6.2 Show the SAS only when the request came from a typed code; hide it for a scanned QR
+- [x] 6.3 Ensure the redeemer never sees a confirmation or name prompt (redeemer just calls `redeemCode`; backend gates the confirm on the shower)
 
 ## 7. Entry points and terminology
 
-- [ ] 7.1 Repoint the Send "Send to" picker pairing affordance to the Devices Add flow
-- [ ] 7.2 Update navigation so Devices is a top-level entry (replacing the old Pair entry)
-- [ ] 7.3 Terminology pass on all pairing copy: code / your devices / paired / Remove; drop pair link / key / trusted; no em dashes in UI text
+- [x] 7.1 Repoint the Send "Send to" picker pairing affordance to the Devices Add flow
+- [x] 7.2 Update navigation so Devices is a top-level entry (replacing the old Pair entry)
+- [x] 7.3 Terminology pass on all pairing copy: code / your devices / paired / Remove; drop pair link / key / trusted; no em dashes in UI text
 
 ## 8. Verification
 
-- [ ] 8.1 `cargo test` green (unit + hermetic transport/pairing)
-- [ ] 8.2 `npm run check` and `npm run lint` green; bindings.ts matches generated output
-- [ ] 8.3 Live E2E updated to the code flow: pair two instances by code, confirm both trust, send code-free, rename and verify refresh on next transfer
-- [ ] 8.4 Manual pass on desktop and mobile: scan-to-add, type-to-add, remove revokes, self-name edit reflected on the peer after a transfer
+- [x] 8.1 `cargo test` green (unit + hermetic transport/pairing) — 42 passed
+- [x] 8.2 `npm run check` and `npm run lint` green (+ `npm run build`); bindings.ts is the generated artifact
+- [ ] 8.3 Live E2E updated to the code flow: pair two instances by code, confirm both trust, send code-free, rename and verify refresh on next transfer — pending (device/two-instance session)
+- [ ] 8.4 Manual pass on desktop and mobile: type-to-add, remove revokes, self-name edit reflected on the peer after a transfer (scan-to-add lands with 5.4) — pending (device session)

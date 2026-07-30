@@ -1,14 +1,16 @@
 import {
 	Accept,
 	ConfirmPair,
-	CreatePairLink,
 	Decline,
 	DismissPair,
 	Identity,
-	OpenPairLink,
 	PreviewPairing,
+	RedeemPairCode,
 	RenameDevice,
+	SelfName,
 	SendTo,
+	SetSelfName,
+	ShowPairCode,
 	Trust,
 	TrustedDevices,
 	Untrust,
@@ -19,6 +21,7 @@ import {
 	type PairingRequest
 } from '$lib/ipc'
 import { goto } from '$app/navigation'
+import { resolve } from '$app/paths'
 import { toast } from 'svelte-sonner'
 import { app } from './transfer-app.svelte'
 
@@ -29,8 +32,10 @@ import { app } from './transfer-app.svelte'
  * public identities, fingerprints, and the SAS for the compare step.
  */
 class PairingApp {
-	/** This device's encoded public identity (for the QR / copy). */
+	/** This device's encoded public identity (used internally for pairing). */
 	identity = $state('')
+	/** This device's own name, shown to peers and editable on the Devices page. */
+	selfName = $state('')
 	devices = $state<DeviceInfo[]>([])
 	/** A verified incoming offer awaiting the user's accept/decline. */
 	incoming = $state<PairingOfferEvent | null>(null)
@@ -46,6 +51,7 @@ class PairingApp {
 	async init() {
 		try {
 			this.identity = await Identity()
+			this.selfName = await SelfName()
 			await this.refresh()
 		} catch {
 			// Pairing unavailable (service not started) — the panel shows a hint.
@@ -59,7 +65,7 @@ class PairingApp {
 				// lingering incoming prompt.
 				app.send.accepted()
 				this.incoming = null
-				void goto('/')
+				void goto(resolve('/'))
 				toast.success('They said yes')
 			}),
 			events.pairingDeclined.listen(() => {
@@ -75,13 +81,13 @@ class PairingApp {
 			// confirm has its context.
 			events.pairingRequest.listen((e) => {
 				this.request = e.payload
-				void goto('/pair')
+				void goto(resolve('/devices'))
 			}),
-			// One-sided pairing completed on this device (either side): show it on
-			// the pair page, where the new device now appears.
+			// A pairing completed on this device (either side): show it on the
+			// Devices page, where the new device now appears.
 			events.pairingPaired.listen((e) => {
 				void this.refresh()
-				void goto('/pair')
+				void goto(resolve('/devices'))
 				toast.success(`Paired with ${e.payload.name}`)
 			})
 		]
@@ -93,19 +99,32 @@ class PairingApp {
 	}
 
 	/**
-	 * One-sided pairing. `createLink` returns a link to show (text/QR); the other
-	 * device passes it to `openLink`, after which both trust each other — the
-	 * `pairing:paired` event refreshes the list and toasts on each side.
+	 * Show a pairing code (also rendered as a QR) for another device to redeem.
+	 * A fresh call shows a new code; the old one expires on its own.
 	 */
-	createLink(): Promise<string> {
-		return CreatePairLink()
+	showCode(): Promise<string> {
+		return ShowPairCode()
 	}
 
-	async openLink(link: string, name: string) {
+	/**
+	 * Redeem a code shown on another device. `via` is 'qr' when scanned or 'code'
+	 * when typed. Resolves once the other device confirms; the `pairing:paired`
+	 * event then refreshes the list and toasts. Rejects so the caller can show the
+	 * linking state ending.
+	 */
+	async redeemCode(code: string, via: 'qr' | 'code') {
+		await RedeemPairCode(code, via)
+	}
+
+	/** Rename this device. The new name is advertised to peers from now on. */
+	async setSelfName(name: string) {
+		const next = name.trim()
+		if (!next) return
 		try {
-			await OpenPairLink(link, name)
+			await SetSelfName(next)
+			this.selfName = next
 		} catch (e) {
-			toast.error(`Pairing did not work: ${e}`)
+			toast.error(`Could not rename this device: ${e}`)
 		}
 	}
 
@@ -118,7 +137,7 @@ class PairingApp {
 		// transfer panel too, since the prompt can be accepted from any page. The
 		// offer travels with it so the panel can say who is sending, and what.
 		app.mode = 'receive'
-		void goto('/')
+		void goto(resolve('/'))
 		app.receive.beginTrusted({
 			name: offer.fromName,
 			fileCount: offer.fileCount,

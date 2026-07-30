@@ -5,6 +5,7 @@
 	import { useSidebar } from '$lib/components/ui/sidebar'
 	import LoginView from '$lib/components/account/LoginView.svelte'
 	import { pairing } from '$lib/pairing-app.svelte'
+	import { resolve } from '$app/paths'
 	import { page } from '$app/state'
 	import ArrowLeftRightIcon from '@lucide/svelte/icons/arrow-left-right'
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right'
@@ -19,10 +20,10 @@
 	// settings).
 	const items = [
 		{ href: '/', label: 'Transfer', icon: ArrowLeftRightIcon, hint: 'Send & receive' },
-		{ href: '/pair', label: 'Pair devices', icon: MonitorSmartphoneIcon, hint: 'Skip the code' },
+		{ href: '/devices', label: 'Devices', icon: MonitorSmartphoneIcon, hint: 'Send without a code' },
 		{ href: '/activity', label: 'Activity', icon: Clock3Icon, hint: 'Recent transfers' },
 		{ href: '/settings', label: 'Settings', icon: SettingsIcon, hint: 'Preferences' }
-	]
+	] as const
 
 	// Exact match — every route is a leaf, so no prefix ambiguity to resolve.
 	const pathname = $derived(page.url.pathname)
@@ -71,7 +72,7 @@
 						<Sidebar.MenuItem>
 							<Sidebar.MenuButton isActive={active} tooltipContent={item.label} class={rowClass}>
 								{#snippet child({ props })}
-									<a href={item.href} {...props} onclick={afterNavigate}>
+									<a href={resolve(item.href)} {...props} onclick={afterNavigate}>
 										<item.icon />
 										<span class="flex min-w-0 flex-col leading-tight">
 											<span class="truncate">{item.label}</span>
@@ -89,7 +90,7 @@
 									</a>
 								{/snippet}
 							</Sidebar.MenuButton>
-							{#if item.href === '/pair' && pairing.available && pairing.devices.length > 0}
+							{#if item.href === '/devices' && pairing.available && pairing.devices.length > 0}
 								<Sidebar.MenuBadge>{pairing.devices.length}</Sidebar.MenuBadge>
 							{/if}
 						</Sidebar.MenuItem>

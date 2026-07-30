@@ -5,7 +5,7 @@
 One-sided pairing now works over the fp channel, but it commits trust with **no
 user confirmation and no useful name**:
 
-- The device that *shows* a link has another device added to its trust store the
+- The device that _shows_ a link has another device added to its trust store the
   instant someone opens the link — silently, no prompt. The user reported this
   as "it simply adds."
 - Every trusted device is stored as `device-<fp[..8]>`, so the list is a wall of

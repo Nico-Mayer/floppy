@@ -37,8 +37,10 @@ export const ConfirmPair = (fingerprint: string, name: string) => ok(commands.co
 export const DismissPair = (fingerprint: string) => ok(commands.dismissPair(fingerprint))
 export const RenameDevice = (fingerprint: string, name: string) =>
 	ok(commands.renameDevice(fingerprint, name))
-export const CreatePairLink = () => ok(commands.createPairLink())
-export const OpenPairLink = (link: string, name: string) => ok(commands.openPairLink(link, name))
+export const ShowPairCode = () => ok(commands.showPairCode())
+export const RedeemPairCode = (code: string, via: string) => ok(commands.redeemPairCode(code, via))
+export const SelfName = () => ok(commands.selfName())
+export const SetSelfName = (name: string) => ok(commands.setSelfName(name))
 export const Accept = (transferId: string) => ok(commands.accept(transferId))
 export const Decline = (transferId: string) => ok(commands.decline(transferId))
 export const SendTo = (fingerprint: string, paths: string[]) => ok(commands.sendTo(fingerprint, paths))

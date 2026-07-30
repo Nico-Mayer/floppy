@@ -2,7 +2,7 @@
 
 Trusted devices already work end to end: each install has an Ed25519 + X25519
 identity, a local trust store, and signed offers verified before a code-free
-transfer (`src-tauri/src/pairing/`). What is weak is how a device *joins* that
+transfer (`src-tauri/src/pairing/`). What is weak is how a device _joins_ that
 store. Today the initiator shows a one-sided `floppy://pair/<base64url(json)>`
 link and the other device **pastes** it; establishment runs over the broker's
 `/fp` fingerprint channel because the link carries the initiator's identity up
@@ -19,6 +19,7 @@ transfer ticket. No users exist yet, so we can replace the link flow outright.
 ## Goals / Non-Goals
 
 **Goals:**
+
 - One primitive to add a device: a short code (typed) or its QR (scanned). No
   pasted links anywhere.
 - Symmetric flow: no initiator/opener role; whoever redeems consents, whoever
@@ -30,6 +31,7 @@ transfer ticket. No users exist yet, so we can replace the link flow outright.
   handshake.
 
 **Non-Goals:**
+
 - Mesh / multi-device propagation (pairing stays strictly pairwise).
 - Accounts, cloud identity, or a name directory.
 - An online/offline presence indicator (the broker already knows who is connected;
@@ -118,7 +120,7 @@ first with the code as fallback; desktop leads with the QR + code and a code fie
 - **Name goes stale between transfers (option B)** → Mitigation: acceptable by
   design; you only read a device's name when you go to send to it, and it refreshes
   on that interaction. Local override sidesteps it entirely.
-- **Removing a device is one-sided** → Mitigation: intended. Remove revokes *your*
+- **Removing a device is one-sided** → Mitigation: intended. Remove revokes _your_
   acceptance so the removed device can no longer send to you without a code; the
   stolen-device case is covered. The peer may still list you, which grants it
   nothing on its own.

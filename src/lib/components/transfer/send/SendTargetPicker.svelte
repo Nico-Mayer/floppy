@@ -4,6 +4,7 @@
 	import * as Select from '$lib/components/ui/select'
 	import * as Tooltip from '$lib/components/ui/tooltip'
 	import { pairing } from '$lib/pairing-app.svelte'
+	import { resolve } from '$app/paths'
 	import GlobeIcon from '@lucide/svelte/icons/globe'
 	import LaptopIcon from '@lucide/svelte/icons/laptop'
 	import ShieldPlusIcon from '@lucide/svelte/icons/shield-plus'
@@ -30,10 +31,10 @@
      With nothing paired the Select would be a one-option control, so the link
      stands alone and carries the explanation instead. -->
 {#if pairing.devices.length === 0}
-	<!-- Pairing lives on its own page now; this is the way in from the send flow. -->
-	<a href="/pair" class={buttonVariants({ variant: 'link', size: 'sm' })}>
+	<!-- Devices live on their own page now; this is the way in from the send flow. -->
+	<a href={resolve('/devices')} class={buttonVariants({ variant: 'link', size: 'sm' })}>
 		<ShieldPlusIcon data-icon="inline-start" />
-		Pair a device and skip the code
+		Add a device and skip the code
 	</a>
 {:else}
 	<Field.Field class="gap-2">
@@ -43,15 +44,15 @@
 				<Tooltip.Root>
 					<Tooltip.Trigger
 						class={buttonVariants({ variant: 'ghost', size: 'icon' }) + ' -my-1'}
-						aria-label="Pair a device"
+						aria-label="Add a device"
 					>
 						{#snippet child({ props })}
-							<a href="/pair" {...props}>
+							<a href={resolve('/devices')} {...props}>
 								<ShieldPlusIcon />
 							</a>
 						{/snippet}
 					</Tooltip.Trigger>
-					<Tooltip.Content>Pair a device</Tooltip.Content>
+					<Tooltip.Content>Add a device</Tooltip.Content>
 				</Tooltip.Root>
 			</Tooltip.Provider>
 		</div>
