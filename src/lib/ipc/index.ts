@@ -30,8 +30,6 @@ export const OpenPath = (path: string) => ok(commands.openPath(path))
 // Pairing
 export const Identity = () => ok(commands.identity())
 export const TrustedDevices = () => ok(commands.trustedDevices())
-export const PreviewPairing = (encoded: string) => ok(commands.previewPairing(encoded))
-export const Trust = (encoded: string, name: string) => ok(commands.trust(encoded, name))
 export const Untrust = (fingerprint: string) => ok(commands.untrust(fingerprint))
 export const ConfirmPair = (fingerprint: string, name: string) => ok(commands.confirmPair(fingerprint, name))
 export const DismissPair = (fingerprint: string) => ok(commands.dismissPair(fingerprint))

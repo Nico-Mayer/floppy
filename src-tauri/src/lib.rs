@@ -40,13 +40,6 @@ pub struct DeviceInfo {
     pub name: String,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, specta::Type)]
-pub struct PairingPreview {
-    pub fingerprint: String,
-    pub sas: String,
-    pub name: String,
-}
-
 /// Bridges the pairing service's events onto the frontend's typed pairing
 /// events. The service stays UI-agnostic; this is the only place that knows both.
 struct TauriPairingEmitter {
@@ -320,22 +313,6 @@ async fn trusted_devices(pairing: State<'_, PairingService>) -> Result<Vec<Devic
         .collect())
 }
 
-#[tauri::command]
-#[specta::specta]
-async fn preview_pairing(
-    pairing: State<'_, PairingService>,
-    encoded: String,
-) -> Result<PairingPreview, String> {
-    let (fingerprint, sas, name) = pairing.preview(&encoded)?;
-    Ok(PairingPreview { fingerprint, sas, name })
-}
-
-#[tauri::command]
-#[specta::specta]
-async fn trust(pairing: State<'_, PairingService>, encoded: String, name: String) -> Result<(), String> {
-    pairing.trust(&encoded, &name)
-}
-
 /// Show a pairing code on this device (also rendered as a QR). Another device
 /// redeems it to pair; this device confirms the request before trust is written.
 #[tauri::command]
@@ -437,8 +414,6 @@ fn specta_builder() -> Builder<tauri::Wry> {
             self_name,
             set_self_name,
             trusted_devices,
-            preview_pairing,
-            trust,
             untrust,
             confirm_pair,
             dismiss_pair,

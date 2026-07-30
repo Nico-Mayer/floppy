@@ -203,13 +203,11 @@ impl PairingService {
 
     /// This device's current self-name, advertised to peers during pairing and
     /// on transfer offers.
-    #[allow(dead_code)] // wired to a Tauri command in the device-management slice
     pub fn self_name(&self) -> String {
         self.self_name.get()
     }
 
     /// Rename this device. The new self-name is advertised to peers thereafter.
-    #[allow(dead_code)] // wired to a Tauri command in the device-management slice
     pub fn set_self_name(&self, name: &str) -> Result<(), String> {
         self.self_name.set(name)
     }
@@ -218,15 +216,8 @@ impl PairingService {
         self.trust.list()
     }
 
-    /// Decode a pasted identity and return (fingerprint, SAS, name) for the
-    /// compare-and-confirm step. The SAS is derived from the ECDH shared secret,
-    /// so both devices see the same digits.
-    pub fn preview(&self, encoded: &str) -> Result<(String, String, String), String> {
-        let pk = crate::pairing::identity::PublicKey::decode(encoded)?;
-        let secret = self.identity.shared_secret(&pk)?;
-        Ok((pk.fingerprint(), sas(&secret), String::new()))
-    }
-
+    /// Trust a device from its encoded public identity. A test helper for
+    /// seeding a mutual trust relationship without running the code exchange.
     pub fn trust(&self, encoded: &str, name: &str) -> Result<(), String> {
         let pk = crate::pairing::identity::PublicKey::decode(encoded)?;
         self.trust.add(pk, name)

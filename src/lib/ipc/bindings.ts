@@ -22,8 +22,6 @@ export const commands = {
 	 */
 	setSelfName: (name: string) => typedError<null, string>(__TAURI_INVOKE("set_self_name", { name })),
 	trustedDevices: () => typedError<DeviceInfo[], string>(__TAURI_INVOKE("trusted_devices")),
-	previewPairing: (encoded: string) => typedError<PairingPreview, string>(__TAURI_INVOKE("preview_pairing", { encoded })),
-	trust: (encoded: string, name: string) => typedError<null, string>(__TAURI_INVOKE("trust", { encoded, name })),
 	untrust: (fingerprint: string) => typedError<null, string>(__TAURI_INVOKE("untrust", { fingerprint })),
 	/**
 	 *  Approve a pending pairing (from a `PairingRequest`) and trust the peer under
@@ -125,12 +123,6 @@ export type PairingOfferEvent = {
 
 /**  A one-sided pairing completed; `name` is the newly trusted device. */
 export type PairingPaired = {
-	name: string,
-};
-
-export type PairingPreview = {
-	fingerprint: string,
-	sas: string,
 	name: string,
 };
 

@@ -4,20 +4,17 @@ import {
 	Decline,
 	DismissPair,
 	Identity,
-	PreviewPairing,
 	RedeemPairCode,
 	RenameDevice,
 	SelfName,
 	SendTo,
 	SetSelfName,
 	ShowPairCode,
-	Trust,
 	TrustedDevices,
 	Untrust,
 	events,
 	type DeviceInfo,
 	type PairingOfferEvent,
-	type PairingPreview,
 	type PairingRequest
 } from '$lib/ipc'
 import { goto } from '$app/navigation'
@@ -39,7 +36,7 @@ class PairingApp {
 	devices = $state<DeviceInfo[]>([])
 	/** A verified incoming offer awaiting the user's accept/decline. */
 	incoming = $state<PairingOfferEvent | null>(null)
-	/** A device that paired against our link, awaiting our confirm-and-name. */
+	/** A device that redeemed a code we are showing, awaiting our confirm. */
 	request = $state<PairingRequest | null>(null)
 
 	/** Whether the pairing backend came up (broker reachable, identity loaded). */
@@ -76,9 +73,8 @@ class PairingApp {
 				this.#resetPendingSend()
 				toast.error(e.payload.message)
 			}),
-			// A device paired against a link we are showing: hold it for the
-			// confirm-and-name prompt, and bring the pair page up behind it so the
-			// confirm has its context.
+			// A device redeemed a code we are showing: hold it for the confirm
+			// prompt, and bring the Devices page up behind it for context.
 			events.pairingRequest.listen((e) => {
 				this.request = e.payload
 				void goto(resolve('/devices'))
@@ -185,18 +181,8 @@ class PairingApp {
 		}
 	}
 
-	/** Decode a pasted identity and get its fingerprint + SAS for the compare. */
-	preview(encoded: string): Promise<PairingPreview> {
-		return PreviewPairing(encoded)
-	}
-
-	async trust(encoded: string, name: string) {
-		await Trust(encoded, name)
-		await this.refresh()
-	}
-
 	/**
-	 * Approve a device that paired against our link, trusting it under `name`.
+	 * Approve a device that redeemed our code, trusting it under `name`.
 	 * The pairing:paired event refreshes the list and toasts; clear the prompt.
 	 */
 	async confirmPair(name: string) {
@@ -210,7 +196,7 @@ class PairingApp {
 		}
 	}
 
-	/** Turn down a device that paired against our link. */
+	/** Turn down a device that redeemed our code. */
 	async dismissPair() {
 		const req = this.request
 		if (!req) return

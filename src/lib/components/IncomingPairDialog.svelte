@@ -7,7 +7,7 @@
 	import XIcon from '@lucide/svelte/icons/x'
 
 	// Driven by pairing.request: a device finished the pairing handshake against a
-	// link this device is showing, and waits here for a yes/no plus a name. Trust
+	// code this device is showing, and waits here for a yes/no plus a name. Trust
 	// is written only on confirm; closing by any other means declines it.
 	const open = $derived(pairing.request !== null)
 
