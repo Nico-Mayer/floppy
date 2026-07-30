@@ -286,8 +286,12 @@ impl PairingService {
             .remove(transfer_id)
             .ok_or("no such incoming offer")?;
         let resp = self.identity.sign_response(transfer_id, true);
-        self.broker.send(&offer.from.fingerprint(), &Signal::Response(resp));
-        self.manager.receive(offer.ticket).await.map_err(|e| e.to_string())
+        let fingerprint = offer.from.fingerprint();
+        self.broker.send(&fingerprint, &Signal::Response(resp));
+        // File what arrives under the sender's name — the local label if the
+        // user set one, else the name the device advertises.
+        let peer = self.trust.get(&fingerprint).map(|d| d.label()).unwrap_or(offer.self_name);
+        self.manager.receive_from(offer.ticket, &peer).await.map_err(|e| e.to_string())
     }
 
     /// Decline a pending offer: tell the sender so it can stop serving.

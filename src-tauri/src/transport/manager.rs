@@ -19,11 +19,12 @@ use std::sync::{Arc, Mutex, Weak};
 use std::time::{Duration, Instant};
 
 use iroh::endpoint::presets;
+use iroh::endpoint::Connection;
 use iroh::protocol::Router;
 use iroh::{Endpoint, RelayMode};
 use iroh_blobs::api::{Store, TempTag};
 use iroh_blobs::format::collection::Collection;
-use iroh_blobs::get::request::{get_blob, get_verified_size};
+use iroh_blobs::get::request::get_verified_size;
 use iroh_blobs::hashseq::HashSeq;
 use iroh_blobs::provider::events::{
     EventMask, EventSender, ProviderMessage, RequestMode, RequestUpdate,
@@ -38,8 +39,8 @@ use tokio_util::sync::CancellationToken;
 
 use crate::rendezvous::{client, code as codegen, pake};
 use crate::transport::error::{StartError, TransferError, TransferErrorCode};
-use crate::transport::event::{Emitter, Event, Kind, Stats};
-use crate::transport::progress::RateTracker;
+use crate::transport::event::{Emitter, Event, Kind};
+use crate::transport::progress::{self, RateTracker};
 
 /// How long a new transfer waits for a cancelled predecessor of the same kind
 /// to finish unwinding before giving up with `Unwinding`.
@@ -97,6 +98,9 @@ impl Blobs {
 struct SendSlot {
     id: String,
     total: u64,
+    /// File names in manifest order. Shared with the provider task, which names
+    /// the file it is serving in every progress event.
+    names: Arc<[String]>,
     cancel: CancellationToken,
     done: CancellationToken,
     cancelled: bool,
@@ -209,9 +213,10 @@ impl Manager {
 
         // Import files and build the collection before claiming the slot, so a
         // failure here doesn't leave a half-registered send.
-        let (root, total, pins) = build_collection(self.inner.store.store(), &paths)
-            .await
-            .map_err(|_| StartError::NoFiles)?;
+        let Imported { root, total, names, pins } =
+            build_collection(self.inner.store.store(), &paths)
+                .await
+                .map_err(|_| StartError::NoFiles)?;
 
         // The ticket must carry a reachable address. Right after bind the addr
         // holds only the EndpointId until direct addresses (or a relay URL) are
@@ -228,6 +233,7 @@ impl Manager {
         slots.send = Some(SendSlot {
             id: id.clone(),
             total,
+            names: names.into(),
             cancel: CancellationToken::new(),
             done: CancellationToken::new(),
             cancelled: false,
@@ -248,11 +254,30 @@ impl Manager {
     }
 
     /// Fetch the content named by `ticket` and export it under the dest root.
+    /// The folder is named after a fresh code phrase — a pasted ticket carries
+    /// nothing a person would recognise.
     pub async fn receive(&self, ticket: String) -> Result<String, StartError> {
+        self.receive_labelled(ticket, None, &codegen::generate()).await
+    }
+
+    /// Receive from a named peer: the files land under `<dest>/<peer>/<tag>`.
+    /// Used by the trusted-device path, where the sender has a name worth
+    /// filing the transfer under.
+    pub async fn receive_from(&self, ticket: String, peer: &str) -> Result<String, StartError> {
+        self.receive_labelled(ticket, Some(peer), &codegen::generate()).await
+    }
+
+    async fn receive_labelled(
+        &self,
+        ticket: String,
+        peer: Option<&str>,
+        tag: &str,
+    ) -> Result<String, StartError> {
         let ticket: BlobTicket = ticket.trim().parse().map_err(|_| StartError::BadCode)?;
         self.await_free_slot(Kind::Receive).await?;
         let (id, cancel, done) = self.claim_receive()?;
-        self.spawn_receive(ticket, id.clone(), cancel, done);
+        let dest = receive_dest(&self.inner.dest_root, peer, tag);
+        self.spawn_receive(ticket, dest, id.clone(), cancel, done);
         Ok(id)
     }
 
@@ -277,8 +302,14 @@ impl Manager {
     }
 
     /// Spawn the fetch+export task for an already-obtained ticket.
-    fn spawn_receive(&self, ticket: BlobTicket, id: String, cancel: CancellationToken, done: CancellationToken) {
-        let dest = self.inner.dest_root.join(short_hash(&ticket.hash()));
+    fn spawn_receive(
+        &self,
+        ticket: BlobTicket,
+        dest: PathBuf,
+        id: String,
+        cancel: CancellationToken,
+        done: CancellationToken,
+    ) {
         tracing::info!(id = %id, dest = %dest.display(), "receive: starting");
         let inner = self.inner.clone();
         tokio::spawn(async move {
@@ -343,7 +374,9 @@ impl Manager {
                     done.cancel();
                 }
                 Some(Ok(ticket)) => {
-                    let dest = inner.dest_root.join(short_hash(&ticket.hash()));
+                    // The code phrase is this transfer's name: single-use, and
+                    // the one thing both sides recognise.
+                    let dest = receive_dest(&inner.dest_root, None, &normalized);
                     run_receive(inner.clone(), ticket, dest, run_id, cancel, done).await;
                 }
                 Some(Err(err)) => {
@@ -439,17 +472,25 @@ async fn build_endpoint(relay: &RelayConfig, bind_addr: Option<&str>) -> anyhow:
     Ok(builder.bind().await?)
 }
 
-/// Import each file and wrap them in a collection. Returns the root hash, the
-/// total content bytes, and the temp tags that pin all imported content against
-/// GC — the caller holds these for the send's lifetime so the store keeps
-/// serving until the transfer finishes or is cancelled. Directories are not
+/// An imported send: what is being served, and the pins keeping it alive.
+struct Imported {
+    root: Hash,
+    /// Total content bytes — the files only, no collection overhead.
+    total: u64,
+    /// File names in manifest order, so progress can say what is moving.
+    names: Vec<String>,
+    /// Pins all imported content against GC — the caller holds these for the
+    /// send's lifetime so the store keeps serving until the transfer finishes
+    /// or is cancelled.
+    pins: Vec<TempTag>,
+}
+
+/// Import each file and wrap them in a collection. Directories are not
 /// expanded — the picker and the queue only ever yield files.
-async fn build_collection(
-    store: &Store,
-    paths: &[PathBuf],
-) -> anyhow::Result<(Hash, u64, Vec<TempTag>)> {
+async fn build_collection(store: &Store, paths: &[PathBuf]) -> anyhow::Result<Imported> {
     let mut entries: Vec<(String, Hash)> = Vec::with_capacity(paths.len());
     let mut pins: Vec<TempTag> = Vec::with_capacity(paths.len() + 1);
+    let mut names: Vec<String> = Vec::with_capacity(paths.len());
     let mut total: u64 = 0;
     for path in paths {
         let meta = std::fs::metadata(path)?;
@@ -462,14 +503,15 @@ async fn build_collection(
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_else(|| "file".into());
         let tag = store.blobs().add_path(path).temp_tag().await?;
-        entries.push((name, tag.hash()));
+        entries.push((name.clone(), tag.hash()));
+        names.push(name);
         pins.push(tag);
     }
     let collection = Collection::from_iter(entries);
     let tag = collection.store(store).await?;
     let root = tag.hash();
     pins.push(tag);
-    Ok((root, total, pins))
+    Ok(Imported { root, total, names, pins })
 }
 
 /// The full receive: connect, size, fetch (streamed progress), export. Emits
@@ -530,28 +572,45 @@ async fn do_receive(
             .map_err(classify_connect_err)
     };
 
-    // Learn the total size up front (for a real percentage). Fetch the hash-seq
-    // blob storelessly to enumerate the content hashes, then ask the peer for
-    // each one's verified size. A dedicated connection: iroh-blobs finishes a
-    // connection once its requests complete, so the bulk fetch gets its own.
+    // Learn the manifest up front (names, per-file sizes, a real total). The
+    // hash-seq root and the collection metadata blob are a few hundred bytes;
+    // fetching them into the store first means the bulk fetch below moves file
+    // bytes only, so its byte counter and `total` measure the same thing. A
+    // dedicated connection: iroh-blobs finishes a connection once its requests
+    // complete, so the bulk fetch gets its own.
     let probe = connect().await?;
-    let (seq_bytes, _) = get_blob(probe.clone(), root)
-        .bytes_and_stats()
+    fetch_blob(store, &probe, root).await?;
+    let seq_bytes = store
+        .blobs()
+        .get_bytes(root)
         .await
-        .map_err(classify_get_err)?;
+        .map_err(|e| TransferError::new(TransferErrorCode::Storage, e.to_string()))?;
     let hash_seq = HashSeq::try_from(seq_bytes)
         .map_err(|e| TransferError::new(TransferErrorCode::Other, e.to_string()))?;
+    // Child 0 of a collection's hash seq is the metadata blob (the names); the
+    // rest are the files themselves.
+    let meta_hash = hash_seq
+        .iter()
+        .next()
+        .ok_or_else(|| TransferError::new(TransferErrorCode::Other, "empty collection"))?;
+    fetch_blob(store, &probe, meta_hash).await?;
+    let collection = Collection::load(root, store)
+        .await
+        .map_err(|e| TransferError::new(TransferErrorCode::Other, e.to_string()))?;
+
+    let mut files: Vec<(String, u64)> = Vec::with_capacity(collection.len());
     let mut total: u64 = 0;
-    let mut file_count: u64 = 0;
-    for child in hash_seq.iter() {
-        let (size, _) = get_verified_size(&probe, &child).await.map_err(classify_get_err)?;
+    for (name, hash) in collection.iter() {
+        let (size, _) = get_verified_size(&probe, hash).await.map_err(classify_get_err)?;
         total += size;
-        file_count += 1;
+        files.push((name.clone(), size));
     }
+    let file_count = files.len() as u64;
     drop(probe);
 
     // Bulk-fetch the whole collection on a fresh connection, emitting progress
-    // from iroh's byte stream.
+    // from iroh's byte stream. The tracker withholds samples that came too fast
+    // to measure, so this emits on a steady cadence rather than per chunk.
     let conn = connect().await?;
     let mut tracker = RateTracker::new();
     let mut stream = store.remote().fetch(conn.clone(), HashAndFormat::hash_seq(root)).stream();
@@ -559,18 +618,17 @@ async fn do_receive(
         use iroh_blobs::api::remote::GetProgressItem::*;
         match item {
             Progress(done_bytes) => {
-                let stats = tracker.sample(Instant::now(), done_bytes, total, String::new(), 0, file_count);
-                inner.emit(Event::Progress { id: id.to_string(), kind: Kind::Receive, stats });
+                let (index, name) = progress::file_at(&files, done_bytes);
+                if let Some(stats) =
+                    tracker.sample(Instant::now(), done_bytes, total, name, index, file_count)
+                {
+                    inner.emit(Event::Progress { id: id.to_string(), kind: Kind::Receive, stats });
+                }
             }
             Done(_) => break,
             Error(e) => return Err(classify_get_err(e)),
         }
     }
-
-    // The content is now local; load the collection to get file names.
-    let collection = Collection::load(root, store)
-        .await
-        .map_err(|e| TransferError::new(TransferErrorCode::Other, e.to_string()))?;
 
     // Export each file to the destination folder under its name.
     std::fs::create_dir_all(dest)
@@ -585,8 +643,20 @@ async fn do_receive(
     }
 
     // Guarantee a final 100% before the Done event (emitted by the caller).
-    let final_stats = Stats { percent: 100.0, sent: total, total, ..Default::default() };
+    let final_stats = progress::completed(total, file_count);
     inner.emit(Event::Progress { id: id.to_string(), kind: Kind::Receive, stats: final_stats });
+    Ok(())
+}
+
+/// Fetch one blob into the store by hash. Used for the two tiny structural
+/// blobs of a collection (the hash-seq root and the metadata blob) before the
+/// bulk transfer starts.
+async fn fetch_blob(store: &Store, conn: &Connection, hash: Hash) -> Result<(), TransferError> {
+    store
+        .remote()
+        .fetch(conn.clone(), HashAndFormat::raw(hash))
+        .await
+        .map_err(classify_get_err)?;
     Ok(())
 }
 
@@ -612,26 +682,33 @@ async fn provider_pump(mut rx: mpsc::Receiver<ProviderMessage>, inner: Weak<Inne
         // Snapshot the active send once — a stale request with no active send is
         // ignored. Keeps the per-update loop lock-free so it drains fast enough
         // that the provider's bounded update channel never fills.
-        let (id, total, cancel_tok) = {
+        let (id, total, cancel_tok, names) = {
             let slots = inner_arc.slots.lock().unwrap();
             match &slots.send {
-                Some(s) => (s.id.clone(), s.total, s.cancel.clone()),
+                Some(s) => (s.id.clone(), s.total, s.cancel.clone(), s.names.clone()),
                 None => continue,
             }
         };
         tokio::spawn(async move {
+            let file_count = names.len() as u64;
             let mut tracker = RateTracker::new();
-            let mut base: u64 = 0; // bytes from completed blobs
-            let mut last_end: u64 = 0; // end offset within the current blob
-            // Number of blobs this request served. A receiver's size probes
-            // (get_blob on the seq, get_verified_size on a child) each move
-            // exactly ONE blob — and a size probe can transfer a whole blob, so
-            // by bytes alone a probe on the largest file looks "complete". The
-            // real content download is the only request that serves MULTIPLE
-            // blobs (seq + metadata + files), so gate send completion/abort on
-            // seeing more than one blob. This is what tells the bulk fetch apart
-            // from the probes.
-            let mut blobs_started: u64 = 0;
+            // Bytes of *file* blobs served so far, and the offset within the
+            // blob currently being served. `Started.index` is the position in
+            // the collection's hash seq: 0 is the seq root and 1 the metadata
+            // blob — a few hundred bytes of structure that are not content.
+            // Counting them made `sent` overshoot `total`, ending the send
+            // before the last of the payload had actually gone out.
+            //
+            // The same index tells the real download from a receiver's probes:
+            // a probe (a verified-size request, or the manifest fetch) requests
+            // a single blob, which is index 0 of its own request, so it can
+            // never look like file content.
+            let mut content: u64 = 0;
+            let mut offset: u64 = 0;
+            // 1-based index of the file being served, or None for a structural
+            // blob. `Some` at any point means this request is the real download.
+            let mut current: Option<u64> = None;
+            let mut served_content = false;
             let mut updates = update_rx;
 
             while let Ok(Some(update)) = updates.recv().await {
@@ -639,42 +716,55 @@ async fn provider_pump(mut rx: mpsc::Receiver<ProviderMessage>, inner: Weak<Inne
                     return;
                 }
                 match update {
-                    RequestUpdate::Started(_) => {
-                        blobs_started += 1;
-                        base += last_end;
-                        last_end = 0;
+                    RequestUpdate::Started(t) => {
+                        if current.is_some() {
+                            content += offset;
+                        }
+                        offset = 0;
+                        current = t.index.checked_sub(2).map(|i| i + 1);
+                        served_content |= current.is_some();
                     }
                     RequestUpdate::Progress(p) => {
-                        last_end = p.end_offset;
-                        // Only surface progress for the real download, not probes.
-                        if blobs_started > 1 {
-                            let sent = base + last_end;
-                            let stats =
-                                tracker.sample(Instant::now(), sent, total, String::new(), 0, 0);
-                            inner_arc.emit(Event::Progress {
-                                id: id.clone(),
-                                kind: Kind::Send,
-                                stats,
-                            });
+                        offset = p.end_offset;
+                        // Only surface progress for file content, not probes.
+                        if let Some(index) = current {
+                            let name =
+                                names.get(index as usize - 1).cloned().unwrap_or_default();
+                            if let Some(stats) = tracker.sample(
+                                Instant::now(),
+                                content + offset,
+                                total,
+                                name,
+                                index,
+                                file_count,
+                            ) {
+                                inner_arc.emit(Event::Progress {
+                                    id: id.clone(),
+                                    kind: Kind::Send,
+                                    stats,
+                                });
+                            }
                         }
                     }
                     RequestUpdate::Completed(_) => {
                         // Completed fires per blob, not per request. Returning
                         // early would drop the update channel and make the
                         // provider abort the rest of the transfer, so only the
-                        // multi-blob bulk request's final blob ends the send.
-                        let sent = base + last_end;
-                        if blobs_started > 1 && total > 0 && sent >= total {
-                            finish_send(&inner_arc, &id, total);
+                        // last file blob ends the send.
+                        if current.is_some() {
+                            content += offset;
+                        }
+                        offset = 0;
+                        current = None;
+                        if served_content && total > 0 && content >= total {
+                            finish_send(&inner_arc, &id, total, file_count);
                             return;
                         }
-                        base += last_end;
-                        last_end = 0;
                     }
                     RequestUpdate::Aborted(_) => {
                         // Only the real download aborting is a send failure; a
                         // probe being reset is not.
-                        if blobs_started > 1 {
+                        if served_content {
                             let mut slots = inner_arc.slots.lock().unwrap();
                             if slots.send.as_ref().is_some_and(|s| s.id == id) {
                                 let done = slots.send.take().unwrap().done;
@@ -696,7 +786,7 @@ async fn provider_pump(mut rx: mpsc::Receiver<ProviderMessage>, inner: Weak<Inne
 }
 
 /// Emit the final 100% progress + Done for a send and free the slot.
-fn finish_send(inner: &Inner, id: &str, total: u64) {
+fn finish_send(inner: &Inner, id: &str, total: u64, file_count: u64) {
     let mut slots = inner.slots.lock().unwrap();
     let done = match &slots.send {
         Some(s) if s.id == id => s.done.clone(),
@@ -705,26 +795,61 @@ fn finish_send(inner: &Inner, id: &str, total: u64) {
     slots.send = None;
     drop(slots);
 
-    let final_stats = Stats { percent: 100.0, sent: total, total, ..Default::default() };
+    let final_stats = progress::completed(total, file_count);
     inner.emit(Event::Progress { id: id.to_string(), kind: Kind::Send, stats: final_stats });
     inner.emit(Event::Done { id: id.to_string(), kind: Kind::Send, dest: String::new() });
     tracing::info!(id = %id, "send: complete");
     done.cancel();
 }
 
-/// A short, filesystem-safe folder name derived from the content hash.
-fn short_hash(hash: &Hash) -> String {
-    hash.to_string().chars().take(16).collect()
+/// The folder one receive exports into: `<root>/<peer>/<tag>`, or `<root>/<tag>`
+/// when the sender has no name here. Every transfer gets its own folder, so two
+/// receives never mix their files, and `tag` is a code phrase rather than a
+/// hash so the folder is something a person can read.
+fn receive_dest(root: &Path, peer: Option<&str>, tag: &str) -> PathBuf {
+    let base = match peer.map(path_component).filter(|p| !p.is_empty()) {
+        Some(peer) => root.join(peer),
+        None => root.to_path_buf(),
+    };
+    let name = path_component(tag);
+    let name = if name.is_empty() { "transfer".to_string() } else { name };
+
+    // The same code can be received twice (a resumed or repeated share); the
+    // second copy gets its own folder instead of landing on the first.
+    let first = base.join(&name);
+    if !first.exists() {
+        return first;
+    }
+    (2..1000)
+        .map(|n| base.join(format!("{name}-{n}")))
+        .find(|p| !p.exists())
+        .unwrap_or(first)
+}
+
+/// One safe path component: no separators, no traversal, no characters Windows
+/// refuses. Empty when nothing usable is left.
+fn path_component(name: &str) -> String {
+    let cleaned: String = name
+        .trim()
+        .chars()
+        .map(|c| if std::path::is_separator(c) || "\\:*?\"<>|".contains(c) { '-' } else { c })
+        .collect();
+    Path::new(cleaned.trim())
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .filter(|n| !n.is_empty() && n != "." && n != "..")
+        .unwrap_or_default()
 }
 
 /// Keep only the file name component, never a path — a malicious collection
 /// entry must not write outside the destination folder.
 fn sanitize_name(name: &str) -> String {
-    Path::new(name)
-        .file_name()
-        .map(|n| n.to_string_lossy().into_owned())
-        .filter(|n| !n.is_empty() && n != "." && n != "..")
-        .unwrap_or_else(|| "file".into())
+    let name = path_component(name);
+    if name.is_empty() {
+        "file".to_string()
+    } else {
+        name
+    }
 }
 
 // ---- quick-share rendezvous (SPAKE2 over the broker mailbox) ----
@@ -805,6 +930,7 @@ fn classify_get_err(err: iroh_blobs::get::GetError) -> TransferError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::transport::event::Stats;
     use std::io::Write;
 
     /// Collects emitted events for assertions.
@@ -920,6 +1046,220 @@ mod tests {
         assert_eq!(last_progress, 100.0);
         // Done is the terminal event.
         assert!(!events[done_at + 1..].iter().any(|e| matches!(e, Event::Done { .. } | Event::Failed { .. })));
+    }
+
+    /// Every progress snapshot of `kind`, in order.
+    fn progress_of(c: &Collector, want: Kind) -> Vec<Stats> {
+        c.events()
+            .iter()
+            .filter_map(|e| match e {
+                Event::Progress { kind, stats, .. } if *kind == want => Some(stats.clone()),
+                _ => None,
+            })
+            .collect()
+    }
+
+    /// Both sides must name the file they are moving and count the files
+    /// correctly — the send side reported `0 files` and the receive side one
+    /// too many (it counted the collection metadata blob as a file).
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn progress_names_the_files_being_moved() {
+        let tmp = tempfile::tempdir().unwrap();
+        let a = write_file(tmp.path(), "a.bin", &vec![1u8; 3_000_000]);
+        let b = write_file(tmp.path(), "b.bin", &vec![2u8; 3_000_000]);
+
+        let se = Collector::default();
+        let re = Collector::default();
+        let sender = manager(tmp.path(), "s", Arc::new(se.clone())).await;
+        let receiver = manager(tmp.path(), "r", Arc::new(re.clone())).await;
+
+        sender.send(vec![a, b]).await.unwrap();
+        wait_for(&se, |e| e.iter().any(|x| matches!(x, Event::Code { .. }))).await;
+        receiver.receive(ticket_of(&se.events())).await.unwrap();
+        wait_for(&re, |e| e.iter().any(|x| matches!(x, Event::Done { .. }))).await;
+        wait_for(&se, |e| e.iter().any(|x| matches!(x, Event::Done { .. }))).await;
+
+        for (side, stats) in [("send", progress_of(&se, Kind::Send)), ("recv", progress_of(&re, Kind::Receive))] {
+            assert!(!stats.is_empty(), "{side}: no progress events");
+            for s in &stats {
+                assert_eq!(s.file_count, 2, "{side}: wrong file count in {s:?}");
+                assert_eq!(s.total, 6_000_000, "{side}: total must be content bytes only");
+            }
+            // The manifest is known while bytes are moving, not just at the end
+            // — every in-flight snapshot names the file it is counting. (Which
+            // files get a snapshot depends on timing: updates are paced, and a
+            // local transfer this size can finish inside one window.)
+            let names = ["a.bin", "b.bin"];
+            let in_flight: Vec<&Stats> = stats.iter().filter(|s| !s.file.is_empty()).collect();
+            assert!(!in_flight.is_empty(), "{side}: no progress event named a file");
+            for s in in_flight {
+                let index = s.file_index as usize;
+                assert!((1..=2).contains(&index), "{side}: file index out of range in {s:?}");
+                assert_eq!(s.file, names[index - 1], "{side}: name and index disagree in {s:?}");
+            }
+            // The terminal snapshot keeps the count: the completion
+            // notification reads it, and a defaulted one said "0 files".
+            let last = stats.last().unwrap();
+            assert_eq!(last.percent, 100.0, "{side}: last progress is not 100%");
+            assert_eq!(last.file_count, 2, "{side}: terminal snapshot lost the file count");
+            assert_eq!(last.sent, last.total, "{side}: terminal snapshot is short");
+        }
+    }
+
+    /// iroh pushes progress thousands of times a second; folding every push
+    /// produced ~5500 events for one transfer and rates in the tens of GB/s
+    /// (which pinned the ETA at 0s). Updates must be paced and the rate sane.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn progress_is_paced_and_the_rate_is_believable() {
+        let tmp = tempfile::tempdir().unwrap();
+        let src = write_file(tmp.path(), "big.bin", &vec![4u8; 32_000_000]);
+
+        let se = Collector::default();
+        let re = Collector::default();
+        let sender = manager(tmp.path(), "s", Arc::new(se.clone())).await;
+        let receiver = manager(tmp.path(), "r", Arc::new(re.clone())).await;
+
+        sender.send(vec![src]).await.unwrap();
+        wait_for(&se, |e| e.iter().any(|x| matches!(x, Event::Code { .. }))).await;
+        receiver.receive(ticket_of(&se.events())).await.unwrap();
+        wait_for(&re, |e| e.iter().any(|x| matches!(x, Event::Done { .. }))).await;
+        wait_for(&se, |e| e.iter().any(|x| matches!(x, Event::Done { .. }))).await;
+
+        // A loopback QUIC transfer does not exceed a few hundred MB/s; anything
+        // near this bound means the rate was measured over a ~0 time gap.
+        const IMPOSSIBLE_BPS: f64 = 5e9;
+        for (side, stats) in [("send", progress_of(&se, Kind::Send)), ("recv", progress_of(&re, Kind::Receive))] {
+            assert!(
+                stats.len() <= 40,
+                "{side}: {} progress events for one transfer — updates are not paced",
+                stats.len()
+            );
+            for s in &stats {
+                assert!(s.bps < IMPOSSIBLE_BPS, "{side}: implausible rate in {s:?}");
+                assert!(s.eta >= -1, "{side}: bad eta in {s:?}");
+            }
+        }
+    }
+
+    /// The provider tells the real download from a receiver's probes by blob
+    /// index, so a single-file collection (where the bulk request may serve one
+    /// blob) must still complete the send.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn single_file_send_completes() {
+        let tmp = tempfile::tempdir().unwrap();
+        let src = write_file(tmp.path(), "only.bin", &vec![5u8; 1_500_000]);
+
+        let se = Collector::default();
+        let re = Collector::default();
+        let sender = manager(tmp.path(), "s", Arc::new(se.clone())).await;
+        let receiver = manager(tmp.path(), "r", Arc::new(re.clone())).await;
+
+        sender.send(vec![src]).await.unwrap();
+        wait_for(&se, |e| e.iter().any(|x| matches!(x, Event::Code { .. }))).await;
+        receiver.receive(ticket_of(&se.events())).await.unwrap();
+        wait_for(&se, |e| e.iter().any(|x| matches!(x, Event::Done { .. }))).await;
+
+        let last = progress_of(&se, Kind::Send).pop().expect("no send progress");
+        assert_eq!(last.file_count, 1);
+        assert_eq!(last.sent, 1_500_000);
+        assert_eq!(last.percent, 100.0);
+    }
+
+    #[test]
+    fn receive_dest_is_one_readable_folder_per_transfer() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path();
+
+        // No known sender: straight under the root, named by the code phrase.
+        assert_eq!(receive_dest(root, None, "4821-crayon-mimic-otter"), root.join("4821-crayon-mimic-otter"));
+        // A named device gets its own shelf.
+        assert_eq!(
+            receive_dest(root, Some("Nico's MacBook"), "7421-velvet-otter-reef"),
+            root.join("Nico's MacBook").join("7421-velvet-otter-reef")
+        );
+        // A peer name is never allowed to escape the root or break the path;
+        // separators are flattened rather than dropped, so the name still reads
+        // like what the device is called.
+        assert_eq!(receive_dest(root, Some("../../etc"), "tag"), root.join("..-..-etc").join("tag"));
+        assert_eq!(receive_dest(root, Some("a/b:c"), "tag"), root.join("a-b-c").join("tag"));
+        assert_eq!(receive_dest(root, Some("   "), "tag"), root.join("tag"));
+        assert_eq!(receive_dest(root, None, "../evil"), root.join("..-evil"));
+        assert_eq!(receive_dest(root, None, ""), root.join("transfer"));
+
+        // The same code twice must not land on top of the first copy.
+        let first = receive_dest(root, None, "9930-amber-finch-loop");
+        std::fs::create_dir_all(&first).unwrap();
+        let second = receive_dest(root, None, "9930-amber-finch-loop");
+        assert_eq!(second, root.join("9930-amber-finch-loop-2"));
+        std::fs::create_dir_all(&second).unwrap();
+        assert_eq!(receive_dest(root, None, "9930-amber-finch-loop"), root.join("9930-amber-finch-loop-3"));
+    }
+
+    /// A pasted ticket has no code phrase, so the folder is a generated one —
+    /// and two receives of the same content still land apart.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn each_receive_gets_its_own_folder() {
+        let tmp = tempfile::tempdir().unwrap();
+        let src = write_file(tmp.path(), "shared.bin", &vec![6u8; 300_000]);
+        let se = Collector::default();
+        let re = Collector::default();
+        let sender = manager(tmp.path(), "s", Arc::new(se.clone())).await;
+        let receiver = manager(tmp.path(), "r", Arc::new(re.clone())).await;
+
+        // The same file, sent and received twice over.
+        for round in 1..=2 {
+            sender.send(vec![src.clone()]).await.unwrap();
+            wait_for(&se, |e| e.iter().filter(|x| matches!(x, Event::Code { .. })).count() >= round).await;
+            let ticket = se
+                .events()
+                .iter()
+                .filter_map(|e| match e {
+                    Event::Code { code, .. } => Some(code.clone()),
+                    _ => None,
+                })
+                .next_back()
+                .unwrap();
+            receiver.receive(ticket).await.unwrap();
+            wait_for(&re, |e| e.iter().filter(|x| matches!(x, Event::Done { .. })).count() >= round).await;
+            wait_for_manager_idle(&receiver).await;
+        }
+
+        let root = tmp.path().join("r-dl");
+        let copies: Vec<PathBuf> = walk(&root)
+            .into_iter()
+            .filter(|p| p.file_name().unwrap() == "shared.bin")
+            .collect();
+        assert_eq!(copies.len(), 2, "each receive gets its own folder: {copies:?}");
+        for copy in &copies {
+            let folder = copy.parent().unwrap();
+            assert_eq!(folder.parent().unwrap(), root);
+            let name = folder.file_name().unwrap().to_string_lossy().into_owned();
+            assert!(codegen::looks_like_code(&name), "folder {name} is not a code phrase");
+        }
+        assert_ne!(copies[0].parent(), copies[1].parent());
+    }
+
+    /// A trusted-device receive files itself under the sender's name.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn receive_from_a_named_peer_is_filed_under_that_name() {
+        let tmp = tempfile::tempdir().unwrap();
+        let src = write_file(tmp.path(), "from-peer.bin", &vec![7u8; 120_000]);
+        let se = Collector::default();
+        let re = Collector::default();
+        let sender = manager(tmp.path(), "s", Arc::new(se.clone())).await;
+        let receiver = manager(tmp.path(), "r", Arc::new(re.clone())).await;
+
+        sender.send(vec![src]).await.unwrap();
+        wait_for(&se, |e| e.iter().any(|x| matches!(x, Event::Code { .. }))).await;
+        receiver.receive_from(ticket_of(&se.events()), "Workshop PC").await.unwrap();
+        wait_for(&re, |e| e.iter().any(|x| matches!(x, Event::Done { .. }))).await;
+
+        let file = walk(&tmp.path().join("r-dl"))
+            .into_iter()
+            .find(|p| p.file_name().unwrap() == "from-peer.bin")
+            .expect("nothing exported");
+        let folder = file.parent().unwrap();
+        assert_eq!(folder.parent().unwrap(), tmp.path().join("r-dl").join("Workshop PC"));
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -1218,11 +1558,13 @@ mod tests {
         receiver.quick_receive(&phrase).await.unwrap();
         wait_for(&re, |e| e.iter().any(|x| matches!(x, Event::Done { .. }))).await;
 
-        let got = walk(&tmp.path().join("r-dl"))
+        // The code phrase names the folder: `<dest root>/<phrase>/quick.bin`.
+        let file = walk(&tmp.path().join("r-dl"))
             .into_iter()
             .find(|p| p.file_name().unwrap() == "quick.bin")
-            .map(|p| std::fs::read(&p).unwrap());
-        assert_eq!(got.as_deref(), Some(&payload[..]));
+            .expect("quick.bin was not exported");
+        assert_eq!(std::fs::read(&file).unwrap(), payload);
+        assert_eq!(file.parent().unwrap(), tmp.path().join("r-dl").join(&phrase));
     }
 
     /// Live cross-language check: quick share over a REAL Go broker (mailbox

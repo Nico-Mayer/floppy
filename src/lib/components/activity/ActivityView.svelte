@@ -1,8 +1,8 @@
 <script lang="ts">
+	import { formatBytes } from '$lib/components/transfer/format'
 	import { Badge } from '$lib/components/ui/badge'
 	import * as Empty from '$lib/components/ui/empty'
 	import { Spinner } from '$lib/components/ui/spinner'
-	import { formatBytes } from '$lib/components/transfer/format'
 	import { cn } from '$lib/utils'
 	import CheckIcon from '@lucide/svelte/icons/check'
 	import Clock3Icon from '@lucide/svelte/icons/clock-3'
@@ -88,7 +88,7 @@
 				<ol class="flex flex-col">
 					{#each day.entries as entry (entry.id)}
 						<li
-							class="relative flex gap-3 pb-4 before:absolute before:top-8 before:bottom-0 before:left-[15px] before:w-px before:bg-border last:pb-0 last:before:hidden"
+							class="relative flex gap-3 pb-4 before:absolute before:top-8 before:bottom-0 before:left-3.75 before:w-px before:bg-border last:pb-0 last:before:hidden"
 						>
 							<!-- Node: direction is the icon, outcome is the colour. bg-background
 							     keeps the rail from showing through the round node. -->

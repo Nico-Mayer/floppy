@@ -122,8 +122,11 @@ impl transport::Emitter for TauriEmitter {
                 .emit(app)
             }
             E::Done { id, kind, dest } => {
+                // Event first, notification after: the panel must not wait on
+                // anything the notification does.
+                let emitted = DoneEvent { id, kind: kind_to_ts(kind), dest: dest.clone() }.emit(app);
                 self.notify_done(kind, &dest);
-                DoneEvent { id, kind: kind_to_ts(kind), dest }.emit(app)
+                emitted
             }
             E::Failed { id, kind, error } => ErrorEvent {
                 id,
@@ -140,18 +143,13 @@ impl TauriEmitter {
     /// Show a completion notification, but only while the window is unfocused
     /// (a foregrounded app already shows the result). No notification on error
     /// or cancel — only Done reaches here.
+    ///
+    /// This runs on a transport task, and asking a window whether it is focused
+    /// blocks the caller until the UI event loop answers — which is what made
+    /// completion notifications land long after the transfer had finished. The
+    /// title is built here (it needs `last`); everything that touches the
+    /// window is queued onto the main thread and not waited on.
     fn notify_done(&self, kind: Kind, dest: &str) {
-        use tauri_plugin_notification::NotificationExt;
-
-        let focused = self
-            .app
-            .get_webview_window("main")
-            .and_then(|w| w.is_focused().ok())
-            .unwrap_or(false);
-        if focused {
-            return;
-        }
-
         let last = self.last.lock().unwrap();
         let (title, body) = match kind {
             Kind::Send => {
@@ -173,11 +171,23 @@ impl TauriEmitter {
         };
         drop(last);
 
-        let mut builder = self.app.notification().builder().title(title);
-        if !body.is_empty() {
-            builder = builder.body(body);
-        }
-        let _ = builder.show();
+        let app = self.app.clone();
+        let _ = self.app.run_on_main_thread(move || {
+            use tauri_plugin_notification::NotificationExt;
+
+            let focused = app
+                .get_webview_window("main")
+                .and_then(|w| w.is_focused().ok())
+                .unwrap_or(false);
+            if focused {
+                return;
+            }
+            let mut builder = app.notification().builder().title(title);
+            if !body.is_empty() {
+                builder = builder.body(body);
+            }
+            let _ = builder.show();
+        });
     }
 }
 
@@ -479,6 +489,22 @@ pub fn run() {
             #[cfg(windows)]
             if let Some(win) = app.get_webview_window("main") {
                 let _ = win.set_decorations(false);
+            }
+
+            // Ask once, up front: on iOS/Android an unasked-for notification is
+            // dropped, so the first completed transfer would silently show
+            // nothing. A no-op on desktop, which always reports granted.
+            {
+                use tauri_plugin_notification::NotificationExt;
+                let handle = app.handle().clone();
+                std::thread::spawn(move || {
+                    if !matches!(
+                        handle.notification().permission_state(),
+                        Ok(tauri::plugin::PermissionState::Granted)
+                    ) {
+                        let _ = handle.notification().request_permission();
+                    }
+                });
             }
 
             // Build the transfer core and make it available to the commands.
