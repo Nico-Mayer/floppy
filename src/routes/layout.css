@@ -31,10 +31,29 @@
 	--send-foreground: #f79d3d;
 	--receive: #2c8be1;
 	--receive-foreground: #69b1f1;
-	/* Window titlebar height. Global (not just on the app wrapper) so portaled
-	   overlays — the account sheet mounts on <body> — can offset below it and
-	   never cover the window controls / macOS traffic lights. */
-	--header-height: calc(var(--spacing) * 13);
+
+	/* Safe areas (status bar, notch, home indicator, gesture rails), one token
+	   per edge for every platform. iOS and desktop resolve through env(): the
+	   webview reports the truth there, and on desktop it is 0. Android's WebView
+	   does not report the system bars through env() at all, so MainActivity.kt
+	   measures them and sets --android-inset-* on <html> (see safe-area.ts) —
+	   which is why the native value comes first and env() is the fallback.
+	   Pairs with viewport-fit=cover in app.html. */
+	--safe-top: var(--android-inset-top, env(safe-area-inset-top, 0px));
+	--safe-right: var(--android-inset-right, env(safe-area-inset-right, 0px));
+	--safe-bottom: var(--android-inset-bottom, env(safe-area-inset-bottom, 0px));
+	--safe-left: var(--android-inset-left, env(safe-area-inset-left, 0px));
+
+	/* Chrome heights, insets included. Global (not just on the app wrapper) so
+	   portaled overlays — sheets and dialogs mount on <body> — can offset below
+	   the header and never cover the window controls / macOS traffic lights or,
+	   on a phone, the status bar. */
+	--bar-height: calc(var(--spacing) * 13);
+	--header-height: calc(var(--safe-top) + var(--bar-height));
+	/* Zero off mobile: the routes reserve room for the tab bar with this, and
+	   desktop has no tab bar, so the same class is a no-op there. */
+	--bottom-nav-height: 0px;
+
 	--chart-1: oklch(0.855 0.138 181.071);
 	--chart-2: oklch(0.704 0.14 182.503);
 	--chart-3: oklch(0.6 0.118 184.704);
@@ -48,6 +67,25 @@
 	--sidebar-accent-foreground: oklch(0.218 0.008 223.9);
 	--sidebar-border: oklch(0.925 0.005 214.3);
 	--sidebar-ring: oklch(0.723 0.014 214.4);
+}
+
+/* Phone chrome sizes: a 56dp app bar (not the desktop titlebar's 52) and a tab
+   bar at UIKit's 49pt. Set from the layout, since form factor is not a media
+   query. */
+html[data-mobile] {
+	--bar-height: calc(var(--spacing) * 14);
+	--bottom-nav-height: calc(var(--spacing) * 12);
+}
+
+/* Room for the tab bar and the gesture bar under it, opted into by whichever
+   element in a route owns the bottom edge — the scroller on a list page, so its
+   content passes under the translucent bar; <main> on the transfer page, which
+   does not scroll and has the mode switch pinned to its bottom.
+   Deliberately unlayered: Tailwind puts its utilities in @layer, and unlayered
+   rules outrank every layer, so this survives a `sm:p-6` on the same element
+   instead of losing to it in landscape. Mobile-only, so desktop is untouched. */
+html[data-mobile] [data-tabbar-clearance] {
+	padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + --spacing(4));
 }
 
 .dark {
@@ -217,5 +255,42 @@
 	html {
 		overscroll-behavior: none;
 		@apply font-sans;
+	}
+	/* Touch chrome: no blue flash on tap, no 300ms wait for a double-tap that
+	   this app has no use for, and no text selection or magnifier when a press
+	   lands slightly long on a button. Text content opts back in below. */
+	html[data-mobile] {
+		-webkit-tap-highlight-color: transparent;
+		touch-action: manipulation;
+		-webkit-user-select: none;
+		user-select: none;
+	}
+	html[data-mobile] input,
+	html[data-mobile] textarea,
+	html[data-mobile] [contenteditable] {
+		-webkit-user-select: text;
+		user-select: text;
+	}
+
+	/* Safe areas for surfaces that are portaled onto <body>, outside the app
+	   shell: sheets and drawers reach the screen edge themselves, so nothing
+	   above them can pad them clear of the status or gesture bar. The shell's
+	   own edges are handled by TopAppBar / BottomNav (mobile) and are 0 on
+	   desktop, so there is no wrapper-level rule any more. */
+	[data-slot='sheet-content'][data-side='left'],
+	[data-slot='sheet-content'][data-side='right'] {
+		padding-top: var(--safe-top);
+		padding-bottom: var(--safe-bottom);
+	}
+	[data-slot='sheet-content'][data-side='top'] {
+		padding-top: var(--safe-top);
+	}
+	[data-slot='sheet-content'][data-side='bottom'],
+	[data-slot='drawer-content'][data-vaul-drawer-direction='bottom'] {
+		padding-bottom: calc(var(--safe-bottom) + --spacing(4));
+	}
+	/* A centred dialog only has to stay off the notch, not sit below it. */
+	[data-slot='dialog-content'] {
+		max-height: calc(100svh - var(--safe-top) - var(--safe-bottom) - --spacing(8));
 	}
 }

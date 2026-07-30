@@ -12,6 +12,11 @@ export const commands = {
 	/**  Quick one-off share over a human code phrase (code-phrase-share). */
 	quickShare: (paths: string[]) => typedError<null, string>(__TAURI_INVOKE("quick_share", { paths })),
 	describe: (paths: string[]) => typedError<FileEntry[], string>(__TAURI_INVOKE("describe", { paths })),
+	/**
+	 *  Delete the sandbox copies made for the send queue (a no-op on desktop, where
+	 *  nothing is copied). The frontend calls this when the queue is cleared.
+	 */
+	clearInputCache: () => typedError<null, string>(__TAURI_INVOKE("clear_input_cache")),
 	openPath: (path: string) => typedError<null, string>(__TAURI_INVOKE("open_path", { path })),
 	identity: () => typedError<string, string>(__TAURI_INVOKE("identity")),
 	/**  This device's own name, shown to peers during pairing and on transfers. */

@@ -137,6 +137,12 @@ context: |
   - The browser tab at :1420 is UI preview only — `invoke()`/`listen()` do not
     work there; anything touching commands must run in the native window or
     Rust tests.
+  - Android needs no Android Studio: mise puts the SDK CLI on PATH and pins
+    `ANDROID_USER_HOME=~/.android` (so `emulator`/`avdmanager` and Studio share
+    one AVD set). Emulator lifecycle: `mise run avd:list` / `avd:start`
+    (default Pixel_9_Pro; `-no-window` for headless) / `avd:stop` / `avd:create`.
+    Then `mise run dev:android`. Run Android tooling from inside the repo so
+    mise's env applies.
 
 # Per-artifact rules (optional)
 # Add custom rules for specific artifacts.

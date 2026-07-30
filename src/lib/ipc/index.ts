@@ -26,6 +26,8 @@ export const QuickShare = (paths: string[]) => ok(commands.quickShare(paths))
 // Files (the picker uses @tauri-apps/plugin-dialog `open()` directly)
 export const Describe = (paths: string[]) => ok(commands.describe(paths))
 export const OpenPath = (path: string) => ok(commands.openPath(path))
+/** Reap the sandbox copies made for a mobile send queue (a no-op on desktop). */
+export const ClearInputCache = () => ok(commands.clearInputCache())
 
 // Pairing
 export const Identity = () => ok(commands.identity())

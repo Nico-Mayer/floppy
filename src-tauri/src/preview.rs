@@ -8,10 +8,11 @@
 // paints, so a queue of 20 MB photos would otherwise cost hundreds of MB of
 // bitmap to draw a row of ~180 px tiles — hence the downscale.
 //
-// Mobile budgets (thumbMaxSourcePixels, decode concurrency) are desktop-shaped;
-// slice 6 lowers them for phones. Path handling (content:// / security-scoped
-// URLs) is also a slice-6 concern — previews there run on the picker's sandbox
-// copy.
+// Preview budgets (max source pixels, decode concurrency) are platform-
+// conditional: lower and serialized on mobile, where the process is killed for
+// far less memory than a laptop's. Path handling is not a concern here —
+// previews always run on a real path (the picker's sandbox copy on mobile; see
+// `fileinput`), so a `content://` URI never reaches this decoder.
 
 use std::io::Cursor;
 use std::path::Path;
@@ -24,8 +25,22 @@ const THUMB_MAX_DIM: u32 = 384;
 /// Files this small are streamed untouched — re-encoding saves nothing.
 const THUMB_MIN_SOURCE_BYTES: u64 = 256 << 10;
 /// Refuse to decode beyond this many pixels (a bitmap that big is a worse
-/// problem than a missing preview). Desktop-shaped.
+/// problem than a missing preview). Phone-bounded on mobile, where the process
+/// is killed for far less memory than a laptop's; the gate falls through to
+/// streaming the original, so a rejected decode just means no thumbnail.
+#[cfg(not(mobile))]
 const THUMB_MAX_SOURCE_PIXELS: u64 = 80 << 20;
+#[cfg(mobile)]
+const THUMB_MAX_SOURCE_PIXELS: u64 = 24 << 20;
+
+/// Serialize decodes on mobile (concurrency 1): a phone cannot afford several
+/// full-resolution bitmaps in flight at once. On desktop this is a no-op and
+/// decodes run concurrently, one per `spawn_blocking` request.
+#[cfg(mobile)]
+fn decode_permit() -> std::sync::MutexGuard<'static, ()> {
+    static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+}
 
 /// Image types worth handing to the webview as a thumbnail; others keep a glyph.
 const PREVIEW_EXTS: &[&str] = &["png", "jpg", "jpeg", "gif", "webp", "avif", "bmp", "svg", "ico"];
@@ -96,6 +111,10 @@ pub fn respond(path: &str, if_none_match: Option<&str>) -> Response<Vec<u8>> {
     // Any surprise (truncated file, an unsupported feature) falls through to
     // streaming the original, which the webview may still render.
     if THUMBNAIL_EXTS.contains(&ext.as_str()) && meta.len() > THUMB_MIN_SOURCE_BYTES {
+        // Hold the mobile decode permit across the dimension probe and decode,
+        // so at most one full-resolution bitmap is ever in flight on a phone.
+        #[cfg(mobile)]
+        let _permit = decode_permit();
         if let Ok((w, h)) = image::image_dimensions(path) {
             if (w as u64) * (h as u64) > THUMB_MAX_SOURCE_PIXELS {
                 return status(StatusCode::FORBIDDEN);

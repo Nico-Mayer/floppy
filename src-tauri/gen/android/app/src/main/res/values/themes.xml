@@ -1,6 +1,20 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Theme.floppy" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- Customize your theme here. -->
+        <!-- Light mode: the app paints a light background behind the bars, so
+             their icons have to be dark to stay readable. The night variant
+             flips both. Kept in the theme rather than set from Kotlin so it is
+             right on the very first frame, before the webview exists. -->
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <!-- Edge-to-edge: no bar backgrounds and no automatic scrim, or the
+             system paints a grey band over the app's own header and nav. -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:enforceStatusBarContrast">false</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
+        <!-- Draw into the notch too. Safe because the cutout is folded into the
+             insets MainActivity reports, so the UI still keeps clear of it. -->
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
     </style>
 </resources>

@@ -12,9 +12,11 @@
 	import { fly } from 'svelte/transition'
 </script>
 
-<main
-	class="flex min-h-0 flex-1 flex-col gap-3 p-4 max-sm:pb-[max(--spacing(4),env(safe-area-inset-bottom))] sm:p-6"
->
+<!-- data-tabbar-clearance: on mobile this pads out from under the tab bar and
+     the gesture bar below it (layout.css). It sits on <main> rather than inside
+     it because this page does not scroll — the send/receive switch is pinned to
+     the bottom of the column and has to stay above the bar, not slide under. -->
+<main class="flex min-h-0 flex-1 flex-col gap-3 p-4 sm:p-6" data-tabbar-clearance>
 	<div
 		class="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-3 sm:max-w-3xl md:max-w-4xl lg:max-w-5xl"
 	>

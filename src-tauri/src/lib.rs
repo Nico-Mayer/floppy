@@ -5,12 +5,14 @@
 // hand-writes the contract — `src/lib/ipc/bindings.ts` is generated.
 
 mod events;
+mod fileinput;
 mod pairing;
 mod preview;
 mod rendezvous;
 mod transport;
 
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use events::{CodeEvent, DeepLink, DoneEvent, ErrorEvent, PairingAccepted, PairingDeclined,
@@ -44,6 +46,12 @@ pub struct DeviceInfo {
 /// events. The service stays UI-agnostic; this is the only place that knows both.
 struct TauriPairingEmitter {
     app: AppHandle,
+    /// Whether the app is in the foreground, maintained from window focus /
+    /// lifecycle events (see `run()`). The OS ping only fires when it is not —
+    /// a foregrounded app already shows the in-app prompt. Shared with the
+    /// transfer emitter; a plain flag so a pairing task can read it without
+    /// blocking on the UI event loop the way `is_focused()` does.
+    foreground: Arc<AtomicBool>,
 }
 
 impl PairingEmitter for TauriPairingEmitter {
@@ -69,12 +77,14 @@ impl PairingEmitter for TauriPairingEmitter {
 }
 
 impl TauriPairingEmitter {
-    /// Show an OS notification for an incoming offer, but only while the window
-    /// is unfocused — a foregrounded app already shows the in-app prompt. Like
-    /// `notify_done`, everything that touches the window is queued onto the main
-    /// thread and not waited on: `is_focused()` blocks on the UI event loop, and
-    /// this runs on a pairing task that must not stall there.
+    /// Show an OS notification for an incoming offer, but only while the app is
+    /// not in the foreground — a foregrounded app already shows the in-app
+    /// prompt. The foreground check is a plain flag read (no UI-loop round
+    /// trip); only the notification itself is queued onto the main thread.
     fn notify_offer(&self, from_name: String, file_count: u64, total_bytes: u64) {
+        if self.foreground.load(Ordering::Relaxed) {
+            return;
+        }
         let files = if file_count <= 1 { "a file".to_string() } else { format!("{file_count} files") };
         let who = if from_name.is_empty() { "Someone".to_string() } else { from_name };
         let title = format!("{who} wants to send you {files}");
@@ -83,14 +93,6 @@ impl TauriPairingEmitter {
         let app = self.app.clone();
         let _ = self.app.run_on_main_thread(move || {
             use tauri_plugin_notification::NotificationExt;
-
-            let focused = app
-                .get_webview_window("main")
-                .and_then(|w| w.is_focused().ok())
-                .unwrap_or(false);
-            if focused {
-                return;
-            }
             let mut builder = app.notification().builder().title(title);
             if !body.is_empty() {
                 builder = builder.body(body);
@@ -110,6 +112,8 @@ struct TauriEmitter {
     /// much was sent / how many files were received (the Done event alone
     /// doesn't carry them). The final 100% progress always precedes Done.
     last: std::sync::Mutex<LastProgress>,
+    /// Foreground flag shared with the pairing emitter (see there).
+    foreground: Arc<AtomicBool>,
 }
 
 #[derive(Default)]
@@ -171,16 +175,19 @@ impl transport::Emitter for TauriEmitter {
 }
 
 impl TauriEmitter {
-    /// Show a completion notification, but only while the window is unfocused
-    /// (a foregrounded app already shows the result). No notification on error
-    /// or cancel — only Done reaches here.
+    /// Show a completion notification, but only while the app is not in the
+    /// foreground (a foregrounded app already shows the result). No notification
+    /// on error or cancel — only Done reaches here.
     ///
-    /// This runs on a transport task, and asking a window whether it is focused
-    /// blocks the caller until the UI event loop answers — which is what made
-    /// completion notifications land long after the transfer had finished. The
-    /// title is built here (it needs `last`); everything that touches the
-    /// window is queued onto the main thread and not waited on.
+    /// The foreground check is a plain flag read. Asking a window whether it is
+    /// focused blocks the caller until the UI event loop answers — which is what
+    /// made completion notifications land long after the transfer had finished,
+    /// and is meaningless on mobile where a backgrounded app is not an
+    /// "unfocused window". Only the notification is queued onto the main thread.
     fn notify_done(&self, kind: Kind, dest: &str) {
+        if self.foreground.load(Ordering::Relaxed) {
+            return;
+        }
         let last = self.last.lock().unwrap();
         let (title, body) = match kind {
             Kind::Send => {
@@ -205,14 +212,6 @@ impl TauriEmitter {
         let app = self.app.clone();
         let _ = self.app.run_on_main_thread(move || {
             use tauri_plugin_notification::NotificationExt;
-
-            let focused = app
-                .get_webview_window("main")
-                .and_then(|w| w.is_focused().ok())
-                .unwrap_or(false);
-            if focused {
-                return;
-            }
             let mut builder = app.notification().builder().title(title);
             if !body.is_empty() {
                 builder = builder.body(body);
@@ -260,13 +259,21 @@ fn format_bytes(bytes: u64) -> String {
 
 // ---- transfer commands (transport-iroh fills these in, slice 2) ----
 
+/// Resolve every picked value to a real path (see `fileinput`): plain paths
+/// pass through; a `content://` URI is materialized into the app cache. Shared
+/// by every command that hands paths to the transport, so the transport and
+/// preview code only ever see real paths.
+fn resolve_all(app: &AppHandle, paths: Vec<String>) -> Result<Vec<PathBuf>, String> {
+    paths.iter().map(|p| fileinput::resolve_input_path(app, p)).collect()
+}
+
 #[tauri::command]
 #[specta::specta]
-async fn send(manager: State<'_, Manager>, paths: Vec<String>) -> Result<(), String> {
+async fn send(app: AppHandle, manager: State<'_, Manager>, paths: Vec<String>) -> Result<(), String> {
     // The transfer id is tracked internally; the UI keys off the code/progress
     // events, so the command just reports start success/failure.
     manager
-        .send(paths.into_iter().map(PathBuf::from).collect())
+        .send(resolve_all(&app, paths)?)
         .await
         .map(|_| ())
         .map_err(|e| e.to_string())
@@ -302,31 +309,31 @@ async fn cancel_receive(manager: State<'_, Manager>) -> Result<(), String> {
 /// Quick one-off share over a human code phrase (code-phrase-share).
 #[tauri::command]
 #[specta::specta]
-async fn quick_share(manager: State<'_, Manager>, paths: Vec<String>) -> Result<(), String> {
+async fn quick_share(app: AppHandle, manager: State<'_, Manager>, paths: Vec<String>) -> Result<(), String> {
     manager
-        .quick_share(paths.into_iter().map(PathBuf::from).collect())
+        .quick_share(resolve_all(&app, paths)?)
         .await
         .map(|_| ())
         .map_err(|e| e.to_string())
 }
 
-// ---- file commands (Tauri plugins replace these in slice 5) ----
-
-/// Stat a path into a `FileEntry` (skipped if it cannot be read).
-fn file_entry(path: &std::path::Path) -> Option<FileEntry> {
-    let meta = std::fs::metadata(path).ok()?;
-    Some(FileEntry {
-        path: path.to_string_lossy().into_owned(),
-        name: path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default(),
-        size: meta.len(),
-        is_dir: meta.is_dir(),
-    })
-}
+// ---- file commands ----
 
 #[tauri::command]
 #[specta::specta]
-async fn describe(paths: Vec<String>) -> Result<Vec<FileEntry>, String> {
-    Ok(paths.iter().filter_map(|p| file_entry(std::path::Path::new(p))).collect())
+async fn describe(app: AppHandle, paths: Vec<String>) -> Result<Vec<FileEntry>, String> {
+    // A `content://` pick is materialized here so the queue shows its real
+    // display name and size; a plain path is stat'd in place. Unreadable picks
+    // are skipped, as before.
+    Ok(paths.iter().filter_map(|p| fileinput::resolve_entry(&app, p)).collect())
+}
+
+/// Delete the sandbox copies made for the send queue (a no-op on desktop, where
+/// nothing is copied). The frontend calls this when the queue is cleared.
+#[tauri::command]
+#[specta::specta]
+async fn clear_input_cache(app: AppHandle) -> Result<(), String> {
+    fileinput::reap(&app).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -429,12 +436,13 @@ async fn decline(pairing: State<'_, PairingService>, transfer_id: String) -> Res
 #[tauri::command]
 #[specta::specta]
 async fn send_to(
+    app: AppHandle,
     pairing: State<'_, PairingService>,
     fingerprint: String,
     paths: Vec<String>,
 ) -> Result<(), String> {
     pairing
-        .send_to(&fingerprint, paths.into_iter().map(PathBuf::from).collect())
+        .send_to(&fingerprint, resolve_all(&app, paths)?)
         .await
         .map(|_| ())
 }
@@ -450,6 +458,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
             cancel_receive,
             quick_share,
             describe,
+            clear_input_cache,
             open_path,
             identity,
             self_name,
@@ -482,17 +491,39 @@ fn specta_builder() -> Builder<tauri::Wry> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Install the process-wide rustls crypto provider before anything builds a
+    // TLS client (the broker WebSocket, iroh's relay/DNS). Without a default,
+    // rustls 0.23 panics on the first `ClientConfig::builder()` — which aborts
+    // `run()` on Android, where nothing installs one transitively. Idempotent:
+    // a second install (or a desktop build that already has one) just errors,
+    // which we ignore.
+    let _ = rustls::crypto::ring::default_provider().install_default();
+
     let builder = specta_builder();
 
-    // Regenerate the frontend bindings on every dev build; release builds ship
-    // the checked-in copy.
-    #[cfg(debug_assertions)]
+    // Regenerate the frontend bindings on every desktop dev build; release
+    // builds ship the checked-in copy. Gated `not(mobile)` because a phone's
+    // working directory is read-only — the `.expect()` would abort `run()`
+    // before the webview loads (the bindings are a desktop dev-loop artifact,
+    // and `cargo test export_bindings` regenerates them there anyway).
+    #[cfg(all(debug_assertions, not(mobile)))]
     builder
         .export(specta_typescript::Typescript::default(), "../src/lib/ipc/bindings.ts")
         .expect("failed to export typescript bindings");
 
-    tauri::Builder::default()
+    let tauri_builder = tauri::Builder::default();
+
+    // iOS: stop UIKit adding its own safe-area inset to the webview's scroll
+    // view. It does that by default, so the page gets pushed down by UIKit and
+    // again by our own `env(safe-area-inset-top)` padding, and the band UIKit
+    // reserves paints the window colour instead of the app background. With it
+    // off, the CSS in layout.css owns the safe areas on both phones.
+    #[cfg(target_os = "ios")]
+    let tauri_builder = tauri_builder.plugin(tauri_plugin_ios_webview_insets::init());
+
+    tauri_builder
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_notification::init())
@@ -540,33 +571,60 @@ pub fn run() {
 
             // Build the transfer core and make it available to the commands.
             // The blob store lives in app data (on-disk => resume by hash);
-            // received files land in ~/Downloads/floppy.
+            // received files land under the platform download dir/floppy.
             let handle = app.handle().clone();
             let data_dir = app
                 .path()
                 .app_data_dir()
                 .unwrap_or_else(|_| std::env::temp_dir());
-            let dest_root = dirs::download_dir()
-                .unwrap_or_else(|| data_dir.clone())
+            // Tauri's resolver maps to the platform download directory on every
+            // OS (Android included), where `dirs::download_dir()` returns None
+            // off-desktop.
+            let dest_root = app
+                .path()
+                .download_dir()
+                .unwrap_or_else(|_| data_dir.clone())
                 .join("floppy");
             let config = Config {
                 store_path: Some(data_dir.join("blobs")),
                 dest_root,
                 relay: RelayConfig::Default,
                 bind_addr: None,
-                // Quick-share rendezvous broker. FLOPPY_BROKER_URL is what mise
-                // sets; the fallback is a local dev broker (`mise run broker`)
-                // for a build launched outside it.
+                // Quick-share rendezvous broker. Resolution order: runtime env
+                // (desktop dev under mise, incl. FLOPPY_BROKER=local) → the URL
+                // baked at compile time (mise sets FLOPPY_BROKER_URL for the
+                // build) → the deployed default. A packaged mobile app has no
+                // shell env, so without the last two it would silently fall back
+                // to loopback and every quick share and pairing would fail.
                 broker_url: std::env::var("FLOPPY_BROKER_URL")
-                    .unwrap_or_else(|_| "ws://127.0.0.1:8787/ws".to_string()),
+                    .ok()
+                    .or_else(|| option_env!("FLOPPY_BROKER_URL").map(str::to_string))
+                    .unwrap_or_else(|| "wss://floppy-broker.up.railway.app/ws".to_string()),
                 // A passive send that no one accepts stops serving after this,
                 // freeing the slot and unpinning its files.
                 send_ttl: std::time::Duration::from_secs(300),
             };
             let broker_url = config.broker_url.clone();
+
+            // Foreground predicate for the notification gate, shared by both
+            // emitters. Maintained from the window's focus events, which fire on
+            // background/foreground on mobile too — the same meaning on all three
+            // platforms, unlike `is_focused()` (see notify_done). Starts true: a
+            // just-launched app is in front.
+            let foreground = Arc::new(AtomicBool::new(true));
+            if let Some(win) = app.get_webview_window("main") {
+                let fg = foreground.clone();
+                win.on_window_event(move |event| {
+                    if let tauri::WindowEvent::Focused(focused) = event {
+                        fg.store(*focused, Ordering::Relaxed);
+                    }
+                });
+            }
+
             let emitter = Arc::new(TauriEmitter {
                 app: handle.clone(),
                 last: std::sync::Mutex::new(LastProgress::default()),
+                foreground: foreground.clone(),
             });
             let manager = tauri::async_runtime::block_on(Manager::new(config, emitter))?;
 
@@ -576,7 +634,10 @@ pub fn run() {
                 || format!("{broker_url}/fp"),
                 |base| format!("{base}/fp"),
             );
-            let pairing_emitter = Arc::new(TauriPairingEmitter { app: handle.clone() });
+            let pairing_emitter = Arc::new(TauriPairingEmitter {
+                app: handle.clone(),
+                foreground: foreground.clone(),
+            });
             let pairing = tauri::async_runtime::block_on(async {
                 PairingService::new(
                     &data_dir,

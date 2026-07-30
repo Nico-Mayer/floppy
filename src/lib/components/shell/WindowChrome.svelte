@@ -10,13 +10,17 @@
 	import { Window } from '$lib/ipc'
 	import { isMac, isWindows } from '$lib/platform'
 
-	// On Windows the window is frameless (see main.go) and we render our own
-	// window controls; on macOS the native traffic lights need a spacer.
+	// Desktop window frame only. A phone has no window to drag, minimise or
+	// close, so the layout renders TopAppBar there instead and this component
+	// never mounts on mobile — it is free to assume a real window.
 
-	// A hamburger toggles the nav (a drawer on mobile, a collapse on desktop) — a
-	// clearer affordance than an avatar. On Windows it sits on the left, away from
-	// the min/max/close cluster; on macOS/mobile it sits on the right. Hidden once
-	// the sidebar is force-open (lg+), where it can't collapse anyway.
+	// On Windows the window is frameless and we render our own window controls;
+	// on macOS the native traffic lights need a spacer.
+
+	// A hamburger toggles the nav — a clearer affordance than an avatar. On
+	// Windows it sits on the left, away from the min/max/close cluster; on macOS
+	// it sits on the right. Hidden once the sidebar is force-open (lg+), where it
+	// can't collapse anyway.
 	const sidebar = useSidebar()
 </script>
 
@@ -40,6 +44,7 @@
      min/max/close buttons stop responding too.
      data-tauri-drag-region: only the element the mousedown hits drags, so it
      goes on the empty zones (spacers), never on the buttons. -->
+
 <header
 	class="pointer-events-auto sticky top-0 z-60 flex w-full items-center border-b bg-background"
 	data-tauri-drag-region
@@ -49,8 +54,8 @@
 		{#if isMac}
 			<div class="w-20" data-tauri-drag-region></div>
 		{/if}
-		<!-- In-app back, leftmost when there's history to pop. No browser chrome or
-		     hardware back in the webview, so this is the way back on mobile. -->
+		<!-- In-app back, leftmost when there's history to pop. There is no browser
+		     chrome in the webview, so this is the only way back. -->
 		{#if nav.canGoBack}
 			<Button
 				variant="ghost"
@@ -67,7 +72,7 @@
 			{@render menuToggle()}
 		{/if}
 		<div class="flex-1" data-tauri-drag-region></div>
-		<!-- macOS / mobile: toggle on the right. -->
+		<!-- macOS: toggle on the right. -->
 		{#if !isWindows}
 			{@render menuToggle()}
 		{/if}

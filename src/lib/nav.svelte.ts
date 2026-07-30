@@ -23,6 +23,15 @@ class Nav {
 	back() {
 		if (this.canGoBack) history.back()
 	}
+
+	/**
+	 * Declare the current page the bottom of the stack again. The mobile bottom
+	 * bar switches tabs by replacing the history entry, so after one there is
+	 * genuinely nothing behind us, however deep we had drilled in before.
+	 */
+	reset() {
+		this.#depth = 0
+	}
 }
 
 export const nav = new Nav()

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { OpenPath } from '$lib/ipc'
 	import { Button } from '$lib/components/ui/button'
+	import { isMobile } from '$lib/platform'
 	import { app } from '$lib/transfer-app.svelte'
 	import FolderOpenIcon from '@lucide/svelte/icons/folder-open'
 	import XIcon from '@lucide/svelte/icons/x'
@@ -52,10 +53,15 @@
 	     already on its way to idle. -->
 	{#snippet actions()}
 		{#if receive.status === 'done'}
-			<Button class="@max-md:min-h-11" onclick={() => OpenPath(receive.savedTo)}>
-				<FolderOpenIcon />
-				Open folder
-			</Button>
+			<!-- Desktop reveals the destination in a file manager. Android has no
+			     reliable intent to open an app-private download directory, so the
+			     button is hidden there and "Get more files" carries the flow. -->
+			{#if !isMobile}
+				<Button class="@max-md:min-h-11" onclick={() => OpenPath(receive.savedTo)}>
+					<FolderOpenIcon />
+					Open folder
+				</Button>
+			{/if}
 			<Button variant="outline" size="sm" class="@max-md:min-h-11" onclick={() => receive.reset()}>
 				Get more files
 			</Button>

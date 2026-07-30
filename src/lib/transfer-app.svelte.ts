@@ -2,6 +2,7 @@ import { open } from '@tauri-apps/plugin-dialog'
 import {
 	CancelReceive,
 	CancelSend,
+	ClearInputCache,
 	Describe,
 	QuickShare,
 	Receive,
@@ -129,6 +130,9 @@ class SendTransfer {
 	reset() {
 		this.#clearTransfer()
 		this.files = []
+		// The queue is empty, so any sandbox copies made for it (mobile picks)
+		// can go. No-op on desktop, where nothing was copied.
+		void ClearInputCache().catch(() => {})
 	}
 
 	#clearTransfer() {

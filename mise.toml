@@ -2,11 +2,20 @@
 mr = "mise run"
 
 [env]
-# Android SDK/NDK paths differ per OS. iOS builds don't use these.
-JAVA_HOME = "{% if os() == 'windows' %}C:\\Program Files\\Android\\Android Studio\\jbr{% else %}/Applications/Android Studio.app/Contents/jbr/Contents/Home{% endif %}"
-ANDROID_HOME = "{% if os() == 'windows' %}{{env.LOCALAPPDATA}}\\Android\\Sdk{% else %}{{env.HOME}}/Library/Android/sdk{% endif %}"
-NDK_HOME = "{% if os() == 'windows' %}{{env.LOCALAPPDATA}}\\Android\\Sdk\\ndk\\30.0.15729638{% else %}{{env.HOME}}/Library/Android/sdk/ndk/30.0.15729638{% endif %}"
-# FLOPPY_BROKER=local runs against `mise run broker` instead of the hosted one.
+# macOS mobile toolchain (Android Studio's JDK + Android SDK/NDK). Windows builds
+# the desktop target only and never reads these.
+JAVA_HOME = "/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+ANDROID_HOME = "{{env.HOME}}/Library/Android/sdk"
+NDK_HOME = "{{env.HOME}}/Library/Android/sdk/ndk/30.0.15729638"
+# Pin the AVD home so the SDK CLI and Android Studio share one AVD set (else the
+# CLI uses $XDG_CONFIG_HOME/.android and they diverge).
+ANDROID_USER_HOME = "{{env.HOME}}/.android"
+_.path = [
+  "{{env.ANDROID_HOME}}/platform-tools",
+  "{{env.ANDROID_HOME}}/emulator",
+  "{{env.ANDROID_HOME}}/cmdline-tools/latest/bin",
+]
+# FLOPPY_BROKER=local points quick share at `mise run broker`.
 FLOPPY_BROKER_URL = "{% if env.FLOPPY_BROKER | default(value='remote') == 'local' %}ws://127.0.0.1:8787/ws{% else %}wss://floppy-broker.up.railway.app/ws{% endif %}"
 FLOPPY_BROKER_ADDR = ":8787"
 FLOPPY_TEST_BROKER = "{{ env.FLOPPY_BROKER_URL }}"
@@ -15,17 +24,9 @@ FLOPPY_TEST_BROKER = "{{ env.FLOPPY_BROKER_URL }}"
 node = "26.5.0"
 ruby = { version = "4.0.6", os = ["macos"] }
 cocoapods = { version = "latest", os = ["macos"] }
-rust = { version = "latest", profile = "default", postinstall = """
-# Android targets (both OSes). iOS targets are added by `mise run doctor` on macOS.
-rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
-# Pin the mise-managed toolchain as the global rustup default. mise activates rust
-# via RUSTUP_TOOLCHAIN, which only exists inside a mise shell. Builds that run
-# outside it -- Xcode's "Build Rust Code" phase for `tauri ios dev`, Gradle's cargo
-# invocation for `tauri android` -- strip that env and fall back to `rustup default`.
-# If the default is stale/broken, `rustc -vV` yields no output and tauri panics
-# (PhaseScriptExecution failed). Pinning keeps a bare `rustc` working everywhere.
-rustup default "$RUSTUP_TOOLCHAIN"
-""" }
+# Pin the mise toolchain as the rustup default so a bare `rustc` (what Gradle and
+# Xcode see outside mise) keeps working. Mobile Rust targets are added by doctor.
+rust = { version = "latest", profile = "default", postinstall = 'rustup default "$RUSTUP_TOOLCHAIN"' }
 "npm:@fission-ai/openspec" = "1.6.0"
 go = "latest"
 
@@ -42,6 +43,24 @@ run = "npm run tauri android dev"
 [tasks."dev:ios"]
 description = "Tauri iOS dev on a connected device/simulator"
 run = "npm run tauri ios dev"
+
+# --- emulator (no Android Studio needed) ---
+
+[tasks."avd:list"]
+description = "List the Android AVDs this machine has"
+run = "emulator -list-avds"
+
+[tasks."avd:start"]
+description = "Boot an AVD (default Pixel_9_Pro; append -no-window for headless)"
+run = "emulator @{{arg(name='avd', default='Pixel_9_Pro')}}"
+
+[tasks."avd:stop"]
+description = "Kill the running emulator"
+run = "adb emu kill"
+
+[tasks."avd:create"]
+description = "Create the Pixel_9_Pro AVD from the installed API-37 system image"
+run = "avdmanager create avd --force -n {{arg(name='avd', default='Pixel_9_Pro')}} -d pixel_9_pro -k 'system-images;android-37.1;google_apis_playstore_ps16k;arm64-v8a'"
 
 [tasks.broker]
 description = "Run the Go rendezvous broker locally (pair with FLOPPY_BROKER=local)"
@@ -68,10 +87,6 @@ description = "Build the iOS app"
 run = "npm run tauri ios build"
 
 # --- check ---
-
-[tasks.fmt]
-description = "Format the frontend with Prettier"
-run = "npm run format"
 
 [tasks.lint]
 description = "Prettier check + ESLint + clippy"
