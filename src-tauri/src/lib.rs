@@ -481,8 +481,9 @@ pub fn run() {
                 dest_root,
                 relay: RelayConfig::Default,
                 bind_addr: None,
-                // Quick-share rendezvous broker. Override with FLOPPY_BROKER_URL;
-                // defaults to a local dev broker (`cargo run` in ./broker).
+                // Quick-share rendezvous broker. FLOPPY_BROKER_URL is what mise
+                // sets; the fallback is a local dev broker (`mise run broker`)
+                // for a build launched outside it.
                 broker_url: std::env::var("FLOPPY_BROKER_URL")
                     .unwrap_or_else(|_| "ws://127.0.0.1:8787/ws".to_string()),
             };

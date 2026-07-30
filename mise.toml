@@ -6,9 +6,10 @@ mr = "mise run"
 JAVA_HOME = "{% if os() == 'windows' %}C:\\Program Files\\Android\\Android Studio\\jbr{% else %}/Applications/Android Studio.app/Contents/jbr/Contents/Home{% endif %}"
 ANDROID_HOME = "{% if os() == 'windows' %}{{env.LOCALAPPDATA}}\\Android\\Sdk{% else %}{{env.HOME}}/Library/Android/sdk{% endif %}"
 NDK_HOME = "{% if os() == 'windows' %}{{env.LOCALAPPDATA}}\\Android\\Sdk\\ndk\\30.0.15729638{% else %}{{env.HOME}}/Library/Android/sdk/ndk/30.0.15729638{% endif %}"
-FLOPPY_BROKER_URL = "{{ env.FLOPPY_BROKER_URL | default(value='ws://127.0.0.1:8787/ws') }}"
-FLOPPY_BROKER_ADDR = "{{ env.FLOPPY_BROKER_ADDR | default(value=':8787') }}"
-FLOPPY_TEST_BROKER = "{{ env.FLOPPY_TEST_BROKER | default(value='ws://127.0.0.1:8787/ws') }}"
+# FLOPPY_BROKER=local runs against `mise run broker` instead of the hosted one.
+FLOPPY_BROKER_URL = "{% if env.FLOPPY_BROKER | default(value='remote') == 'local' %}ws://127.0.0.1:8787/ws{% else %}wss://floppy-broker.up.railway.app/ws{% endif %}"
+FLOPPY_BROKER_ADDR = ":8787"
+FLOPPY_TEST_BROKER = "{{ env.FLOPPY_BROKER_URL }}"
 
 [tools]
 node = "26.5.0"
@@ -43,7 +44,7 @@ description = "Tauri iOS dev on a connected device/simulator"
 run = "npm run tauri ios dev"
 
 [tasks.broker]
-description = "Run the Go rendezvous broker locally (FLOPPY_BROKER_ADDR)"
+description = "Run the Go rendezvous broker locally (pair with FLOPPY_BROKER=local)"
 dir = "broker"
 run = "go run ."
 
@@ -105,7 +106,7 @@ description = "Full offline gate: Rust + broker"
 depends = ["test:rust", "test:go"]
 
 [tasks."test:live"]
-description = "Live cross-language E2E; needs `mise run broker` running (FLOPPY_TEST_BROKER)"
+description = "Live cross-language E2E against FLOPPY_TEST_BROKER"
 dir = "src-tauri"
 run = "cargo test -- --ignored"
 
