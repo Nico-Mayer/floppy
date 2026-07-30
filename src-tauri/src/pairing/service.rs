@@ -12,20 +12,36 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use base64::engine::general_purpose::STANDARD as B64;
 use base64::Engine;
+use tokio::sync::oneshot;
 
 use crate::pairing::broker::{connect, FpClient, Incoming};
 use crate::pairing::identity::{Identity, PublicKey};
-use crate::pairing::link::{PairLink, PairPayload};
+use crate::pairing::link::{PairInit, PairLink, PairPayload, PairResp, PairSeal};
 use crate::pairing::offer::{Offer, VerifyError};
 use crate::pairing::sas::sas;
 use crate::pairing::signal::Signal;
 use crate::pairing::trust::{TrustStore, TrustedDevice};
-use crate::rendezvous::{client, pake};
+use crate::rendezvous::pake;
 use crate::transport::Manager;
 
-/// How long an initiator waits in the mailbox for someone to open its pairing
-/// link before the link expires.
+/// How long a shown pairing link stays valid — the initiator keeps the session
+/// this long, then drops it silently (showing a link you never use is not an
+/// error). Also bounds how long the opener waits for the initiator's reply.
 const PAIR_TIMEOUT: Duration = Duration::from_secs(120);
+
+/// Initiator-side state for one outstanding pairing link, keyed by room. Holds
+/// the link secret until an opener arrives, then the PAKE key + opener
+/// fingerprint until the sealed identity lands.
+struct LinkSession {
+    secret: String,
+    established: Option<(/* key */ [u8; 32], /* opener_fp */ String)>,
+}
+
+/// Shared pairing state, threaded into the incoming-signal loop.
+type Links = Arc<Mutex<HashMap<String, LinkSession>>>;
+/// Opener-side waiters: room → the channel `open_pair_link` blocks on for the
+/// initiator's SPAKE2 reply.
+type Waiters = Arc<Mutex<HashMap<String, oneshot::Sender<Vec<u8>>>>>;
 
 /// What the service tells the UI. Translated to frontend events by the caller.
 pub enum PairingEvent {
@@ -51,30 +67,28 @@ pub struct PairingService {
     trust: Arc<TrustStore>,
     manager: Manager,
     broker: FpClient,
-    /// Broker mailbox URL (`…/ws`) used for the one-sided pairing exchange. The
-    /// fingerprint-routing URL (`…/fp`) for offers is derived from it.
-    mailbox_url: String,
     emit: Arc<dyn PairingEmitter>,
     /// Verified incoming offers keyed by transfer id, awaiting accept/decline.
     pending: Arc<Mutex<HashMap<String, Offer>>>,
+    /// Outstanding pairing links this device is showing.
+    links: Links,
+    /// Pairing exchanges this device initiated by opening a link.
+    waiters: Waiters,
 }
 
 impl PairingService {
     /// Load (or create) the identity + trust store under `dir`, connect to the
-    /// broker's fingerprint mode, and start handling incoming signals.
-    /// `mailbox_url` is the broker's `…/ws` URL; the `…/fp` routing URL is
-    /// derived from it. Must be called from within a Tokio runtime.
+    /// broker's fingerprint mode, and start handling incoming signals. `fp_url`
+    /// is the broker's fingerprint-routing URL (`…/fp`) — pairing and offers
+    /// both ride it. Must be called from within a Tokio runtime.
     pub fn new(
         dir: &Path,
         manager: Manager,
-        mailbox_url: String,
+        fp_url: String,
         emit: Arc<dyn PairingEmitter>,
     ) -> Result<PairingService, String> {
         let identity = Arc::new(Identity::load_or_create(dir)?);
         let trust = Arc::new(TrustStore::load(dir)?);
-        let fp_url = mailbox_url
-            .strip_suffix("/ws")
-            .map_or_else(|| format!("{mailbox_url}/fp"), |base| format!("{base}/fp"));
         let (broker, incoming) = connect(fp_url, &identity);
 
         let svc = PairingService {
@@ -82,13 +96,23 @@ impl PairingService {
             trust: trust.clone(),
             manager: manager.clone(),
             broker: broker.clone(),
-            mailbox_url,
             emit: emit.clone(),
             pending: Arc::new(Mutex::new(HashMap::new())),
+            links: Arc::new(Mutex::new(HashMap::new())),
+            waiters: Arc::new(Mutex::new(HashMap::new())),
         };
 
         // Background loop: verify and dispatch every incoming signal.
-        tokio::spawn(incoming_loop(incoming, trust, manager, emit, svc.pending.clone()));
+        tokio::spawn(incoming_loop(Loop {
+            incoming,
+            trust,
+            manager,
+            broker,
+            emit,
+            pending: svc.pending.clone(),
+            links: svc.links.clone(),
+            waiters: svc.waiters.clone(),
+        }));
         Ok(svc)
     }
 
@@ -99,8 +123,10 @@ impl PairingService {
     }
 
     /// Create a one-sided pairing link to show (as text/QR) on this device. When
-    /// another device opens it, both end up trusting each other. Spawns a waiter
-    /// that trusts whoever completes the exchange (or expires after a timeout).
+    /// another device opens it, both end up trusting each other. Registers the
+    /// link so the incoming-signal loop can complete the exchange; showing a
+    /// link opens no socket and raises no error if it goes unused — it just
+    /// expires quietly after `PAIR_TIMEOUT`.
     pub fn create_pair_link(&self) -> Result<String, String> {
         let mut room = [0u8; 8];
         let mut secret = [0u8; 16];
@@ -117,43 +143,53 @@ impl PairingService {
             name: self.default_name(),
         };
 
-        let mailbox_url = self.mailbox_url.clone();
-        let trust = self.trust.clone();
-        let emit = self.emit.clone();
+        self.links.lock().unwrap().insert(room.clone(), LinkSession { secret, established: None });
+
+        // Expire the session quietly — no error to the UI. A link left on screen
+        // and never scanned should just stop working, not toast a failure.
+        let links = self.links.clone();
         tokio::spawn(async move {
-            let result = tokio::time::timeout(
-                PAIR_TIMEOUT,
-                pair_await(&mailbox_url, &room, &secret, &trust),
-            )
-            .await;
-            match result {
-                Ok(Ok(name)) => emit.emit(PairingEvent::Paired { name }),
-                Ok(Err(e)) => {
-                    tracing::warn!(error = %e, "pairing link: exchange failed");
-                    emit.emit(PairingEvent::Error { message: "Pairing failed. Try a new link.".into() });
-                }
-                Err(_) => emit.emit(PairingEvent::Error {
-                    message: "The pairing link expired. Create a new one.".into(),
-                }),
-            }
+            tokio::time::sleep(PAIR_TIMEOUT).await;
+            links.lock().unwrap().remove(&room);
         });
 
         Ok(link.encode())
     }
 
     /// Open a pairing link from another device: trust the initiator immediately
-    /// (the link is the authenticated out-of-band channel) and send this
-    /// device's signed identity back so the initiator trusts it too.
+    /// (the link is the authenticated out-of-band channel), then run the SPAKE2
+    /// exchange over the fp channel so the initiator trusts this device too. The
+    /// initiator's fingerprint comes from the link, and it is already registered
+    /// on the broker, so the reply routes straight back — no mailbox socket.
     pub async fn open_pair_link(&self, link: &str) -> Result<(), String> {
         let link = PairLink::decode(link)?;
         let initiator = PublicKey::decode(&link.id)?;
+        let initiator_fp = initiator.fingerprint();
         // Trust the initiator now; the exchange below makes it mutual.
         self.trust.add(initiator, &link.name)?;
 
-        let mut mailbox = client::join(&self.mailbox_url, &link.room).await?;
         let (handshake, my_msg) = pake::start(&link.secret, &link.room);
-        mailbox.send(&my_msg).await?;
-        let peer_msg = mailbox.recv().await?;
+        let (tx, rx) = oneshot::channel();
+        self.waiters.lock().unwrap().insert(link.room.clone(), tx);
+
+        self.broker.send(
+            &initiator_fp,
+            &Signal::PairInit(PairInit {
+                room: link.room.clone(),
+                from_fp: self.identity.public().fingerprint(),
+                pake: my_msg,
+            }),
+        );
+
+        // Wait for the initiator's SPAKE2 reply, delivered by the signal loop.
+        let peer_msg = match tokio::time::timeout(PAIR_TIMEOUT, rx).await {
+            Ok(Ok(msg)) => msg,
+            _ => {
+                self.waiters.lock().unwrap().remove(&link.room);
+                return Err("The other device didn't respond. Make sure it's online and showing the link, then try again.".into());
+            }
+        };
+
         let key = handshake.finish(&peer_msg)?;
         let payload = serde_json::to_vec(&PairPayload {
             id: self.identity.public().encode(),
@@ -161,7 +197,7 @@ impl PairingService {
         })
         .map_err(|e| e.to_string())?;
         let sealed = pake::seal(&key, &payload)?;
-        mailbox.send(&sealed).await?;
+        self.broker.send(&initiator_fp, &Signal::PairSeal(PairSeal { room: link.room, sealed }));
 
         self.emit.emit(PairingEvent::Paired { name: link.name });
         Ok(())
@@ -241,18 +277,26 @@ impl PairingService {
     }
 }
 
-async fn incoming_loop(
-    mut incoming: tokio::sync::mpsc::UnboundedReceiver<Incoming>,
+/// Everything the incoming-signal loop needs. Bundled because pairing added
+/// enough shared state that a positional argument list stopped being readable.
+struct Loop {
+    incoming: tokio::sync::mpsc::UnboundedReceiver<Incoming>,
     trust: Arc<TrustStore>,
     manager: Manager,
+    broker: FpClient,
     emit: Arc<dyn PairingEmitter>,
     pending: Arc<Mutex<HashMap<String, Offer>>>,
-) {
-    while let Some(msg) = incoming.recv().await {
+    links: Links,
+    waiters: Waiters,
+}
+
+async fn incoming_loop(mut l: Loop) {
+    while let Some(msg) = l.incoming.recv().await {
         match msg {
-            Incoming::Signal(Signal::Offer(offer)) => match offer.verify(&trust) {
+            Incoming::Signal(Signal::Offer(offer)) => match offer.verify(&l.trust) {
                 Ok(()) => {
-                    let from_name = trust
+                    let from_name = l
+                        .trust
                         .get(&offer.from.fingerprint())
                         .map(|d| d.name)
                         .unwrap_or_default();
@@ -262,46 +306,84 @@ async fn incoming_loop(
                         file_count: offer.file_count,
                         total_bytes: offer.total_bytes,
                     };
-                    pending.lock().unwrap().insert(offer.transfer_id.clone(), offer);
-                    emit.emit(ev);
+                    l.pending.lock().unwrap().insert(offer.transfer_id.clone(), offer);
+                    l.emit.emit(ev);
                 }
                 Err(VerifyError::Untrusted) => tracing::warn!("pairing: offer from untrusted device"),
                 Err(VerifyError::BadSignature) => tracing::warn!("pairing: offer with bad signature"),
             },
             Incoming::Signal(Signal::Response(resp)) => {
-                if resp.verify(&trust).is_ok() {
+                if resp.verify(&l.trust).is_ok() {
                     if resp.accept {
-                        emit.emit(PairingEvent::Accepted);
+                        l.emit.emit(PairingEvent::Accepted);
                     } else {
-                        emit.emit(PairingEvent::Declined);
-                        manager.cancel(crate::transport::Kind::Send);
+                        l.emit.emit(PairingEvent::Declined);
+                        l.manager.cancel(crate::transport::Kind::Send);
                     }
                 }
             }
+            // Initiator side: someone opened our link. Finish our half of the
+            // SPAKE2 and reply so they can seal their identity back to us.
+            Incoming::Signal(Signal::PairInit(init)) => on_pair_init(&l, init),
+            // Opener side: hand the initiator's reply to the waiting call.
+            Incoming::Signal(Signal::PairResp(resp)) => {
+                if let Some(tx) = l.waiters.lock().unwrap().remove(&resp.room) {
+                    let _ = tx.send(resp.pake);
+                }
+            }
+            // Initiator side: open the opener's sealed identity and trust it.
+            Incoming::Signal(Signal::PairSeal(seal)) => on_pair_seal(&l, seal),
             Incoming::Unreachable(fp) => {
                 tracing::info!(fp = %fp, "pairing: target offline");
-                emit.emit(PairingEvent::Error { message: "The device is offline.".into() });
+                l.emit.emit(PairingEvent::Error { message: "The device is offline.".into() });
             }
         }
     }
 }
 
-/// Initiator side of a one-sided pairing: wait in the mailbox for the opener,
-/// run SPAKE2 over the link secret, receive and trust the opener's identity.
-/// Returns the newly trusted device's name.
-async fn pair_await(
-    mailbox_url: &str,
-    room: &str,
-    secret: &str,
-    trust: &TrustStore,
-) -> Result<String, String> {
-    let mut mailbox = client::join(mailbox_url, room).await?;
-    let (handshake, my_msg) = pake::start(secret, room);
-    mailbox.send(&my_msg).await?;
-    let peer_msg = mailbox.recv().await?;
-    let key = handshake.finish(&peer_msg)?;
-    let sealed = mailbox.recv().await?;
-    let payload = pake::open(&key, &sealed)?;
+/// Initiator's response to an opener's `PairInit`: derive the shared key from
+/// the link secret, stash it against the seal that follows, and reply.
+fn on_pair_init(l: &Loop, init: PairInit) {
+    let secret = match l.links.lock().unwrap().get(&init.room) {
+        Some(s) => s.secret.clone(),
+        None => return, // unknown or expired link — ignore
+    };
+    let (handshake, my_msg) = pake::start(&secret, &init.room);
+    let key = match handshake.finish(&init.pake) {
+        Ok(k) => k,
+        Err(e) => {
+            tracing::warn!(error = %e, "pairing: PAKE finish failed");
+            return;
+        }
+    };
+    if let Some(s) = l.links.lock().unwrap().get_mut(&init.room) {
+        s.established = Some((key, init.from_fp.clone()));
+    }
+    l.broker.send(&init.from_fp, &Signal::PairResp(PairResp { room: init.room, pake: my_msg }));
+}
+
+/// Initiator's handling of the opener's `PairSeal`: decrypt the identity the
+/// opener sealed under the PAKE key, trust it, and report the pairing done.
+fn on_pair_seal(l: &Loop, seal: PairSeal) {
+    let Some((key, _)) = l.links.lock().unwrap().get(&seal.room).and_then(|s| s.established.clone())
+    else {
+        return; // no matching pending link
+    };
+    let name = match open_pair_payload(&key, &seal.sealed, &l.trust) {
+        Ok(name) => name,
+        Err(e) => {
+            tracing::warn!(error = %e, "pairing: could not complete from seal");
+            return;
+        }
+    };
+    l.links.lock().unwrap().remove(&seal.room);
+    l.emit.emit(PairingEvent::Paired { name });
+}
+
+/// Decrypt and trust the identity an opener sealed under the PAKE key. Returns
+/// the newly trusted device's name.
+fn open_pair_payload(key: &[u8; 32], sealed: &[u8], trust: &TrustStore) -> Result<String, String> {
+    let payload = pake::open(key, sealed)?;
     let payload: PairPayload =
         serde_json::from_slice(&payload).map_err(|e| format!("bad pairing payload: {e}"))?;
     let peer = PublicKey::decode(&payload.id)?;
@@ -512,7 +594,9 @@ mod tests {
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     #[ignore = "needs a running Go broker at FLOPPY_TEST_BROKER"]
     async fn live_trusted_transfer_against_real_broker() {
-        let Ok(broker) = std::env::var("FLOPPY_TEST_BROKER") else { return };
+        let Ok(ws) = std::env::var("FLOPPY_TEST_BROKER") else { return };
+        // FLOPPY_TEST_BROKER is the `…/ws` URL; the fp channel dials `…/fp`.
+        let broker = format!("{}/fp", ws.strip_suffix("/ws").unwrap_or(&ws));
         let tmp = tempfile::tempdir().unwrap();
         let payload = vec![9u8; 250_000];
         let src = write_file(tmp.path(), "live-trusted.bin", &payload);
@@ -543,104 +627,27 @@ mod tests {
         assert_eq!(got.as_deref(), Some(&payload[..]));
     }
 
-    /// In-process mailbox broker (the `/ws` mode) for the one-sided pairing
-    /// exchange: pairs two parties by room, buffering the first's frames.
-    async fn spawn_mock_mailbox() -> String {
-        use futures_util::{SinkExt, StreamExt as _};
-        use std::collections::HashMap;
-        use tokio::sync::mpsc;
-        use tokio::sync::Mutex as AsyncMutex;
-        use tokio_tungstenite::tungstenite::Message;
-
-        #[derive(serde::Deserialize)]
-        struct In {
-            #[serde(rename = "type")]
-            typ: String,
-            room: Option<String>,
-        }
-        #[derive(Default)]
-        struct Room {
-            parties: Vec<(u64, mpsc::UnboundedSender<Message>)>,
-            buffered: Vec<Message>,
-        }
-
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let addr = listener.local_addr().unwrap();
-        let rooms: Arc<AsyncMutex<HashMap<String, Room>>> = Arc::new(AsyncMutex::new(HashMap::new()));
-        static IDS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-
-        tokio::spawn(async move {
-            while let Ok((stream, _)) = listener.accept().await {
-                let rooms = rooms.clone();
-                tokio::spawn(async move {
-                    let Ok(ws) = tokio_tungstenite::accept_async(stream).await else { return };
-                    let (mut write, mut read) = ws.split();
-                    let (tx, mut rx) = mpsc::unbounded_channel::<Message>();
-                    tokio::spawn(async move {
-                        while let Some(m) = rx.recv().await {
-                            if write.send(m).await.is_err() {
-                                break;
-                            }
-                        }
-                    });
-                    // First frame must be a mailbox join (fp registers land here
-                    // too and are dropped — harmless).
-                    let room_id = match futures_util::StreamExt::next(&mut read).await {
-                        Some(Ok(Message::Text(t))) => match serde_json::from_str::<In>(&t) {
-                            Ok(m) if m.typ == "join" => m.room.unwrap_or_default(),
-                            _ => return,
-                        },
-                        _ => return,
-                    };
-                    let my_id = IDS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                    let backlog = {
-                        let mut g = rooms.lock().await;
-                        let rm = g.entry(room_id.clone()).or_default();
-                        let backlog = std::mem::take(&mut rm.buffered);
-                        rm.parties.push((my_id, tx.clone()));
-                        backlog
-                    };
-                    for m in backlog {
-                        let _ = tx.send(m);
-                    }
-                    while let Some(Ok(msg)) = futures_util::StreamExt::next(&mut read).await {
-                        if !matches!(msg, Message::Text(_)) {
-                            continue;
-                        }
-                        let mut g = rooms.lock().await;
-                        let rm = g.entry(room_id.clone()).or_default();
-                        if let Some((_, peer)) = rm.parties.iter().find(|(id, _)| *id != my_id) {
-                            let _ = peer.send(msg);
-                        } else {
-                            rm.buffered.push(msg);
-                        }
-                    }
-                    if let Some(rm) = rooms.lock().await.get_mut(&room_id) {
-                        rm.parties.retain(|(id, _)| *id != my_id);
-                    }
-                });
-            }
-        });
-        format!("ws://{addr}/ws")
-    }
-
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn one_sided_pairing_makes_trust_mutual() {
         let tmp = tempfile::tempdir().unwrap();
-        let mailbox = spawn_mock_mailbox().await;
+        // Pairing rides the fp channel now, so both devices share one fp broker.
+        let broker = spawn_mock_fp_broker().await;
 
         let a_mgr = manager(tmp.path(), "pa", Arc::new(DoneFlag::default())).await;
         let b_mgr = manager(tmp.path(), "pb", Arc::new(DoneFlag::default())).await;
         let a_ev = PairCollector::default();
         let b_ev = PairCollector::default();
-        let a = PairingService::new(&tmp.path().join("id-a"), a_mgr, mailbox.clone(), Arc::new(a_ev.clone())).unwrap();
-        let b = PairingService::new(&tmp.path().join("id-b"), b_mgr, mailbox.clone(), Arc::new(b_ev.clone())).unwrap();
+        let a = PairingService::new(&tmp.path().join("id-a"), a_mgr, broker.clone(), Arc::new(a_ev.clone())).unwrap();
+        let b = PairingService::new(&tmp.path().join("id-b"), b_mgr, broker.clone(), Arc::new(b_ev.clone())).unwrap();
+
+        // Let both register with the broker before the exchange routes by fp.
+        tokio::time::sleep(Duration::from_millis(200)).await;
 
         // A shows a link; B opens it. One action → mutual trust.
         let link = a.create_pair_link().unwrap();
         b.open_pair_link(&link).await.unwrap();
 
-        // A completes the exchange and trusts B.
+        // A completes the exchange (over fp) and trusts B.
         wait_until(Duration::from_secs(10), || {
             a_ev.tags().iter().any(|t| t.starts_with("paired"))
         })

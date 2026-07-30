@@ -58,6 +58,35 @@ pub struct PairPayload {
     pub name: String,
 }
 
+// The three messages of the one-sided pairing handshake, exchanged as fp
+// `Signal`s (routed by fingerprint over the persistent broker connection —
+// no separate mailbox socket, so nothing to reap while a link is on screen).
+// The SPAKE2 exchange still runs end-to-end: the broker relays these opaque
+// blobs and never learns the link secret, so it cannot substitute an identity.
+
+/// Opener → initiator. `from_fp` is the opener's fingerprint so the initiator
+/// can route its reply back; `pake` is the opener's SPAKE2 message.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PairInit {
+    pub room: String,
+    pub from_fp: String,
+    pub pake: Vec<u8>,
+}
+
+/// Initiator → opener: the initiator's SPAKE2 message, keyed to `room`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PairResp {
+    pub room: String,
+    pub pake: Vec<u8>,
+}
+
+/// Opener → initiator: the opener's `PairPayload`, sealed under the PAKE key.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PairSeal {
+    pub room: String,
+    pub sealed: Vec<u8>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

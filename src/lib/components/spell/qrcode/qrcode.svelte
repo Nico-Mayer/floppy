@@ -40,8 +40,8 @@
 	let {
 		value,
 		size = 268,
-		fgColor = 'var(--foreground)',
-		bgColor = 'var(--background)',
+		fgColor = 'var(--card-foreground)',
+		bgColor = 'var(--card)',
 		errorCorrectionLevel = 'M',
 		class: className,
 		...restProps
