@@ -7,7 +7,7 @@ context: |
   - Core: Rust + Tauri 2 in `src-tauri/` (commands, events, iroh transport)
   - Frontend: SvelteKit (adapter-static, SPA fallback) + Svelte 5 runes
     (`$state`, `$derived`, `$props`, `$effect`) in `src/`
-  - UI: shadcn-svelte first; animated variants from https://v-animations.vercel.app
+  - UI / Frontend: shadcn-svelte first; animated variants from https://v-animations.vercel.app use the available shadcn-svelte and svelte skills before implementing stuff
   - Broker: small Go service in `broker/` (the only Go left), deployed via
     `broker/Dockerfile` (railway.json)
   - Transfer: iroh + iroh-blobs (QUIC, hole-punching, relay fallback, BLAKE3

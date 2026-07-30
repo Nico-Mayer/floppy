@@ -9,34 +9,34 @@ the real Go broker (`live_quick_share_against_real_broker`,
 
 ## Commands (Go bound method → Tauri command)
 
-| Go (Wails)                        | Tauri                                             | Status |
-| --------------------------------- | ------------------------------------------------- | ------ |
-| `CrocService.Send`                | `quick_share` (code flow) + `send` (raw ticket)   | ✅     |
-| `CrocService.Receive`             | `receive` (routes code-phrase vs raw ticket)      | ✅     |
-| `CrocService.SendCoded/ReceiveCoded` (trusted, croc-code) | pairing `send_to` / `accept`→`receive(ticket)` | ✅ (croc-code derivation removed; ticket in the signed offer) |
-| `CrocService.CancelSend/CancelReceive` | `cancel_send` / `cancel_receive`             | ✅     |
-| `FileService.SelectFiles`         | frontend `@tauri-apps/plugin-dialog` `open()`     | ✅     |
-| `FileService.Describe`            | `describe`                                        | ✅     |
-| `FileService.OpenPath`            | `open_path` (`tauri-plugin-opener`)               | ✅     |
-| `PairingService.Identity`         | `identity`                                        | ✅     |
-| `PairingService.PreviewPairing`   | `preview_pairing`                                 | ✅     |
-| `PairingService.Trust/Untrust`    | `trust` / `untrust`                               | ✅     |
-| `PairingService.TrustedDevices`   | `trusted_devices`                                 | ✅     |
-| `PairingService.SendTo`           | `send_to`                                         | ✅     |
-| `PairingService.Accept/Decline`   | `accept` / `decline`                              | ✅     |
-| —                                 | `create_pair_link` / `open_pair_link`             | ➕ new (one-sided pairing) |
+| Go (Wails)                                                | Tauri                                           | Status                                                        |
+| --------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------- |
+| `CrocService.Send`                                        | `quick_share` (code flow) + `send` (raw ticket) | ✅                                                            |
+| `CrocService.Receive`                                     | `receive` (routes code-phrase vs raw ticket)    | ✅                                                            |
+| `CrocService.SendCoded/ReceiveCoded` (trusted, croc-code) | pairing `send_to` / `accept`→`receive(ticket)`  | ✅ (croc-code derivation removed; ticket in the signed offer) |
+| `CrocService.CancelSend/CancelReceive`                    | `cancel_send` / `cancel_receive`                | ✅                                                            |
+| `FileService.SelectFiles`                                 | frontend `@tauri-apps/plugin-dialog` `open()`   | ✅                                                            |
+| `FileService.Describe`                                    | `describe`                                      | ✅                                                            |
+| `FileService.OpenPath`                                    | `open_path` (`tauri-plugin-opener`)             | ✅                                                            |
+| `PairingService.Identity`                                 | `identity`                                      | ✅                                                            |
+| `PairingService.PreviewPairing`                           | `preview_pairing`                               | ✅                                                            |
+| `PairingService.Trust/Untrust`                            | `trust` / `untrust`                             | ✅                                                            |
+| `PairingService.TrustedDevices`                           | `trusted_devices`                               | ✅                                                            |
+| `PairingService.SendTo`                                   | `send_to`                                       | ✅                                                            |
+| `PairingService.Accept/Decline`                           | `accept` / `decline`                            | ✅                                                            |
+| —                                                         | `create_pair_link` / `open_pair_link`           | ➕ new (one-sided pairing)                                    |
 
 ## Events (Go → Tauri, typed via tauri-specta)
 
-| Go                                          | Tauri                                          |
-| ------------------------------------------- | ---------------------------------------------- |
-| `croc:code`                                 | `code-event`                                   |
-| `croc:send:progress` / `croc:recv:progress` | `progress-event` (one struct, `kind`)          |
-| `croc:sent` / `croc:received`               | `done-event` (one struct, `kind`)              |
-| `croc:error`                                | `error-event`                                  |
-| `files-dropped`                             | native webview drag-drop (no app event)        |
+| Go                                          | Tauri                                                                             |
+| ------------------------------------------- | --------------------------------------------------------------------------------- |
+| `croc:code`                                 | `code-event`                                                                      |
+| `croc:send:progress` / `croc:recv:progress` | `progress-event` (one struct, `kind`)                                             |
+| `croc:sent` / `croc:received`               | `done-event` (one struct, `kind`)                                                 |
+| `croc:error`                                | `error-event`                                                                     |
+| `files-dropped`                             | native webview drag-drop (no app event)                                           |
 | `pairing:offer/accepted/declined/error`     | `pairing-offer-event` / `pairing-accepted` / `pairing-declined` / `pairing-error` |
-| —                                           | `pairing-paired` (one-sided), `deep-link` (`floppy://receive`) — ➕ new |
+| —                                           | `pairing-paired` (one-sided), `deep-link` (`floppy://receive`) — ➕ new           |
 
 ## Transport behavior parity (croc → iroh)
 

@@ -19,6 +19,7 @@
 		"**/.classpath",
 		"**/.settings",
 		"**/node_modules",
+		"**/.svelte-kit",
 		"**/dist",
 		// "**/bin",
 		"**/.task"

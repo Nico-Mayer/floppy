@@ -9,6 +9,9 @@ bun.lockb
 /static/
 src-tauri
 
+# Agent skill docs: snippets carry `+++` diff markers that no JS parser accepts
+.claude/
+
 # Generated (tauri-specta) and vendored (shadcn-svelte)
 src/lib/ipc/bindings.ts
 src/lib/components/ui/
