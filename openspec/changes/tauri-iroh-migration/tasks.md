@@ -55,7 +55,7 @@ Applied incrementally on a long-lived rewrite branch. Slices are ordered so each
 
 > **Moved out of this change** (2026-07-30, at desktop-parity milestone):
 >
-> - Mobile targets (iOS/Android, mobile picker, phone preview budgets) → **`mobile-targets`** change.
+> - Mobile targets (iOS/Android, mobile picker, phone preview budgets) → **`android-port`** (which also lays the shared mobile foundation), then **`ios-port`**.
 > - Cross-machine E2E, broker deploy + relay-strategy doc, archiving superseded changes → **`release-hardening`** change.
 >
 > This change is now scoped to desktop feature-parity with the Go/Wails build (slices 1–5), which is complete.

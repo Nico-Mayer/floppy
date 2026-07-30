@@ -12,5 +12,5 @@ green there; this change covers the operational + cross-machine gates.
 ## 2. Validate & close
 
 - [ ] 2.1 Manual E2E: quick-share and trusted-device transfer across two real machines; resume after interrupt
-- [ ] 2.2 Archive/close the superseded `transfer-complete-notifications` and `deep-link-receive` changes
+- [x] 2.2 Close the superseded `transfer-complete-notifications` and `deep-link-receive` changes — deleted 2026-07-30 (their behaviour ships in `tauri-iroh-migration` slices 5.1/5.2 and is specified in `specs/app-shell-tauri/spec.md`)
 - [ ] 2.3 Promote `tauri-iroh-migration` specs and archive it
