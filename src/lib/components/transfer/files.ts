@@ -20,11 +20,12 @@ export function isPreviewable(path: string): boolean {
 import { convertFileSrc } from '@tauri-apps/api/core'
 
 /**
- * URL the webview can load to preview a local file. Uses Tauri's asset protocol
- * (gated by `assetProtocol.scope` in tauri.conf), which serves the file
- * directly — no round-trip through a dev/asset server. Full-resolution for now;
- * server-side downscaling behind this same call is slice 5.5.
+ * URL the webview can load to preview a local file. Served over the `thumb://`
+ * custom protocol (see src-tauri/src/preview.rs), which decodes and downscales
+ * png/jpeg/gif to a small thumbnail off the UI thread, streams other image
+ * types as-is, and caches per session (ETag + max-age). Replaces the Go build's
+ * `/localfile` asset route.
  */
 export function previewURL(path: string): string {
-	return convertFileSrc(path)
+	return convertFileSrc(path, 'thumb')
 }

@@ -49,7 +49,7 @@
 		     one turns them into solid blobs. The beam travelling the border is
 		     the "still waiting for your peer" tell — it stops the moment this
 		     screen is replaced. -->
-		<div class="relative shrink-0 rounded-2xl border bg-qr-background p-4 @md:p-3">
+		<div class="bg-qr-background relative shrink-0 rounded-2xl border p-4 @md:p-3">
 			<QRCode value={code} class="size-44 @md:size-32" />
 			{#if motionOK()}
 				<BorderBeam size={70} duration={5} colorFrom="var(--tint)" colorTo="var(--tint-fg)" />

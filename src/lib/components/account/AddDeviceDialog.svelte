@@ -102,8 +102,7 @@
 					{#if link}
 						<QRCode value={link} class="size-48" />
 						<p class="text-sm text-muted-foreground">
-							Scan this on your other device, or copy the link and open it there. You'll both be
-							paired.
+							Scan this on your other device, or copy the link and open it there. You'll both be paired.
 						</p>
 						<Button variant="secondary" size="sm" onclick={copyLink}>
 							<CopyIcon data-icon="inline-start" />

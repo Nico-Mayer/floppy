@@ -276,6 +276,12 @@ class TransferApp {
 				if (e.payload.kind === 'send') this.send.status = 'done'
 				else this.receive.complete(e.payload.dest)
 			}),
+			events.deepLink.listen((e) => {
+				// A floppy://receive?code=… link opened the app: switch to receive
+				// and prefill the code, but never auto-start (drive-by risk).
+				this.mode = 'receive'
+				this.receive.code = e.payload.code
+			}),
 			events.errorEvent.listen((e) => {
 				// The core reports which side failed and a machine-readable code;
 				// the raw message still needs translating for the user.

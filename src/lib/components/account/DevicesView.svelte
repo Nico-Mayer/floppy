@@ -74,7 +74,7 @@
 					onclick={() => (qrHidden = !qrHidden)}
 					aria-label={qrHidden ? 'Show pairing code' : 'Hide pairing code'}
 					aria-pressed={!qrHidden}
-					class="group relative cursor-pointer overflow-hidden rounded-2xl border bg-qr-background p-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+					class="group bg-qr-background relative cursor-pointer overflow-hidden rounded-2xl border p-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
 				>
 					<QRCode value={pairing.identity} class={cn('size-40', qrHidden && 'select-none')} />
 					<!-- The veil blurs, not the QR itself: a `filter` on the svg gets its

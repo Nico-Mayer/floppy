@@ -1225,6 +1225,34 @@ mod tests {
         assert_eq!(got.as_deref(), Some(&payload[..]));
     }
 
+    /// Live cross-language check: quick share over a REAL Go broker (mailbox
+    /// mode), not the mock — proves the Rust client wire matches broker/mailbox.go.
+    /// Gated: run with a broker at `FLOPPY_TEST_BROKER` (e.g. `ws://127.0.0.1:8799/ws`).
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    #[ignore = "needs a running Go broker at FLOPPY_TEST_BROKER"]
+    async fn live_quick_share_against_real_broker() {
+        let Ok(broker) = std::env::var("FLOPPY_TEST_BROKER") else { return };
+        let tmp = tempfile::tempdir().unwrap();
+        let payload = vec![7u8; 300_000];
+        let src = write_file(tmp.path(), "live.bin", &payload);
+
+        let se = Collector::default();
+        let re = Collector::default();
+        let sender = quick_manager(tmp.path(), "s", &broker, Arc::new(se.clone())).await;
+        let receiver = quick_manager(tmp.path(), "r", &broker, Arc::new(re.clone())).await;
+
+        sender.quick_share(vec![src]).await.unwrap();
+        wait_for(&se, |e| e.iter().any(|x| matches!(x, Event::Code { .. }))).await;
+        receiver.quick_receive(&ticket_of(&se.events())).await.unwrap();
+        wait_for(&re, |e| e.iter().any(|x| matches!(x, Event::Done { .. }))).await;
+
+        let got = walk(&tmp.path().join("r-dl"))
+            .into_iter()
+            .find(|p| p.file_name().unwrap() == "live.bin")
+            .map(|p| std::fs::read(&p).unwrap());
+        assert_eq!(got.as_deref(), Some(&payload[..]));
+    }
+
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn quick_share_wrong_code_fails_without_leaking() {
         let tmp = tempfile::tempdir().unwrap();

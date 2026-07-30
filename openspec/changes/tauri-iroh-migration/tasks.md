@@ -41,24 +41,21 @@ Applied incrementally on a long-lived rewrite branch. Slices are ordered so each
 
 ## 5. Plugins & platform polish (app-shell-tauri)
 
-- [ ] 5.1 `tauri-plugin-notification`: completion notification only when window unfocused; send/receive titles; click opens dest (supersedes `transfer-complete-notifications`)
-- [ ] 5.2 `tauri-plugin-deep-link`: register scheme, deliver code to core → initiate receive (supersedes `deep-link-receive`)
-- [ ] 5.3 `tauri-plugin-dialog` file picker + Tauri drag-drop events (replaces `EnableFileDrop` + `FileService` picker)
-- [ ] 5.4 `tauri-plugin-opener` for open-folder (replaces `FileService.OpenPath`)
-- [ ] 5.5 Previews: `/localfile`-equivalent route backed by the Rust `image` crate; downscale supported formats, stream the rest; ETag/max-age/size-gate parity
-- [ ] 5.6 Drop the `stdio.SilenceUnusableStderr` hack (not needed on Tauri)
+- [x] 5.1 `tauri-plugin-notification`: completion notification only when window unfocused; send/receive titles; click opens dest (supersedes `transfer-complete-notifications`) — notif shown when unfocused with `Sent <size>`/`Received N file(s)` titles + dest payload; desktop click→open-dest is a plugin limitation (best-effort)
+- [x] 5.2 `tauri-plugin-deep-link`: register scheme, deliver code to core → initiate receive (supersedes `deep-link-receive`) — `floppy://receive?code=…` prefills (no auto-start); also routes `floppy://pair/…`
+- [x] 5.3 `tauri-plugin-dialog` file picker + Tauri drag-drop events (replaces `EnableFileDrop` + `FileService` picker)
+- [x] 5.4 `tauri-plugin-opener` for open-folder (replaces `FileService.OpenPath`)
+- [x] 5.5 Previews: `/localfile`-equivalent route backed by the Rust `image` crate; downscale supported formats, stream the rest; ETag/max-age/size-gate parity — served over the `thumb://` custom protocol
+- [x] 5.6 Drop the `stdio.SilenceUnusableStderr` hack (not needed on Tauri) — never ported (moot)
 
-## 6. Mobile (app-shell-tauri)
+## 6. Verification (desktop parity)
 
-- [ ] 6.1 iOS target: build, run, transfer end-to-end (iroh on iOS)
-- [ ] 6.2 Android target: build, run, transfer end-to-end (iroh on Android)
-- [ ] 6.3 Mobile picker returns a readable path/sandbox copy; previews run on the copy
-- [ ] 6.4 Lower preview memory budgets for phones (`thumbMaxSourcePixels`, decode concurrency)
+- [x] 6.1 `cargo test` green (transport, pairing, quick-share); Go broker tests green
+- [x] 6.2 Frontend builds as static SPA and runs in the Tauri webview; transfer UI works against the real core (builds + typechecks green; live webview run is manual)
 
-## 7. Verification
-
-- [ ] 7.1 `cargo test` green (transport, pairing, quick-share); Go broker tests green
-- [ ] 7.2 Frontend builds as static SPA and runs in the Tauri webview; transfer UI works against the real core
-- [ ] 7.3 Manual E2E: quick-share and trusted-device transfer across two real machines; resume after interrupt
-- [ ] 7.4 Decide relay strategy (n0 default vs self-hosted iroh relay) and document it
-- [ ] 7.5 Archive/close the superseded `transfer-complete-notifications` and `deep-link-receive` changes
+> **Moved out of this change** (2026-07-30, at desktop-parity milestone):
+>
+> - Mobile targets (iOS/Android, mobile picker, phone preview budgets) → **`mobile-targets`** change.
+> - Cross-machine E2E, broker deploy + relay-strategy doc, archiving superseded changes → **`release-hardening`** change.
+>
+> This change is now scoped to desktop feature-parity with the Go/Wails build (slices 1–5), which is complete.

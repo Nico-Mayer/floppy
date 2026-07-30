@@ -505,6 +505,44 @@ mod tests {
         assert_eq!(got.as_deref(), Some(&payload[..]));
     }
 
+    /// Live cross-language check: a trusted-device transfer over a REAL Go
+    /// broker (fingerprint mode), not the mock — proves the Rust fp client wire
+    /// matches broker/fproute.go. Gated on `FLOPPY_TEST_BROKER` (the `…/ws` URL;
+    /// the service derives `…/fp`).
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    #[ignore = "needs a running Go broker at FLOPPY_TEST_BROKER"]
+    async fn live_trusted_transfer_against_real_broker() {
+        let Ok(broker) = std::env::var("FLOPPY_TEST_BROKER") else { return };
+        let tmp = tempfile::tempdir().unwrap();
+        let payload = vec![9u8; 250_000];
+        let src = write_file(tmp.path(), "live-trusted.bin", &payload);
+
+        let a_mgr = manager(tmp.path(), "la", Arc::new(DoneFlag::default())).await;
+        let b_done = DoneFlag::default();
+        let b_mgr = manager(tmp.path(), "lb", Arc::new(b_done.clone())).await;
+        let a_events = PairCollector::default();
+        let b_events = PairCollector::default();
+        let a = PairingService::new(&tmp.path().join("lid-a"), a_mgr, broker.clone(), Arc::new(a_events.clone())).unwrap();
+        let b = PairingService::new(&tmp.path().join("lid-b"), b_mgr, broker.clone(), Arc::new(b_events.clone())).unwrap();
+        tokio::time::sleep(Duration::from_millis(400)).await; // register with the real broker
+
+        let b_fp = PublicKey::decode(&b.identity()).unwrap().fingerprint();
+        a.trust(&b.identity(), "device-b").unwrap();
+        b.trust(&a.identity(), "device-a").unwrap();
+
+        a.send_to(&b_fp, vec![src]).await.unwrap();
+        wait_until(Duration::from_secs(10), || b_events.offer_id().is_some()).await;
+        let id = b_events.offer_id().unwrap();
+        b.accept(&id).await.unwrap();
+        wait_until(Duration::from_secs(20), || *b_done.0.lock().unwrap()).await;
+
+        let got = walk(&tmp.path().join("lb-dl"))
+            .into_iter()
+            .find(|p| p.file_name().unwrap() == "live-trusted.bin")
+            .map(|p| std::fs::read(&p).unwrap());
+        assert_eq!(got.as_deref(), Some(&payload[..]));
+    }
+
     /// In-process mailbox broker (the `/ws` mode) for the one-sided pairing
     /// exchange: pairs two parties by room, buffering the first's frames.
     async fn spawn_mock_mailbox() -> String {

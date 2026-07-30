@@ -15,9 +15,10 @@ use tauri_specta::Event;
 // Number)]` emits plain JS `number` (floppy's counts stay well under 2^53).
 
 /// Which side of a transfer an event belongs to. Serializes as "send"/"receive".
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, Type)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Default, Type)]
 #[serde(rename_all = "lowercase")]
 pub enum TransferKind {
+    #[default]
     Send,
     Receive,
 }
@@ -109,9 +110,9 @@ pub struct PairingError {
     pub message: String,
 }
 
-// `Default` needs a variant to point at; nothing depends on which.
-impl Default for TransferKind {
-    fn default() -> Self {
-        TransferKind::Send
-    }
+/// A `floppy://receive?code=…` deep link opened the app; prefill the code.
+#[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
+pub struct DeepLink {
+    pub code: String,
 }
+

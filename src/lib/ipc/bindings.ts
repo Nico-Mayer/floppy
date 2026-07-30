@@ -33,6 +33,7 @@ export const commands = {
 /** Events */
 export const events = {
 	codeEvent: makeEvent<CodeEvent>("code-event"),
+	deepLink: makeEvent<DeepLink>("deep-link"),
 	doneEvent: makeEvent<DoneEvent>("done-event"),
 	errorEvent: makeEvent<ErrorEvent>("error-event"),
 	pairingAccepted: makeEvent<PairingAccepted>("pairing-accepted"),
@@ -48,6 +49,11 @@ export const events = {
 export type CodeEvent = {
 	id: string,
 	kind: TransferKind,
+	code: string,
+};
+
+/**  A `floppy://receive?code=…` deep link opened the app; prefill the code. */
+export type DeepLink = {
 	code: string,
 };
 

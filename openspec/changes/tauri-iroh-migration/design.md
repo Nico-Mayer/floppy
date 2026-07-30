@@ -70,16 +70,16 @@ The command surface, event vocabulary, and shared types are defined once in Rust
 
 The `croc:*` names are **dropped** (croc is gone). Events are typed structs (`events.rs`); each derives `tauri_specta::Event`, so the wire name and the TS listener are generated from the struct name (`CodeEvent` → wire `code-event` → `events.codeEvent.listen(...)`). Send and receive share one event each, distinguished by a `kind: "send" | "receive"` field, instead of the old split `send`/`recv` names:
 
-| Event struct        | Frontend accessor        | Payload                                                            |
-| ------------------- | ------------------------ | ------------------------------------------------------------------ |
-| `CodeEvent`         | `events.codeEvent`       | `{id, kind, code}` — the code/ticket to display                    |
-| `ProgressEvent`     | `events.progressEvent`   | `{id, kind, percent, file, fileIndex, fileCount, sent, total, bps, eta}` |
-| `DoneEvent`         | `events.doneEvent`       | `{id, kind, dest}` (dest empty on a send)                          |
-| `ErrorEvent`        | `events.errorEvent`      | `{id, kind, code, message}`                                        |
-| `FilesDropped`      | `events.filesDropped`    | `string[]`                                                         |
-| `PairingOfferEvent` | `events.pairingOfferEvent` | `{transferId, fromName, fileCount, totalBytes}`                  |
-| `PairingAccepted` / `PairingDeclined` | `events.pairingAccepted` / `.pairingDeclined` | (empty) |
-| `PairingError`      | `events.pairingError`    | `{message}`                                                        |
+| Event struct                          | Frontend accessor                             | Payload                                                                  |
+| ------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------ |
+| `CodeEvent`                           | `events.codeEvent`                            | `{id, kind, code}` — the code/ticket to display                          |
+| `ProgressEvent`                       | `events.progressEvent`                        | `{id, kind, percent, file, fileIndex, fileCount, sent, total, bps, eta}` |
+| `DoneEvent`                           | `events.doneEvent`                            | `{id, kind, dest}` (dest empty on a send)                                |
+| `ErrorEvent`                          | `events.errorEvent`                           | `{id, kind, code, message}`                                              |
+| `FilesDropped`                        | `events.filesDropped`                         | `string[]`                                                               |
+| `PairingOfferEvent`                   | `events.pairingOfferEvent`                    | `{transferId, fromName, fileCount, totalBytes}`                          |
+| `PairingAccepted` / `PairingDeclined` | `events.pairingAccepted` / `.pairingDeclined` | (empty)                                                                  |
+| `PairingError`                        | `events.pairingError`                         | `{message}`                                                              |
 
 Commands return `Result<T, String>`; tauri-specta represents that as a `{status:"ok"} | {status:"error"}` union, wrapped by thin `$lib/ipc` helpers that throw the error string so the UI's existing try/catch + `describeError` flow is unchanged. Cancelled transfers still emit **no** terminal event. Sentinel error message text stays stable as a frontend contract.
 

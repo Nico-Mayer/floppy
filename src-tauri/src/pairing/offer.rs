@@ -155,8 +155,8 @@ mod tests {
     #[test]
     fn trusted_intact_offer_verifies() {
         let sender = ident();
-        let mut trust = TrustStore::in_memory();
-        trust.add(sender.public(), "sender");
+        let trust = TrustStore::in_memory();
+        trust.add(sender.public(), "sender").unwrap();
         let offer = sender.sign_offer("t1", 123, 3, 900, "blob-ticket-with-nodeid");
         assert_eq!(offer.verify(&trust), Ok(()));
     }
@@ -172,8 +172,8 @@ mod tests {
     #[test]
     fn tampered_ticket_is_bad_signature() {
         let sender = ident();
-        let mut trust = TrustStore::in_memory();
-        trust.add(sender.public(), "sender");
+        let trust = TrustStore::in_memory();
+        trust.add(sender.public(), "sender").unwrap();
         let mut offer = sender.sign_offer("t1", 123, 1, 10, "real-node-ticket");
         // A rendezvous swaps in its own node's ticket, keeping the signature.
         offer.ticket = "attacker-node-ticket".into();
@@ -187,8 +187,8 @@ mod tests {
         // as the real sender the signature fails.
         let sender = ident();
         let attacker = ident();
-        let mut trust = TrustStore::in_memory();
-        trust.add(sender.public(), "sender");
+        let trust = TrustStore::in_memory();
+        trust.add(sender.public(), "sender").unwrap();
         // Attacker signs its own offer but claims to be the trusted sender by
         // copying `from` — the signature no longer matches that key.
         let mut forged = attacker.sign_offer("t1", 1, 1, 1, "attacker-ticket");
@@ -199,8 +199,8 @@ mod tests {
     #[test]
     fn response_round_trip_and_spoof_rejected() {
         let receiver = ident();
-        let mut trust = TrustStore::in_memory();
-        trust.add(receiver.public(), "receiver");
+        let trust = TrustStore::in_memory();
+        trust.add(receiver.public(), "receiver").unwrap();
         let ok = receiver.sign_response("t1", true);
         assert_eq!(ok.verify(&trust), Ok(()));
 

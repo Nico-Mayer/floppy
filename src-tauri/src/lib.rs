@@ -6,13 +6,14 @@
 
 mod events;
 mod pairing;
+mod preview;
 mod rendezvous;
 mod transport;
 
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use events::{CodeEvent, DoneEvent, ErrorEvent, PairingAccepted, PairingDeclined,
+use events::{CodeEvent, DeepLink, DoneEvent, ErrorEvent, PairingAccepted, PairingDeclined,
     PairingError, PairingOfferEvent, PairingPaired, ProgressEvent, TransferKind};
 use specta_typescript::Number;
 use pairing::{PairingEmitter, PairingEvent, PairingService};
@@ -72,11 +73,22 @@ impl PairingEmitter for TauriPairingEmitter {
     }
 }
 
-/// Bridges the transport core's events onto the frontend's typed events. The
-/// core stays UI-agnostic (see transport::Emitter); this is the only place that
-/// knows both vocabularies.
+/// Bridges the transport core's events onto the frontend's typed events, and
+/// raises an OS notification when a transfer completes while the window is
+/// unfocused. The core stays UI-agnostic (see transport::Emitter); this is the
+/// only place that knows both vocabularies.
 struct TauriEmitter {
     app: AppHandle,
+    /// Last progress seen per kind, so the completion notification can say how
+    /// much was sent / how many files were received (the Done event alone
+    /// doesn't carry them). The final 100% progress always precedes Done.
+    last: std::sync::Mutex<LastProgress>,
+}
+
+#[derive(Default)]
+struct LastProgress {
+    send_total: u64,
+    recv_files: u64,
 }
 
 fn kind_to_ts(kind: Kind) -> TransferKind {
@@ -94,20 +106,27 @@ impl transport::Emitter for TauriEmitter {
             E::Code { id, kind, code } => {
                 CodeEvent { id, kind: kind_to_ts(kind), code }.emit(app)
             }
-            E::Progress { id, kind, stats } => ProgressEvent {
-                id,
-                kind: kind_to_ts(kind),
-                percent: stats.percent,
-                file: stats.file,
-                file_index: stats.file_index,
-                file_count: stats.file_count,
-                sent: stats.sent,
-                total: stats.total,
-                bps: stats.bps,
-                eta: stats.eta,
+            E::Progress { id, kind, stats } => {
+                match kind {
+                    Kind::Send => self.last.lock().unwrap().send_total = stats.total,
+                    Kind::Receive => self.last.lock().unwrap().recv_files = stats.file_count,
+                }
+                ProgressEvent {
+                    id,
+                    kind: kind_to_ts(kind),
+                    percent: stats.percent,
+                    file: stats.file,
+                    file_index: stats.file_index,
+                    file_count: stats.file_count,
+                    sent: stats.sent,
+                    total: stats.total,
+                    bps: stats.bps,
+                    eta: stats.eta,
+                }
+                .emit(app)
             }
-            .emit(app),
             E::Done { id, kind, dest } => {
+                self.notify_done(kind, &dest);
                 DoneEvent { id, kind: kind_to_ts(kind), dest }.emit(app)
             }
             E::Failed { id, kind, error } => ErrorEvent {
@@ -118,6 +137,94 @@ impl transport::Emitter for TauriEmitter {
             }
             .emit(app),
         };
+    }
+}
+
+impl TauriEmitter {
+    /// Show a completion notification, but only while the window is unfocused
+    /// (a foregrounded app already shows the result). No notification on error
+    /// or cancel — only Done reaches here.
+    fn notify_done(&self, kind: Kind, dest: &str) {
+        use tauri_plugin_notification::NotificationExt;
+
+        let focused = self
+            .app
+            .get_webview_window("main")
+            .and_then(|w| w.is_focused().ok())
+            .unwrap_or(false);
+        if focused {
+            return;
+        }
+
+        let last = self.last.lock().unwrap();
+        let (title, body) = match kind {
+            Kind::Send => {
+                let title = if last.send_total > 0 {
+                    format!("Sent {}", format_bytes(last.send_total))
+                } else {
+                    "Send complete".to_string()
+                };
+                (title, String::new())
+            }
+            Kind::Receive => {
+                let title = match last.recv_files {
+                    0 => "Receive complete".to_string(),
+                    1 => "Received 1 file".to_string(),
+                    n => format!("Received {n} files"),
+                };
+                (title, dest.to_string())
+            }
+        };
+        drop(last);
+
+        let mut builder = self.app.notification().builder().title(title);
+        if !body.is_empty() {
+            builder = builder.body(body);
+        }
+        let _ = builder.show();
+    }
+}
+
+/// Route an incoming `floppy://` deep link. `receive?code=…` prefills the code
+/// (never auto-starts — drive-by download risk); `pair/…` opens a pairing link.
+fn route_deep_link(app: &AppHandle, url: &str) {
+    let Some(rest) = url.trim().strip_prefix("floppy://") else { return };
+    if let Some(query) = rest.strip_prefix("receive?").or_else(|| rest.strip_prefix("receive/?")) {
+        if let Some(code) = query
+            .split('&')
+            .find_map(|p| p.strip_prefix("code="))
+            .map(|c| c.replace('+', " "))
+        {
+            let _ = DeepLink { code }.emit(app);
+        }
+    } else if rest.starts_with("pair/") {
+        // The whole URL is the pairing link (PairLink::decode strips the prefix).
+        let app = app.clone();
+        let link = url.to_string();
+        tauri::async_runtime::spawn(async move {
+            if let Some(pairing) = app.try_state::<PairingService>() {
+                let _ = pairing.open_pair_link(&link).await;
+            }
+        });
+    }
+}
+
+/// Decimal byte sizes, matching the frontend's `formatBytes` (format.ts).
+fn format_bytes(bytes: u64) -> String {
+    if bytes < 1000 {
+        return format!("{bytes} B");
+    }
+    let units = ["kB", "MB", "GB", "TB"];
+    let mut value = bytes as f64 / 1000.0;
+    let mut unit = 0;
+    while value >= 1000.0 && unit < units.len() - 1 {
+        value /= 1000.0;
+        unit += 1;
+    }
+    if value < 10.0 {
+        format!("{value:.1} {}", units[unit])
+    } else {
+        format!("{value:.0} {}", units[unit])
     }
 }
 
@@ -312,6 +419,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
             PairingDeclined,
             PairingPaired,
             PairingError,
+            DeepLink,
         ])
 }
 
@@ -329,6 +437,21 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_deep_link::init())
+        // Image previews for queued files: decode + downscale off the UI thread.
+        .register_asynchronous_uri_scheme_protocol("thumb", |_ctx, request, responder| {
+            let uri = request.uri().clone();
+            let inm = request
+                .headers()
+                .get("If-None-Match")
+                .and_then(|v| v.to_str().ok())
+                .map(|s| s.to_string());
+            tauri::async_runtime::spawn_blocking(move || {
+                let path = preview::path_from_uri(&uri);
+                responder.respond(preview::respond(&path, inm.as_deref()));
+            });
+        })
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {
             builder.mount_events(app);
@@ -363,7 +486,10 @@ pub fn run() {
                     .unwrap_or_else(|_| "ws://127.0.0.1:8787/ws".to_string()),
             };
             let broker_url = config.broker_url.clone();
-            let emitter = Arc::new(TauriEmitter { app: handle.clone() });
+            let emitter = Arc::new(TauriEmitter {
+                app: handle.clone(),
+                last: std::sync::Mutex::new(LastProgress::default()),
+            });
             let manager = tauri::async_runtime::block_on(Manager::new(config, emitter))?;
 
             // Trusted-device pairing: identity + trust store under app data, and
@@ -379,6 +505,23 @@ pub fn run() {
 
             app.manage(manager);
             app.manage(pairing);
+
+            // Deep links: `floppy://receive?code=…` prefills the receive code;
+            // `floppy://pair/…` completes a one-sided pairing. Registered after
+            // state is managed so a cold-start URL can be routed.
+            {
+                use tauri_plugin_deep_link::DeepLinkExt;
+                // Runtime registration for dev on Linux/Windows (macOS uses the
+                // bundled Info.plist entry from tauri.conf).
+                #[cfg(any(target_os = "linux", windows))]
+                let _ = app.deep_link().register("floppy");
+                let dl_app = handle.clone();
+                app.deep_link().on_open_url(move |event| {
+                    for url in event.urls() {
+                        route_deep_link(&dl_app, url.as_str());
+                    }
+                });
+            }
             Ok(())
         })
         .run(tauri::generate_context!())

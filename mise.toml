@@ -1,12 +1,6 @@
 [shell_alias]
 mr = "mise run"
 
-# Cross-platform dev env for Tauri.
-#   macOS   -> iOS + Android + desktop
-#   Windows -> Android + desktop
-# Android needs Android Studio installed: https://v2.tauri.app/start/prerequisites/#android
-# Run `mise run doctor` after setup to verify the toolchain for your OS.
-
 [env]
 # Android SDK/NDK paths differ per OS. iOS builds don't use these.
 JAVA_HOME = "{% if os() == 'windows' %}C:\\Program Files\\Android\\Android Studio\\jbr{% else %}/Applications/Android Studio.app/Contents/jbr/Contents/Home{% endif %}"
@@ -15,7 +9,6 @@ NDK_HOME = "{% if os() == 'windows' %}{{env.LOCALAPPDATA}}\\Android\\Sdk\\ndk\\3
 
 [tools]
 node = "26.5.0"
-# Ruby + CocoaPods are only needed for iOS builds -> macOS only.
 ruby = { version = "4.0.6", os = ["macos"] }
 cocoapods = { version = "latest", os = ["macos"] }
 rust = { version = "latest", profile = "default", postinstall = """
@@ -30,9 +23,11 @@ rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-andro
 rustup default "$RUSTUP_TOOLCHAIN"
 """ }
 "npm:@fission-ai/openspec" = "1.6.0"
+go = "latest"
 
-# ---- doctor: verify + self-heal the toolchain for the current OS ----
-# One task; mise picks `run_windows` on Windows, `run` elsewhere.
+[tasks.dev]
+run = "npm run tauri dev"
+
 [tasks.doctor]
 description = "Verify the Tauri dev toolchain for this OS"
 run = "./scripts/doctor-macos.sh"

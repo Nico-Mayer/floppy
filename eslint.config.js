@@ -11,6 +11,11 @@ const gitignorePath = path.resolve(import.meta.dirname, '.gitignore')
 
 export default defineConfig(
 	includeIgnoreFile(gitignorePath),
+	{
+		// Generated (tauri-specta) and vendored (shadcn-svelte) code, and the
+		// Rust crate's build artifacts — not hand-written JS, so not linted.
+		ignores: ['src/lib/ipc/bindings.ts', 'src/lib/components/ui/**', 'src-tauri/**']
+	},
 	js.configs.recommended,
 	ts.configs.recommended,
 	svelte.configs.recommended,
