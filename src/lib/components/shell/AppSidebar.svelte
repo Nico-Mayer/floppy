@@ -1,12 +1,12 @@
 <script lang="ts">
+	import { resolve } from '$app/paths'
+	import { page } from '$app/state'
+	import LoginView from '$lib/components/auth/LoginView.svelte'
 	import * as Avatar from '$lib/components/ui/avatar'
 	import * as Dialog from '$lib/components/ui/dialog'
 	import * as Sidebar from '$lib/components/ui/sidebar'
 	import { useSidebar } from '$lib/components/ui/sidebar'
-	import LoginView from '$lib/components/auth/LoginView.svelte'
 	import { pairing } from '$lib/pairing-app.svelte'
-	import { resolve } from '$app/paths'
-	import { page } from '$app/state'
 	import ArrowLeftRightIcon from '@lucide/svelte/icons/arrow-left-right'
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right'
 	import Clock3Icon from '@lucide/svelte/icons/clock-3'
@@ -51,9 +51,9 @@
 	<Sidebar.Header class="gap-0 p-3">
 		<div class="flex items-center gap-2.5">
 			<div
-				class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary font-heading text-lg font-black text-primary-foreground shadow-sm select-none"
+				class="flex size-9 shrink-0 items-center justify-center rounded-xl font-heading text-lg font-black text-primary-foreground shadow-sm select-none"
 			>
-				F
+				<img src="maybe-logo.png" alt="" />
 			</div>
 			<div class="flex min-w-0 flex-col leading-tight">
 				<span class="font-heading text-sm font-black tracking-tight uppercase">Floppy</span>
@@ -116,6 +116,7 @@
 					     empty account, and fetching one from the cloud is at odds with the
 					     app's peer-to-peer, no-cloud promise. The icon fallback stands in. -->
 					<Avatar.Root class="size-8 rounded-lg">
+						<Avatar.Image src="https://api.dicebear.com/10.x/initial-face/svg?seed=Nico" alt="" />
 						<Avatar.Fallback class="rounded-lg"><UserIcon class="size-4" /></Avatar.Fallback>
 					</Avatar.Root>
 					<div class="flex min-w-0 flex-col text-left leading-tight">
