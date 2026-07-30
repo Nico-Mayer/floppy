@@ -51,21 +51,52 @@ impl PairingEmitter for TauriPairingEmitter {
         use PairingEvent as P;
         let app = &self.app;
         let _ = match event {
-            P::Offer { transfer_id, from_name, file_count, total_bytes } => PairingOfferEvent {
-                transfer_id,
-                from_name,
-                file_count,
-                total_bytes,
+            P::Offer { transfer_id, from_name, file_count, total_bytes } => {
+                // Ping the OS when unfocused so a backgrounded user sees the offer;
+                // the in-app prompt covers the focused case.
+                self.notify_offer(from_name.clone(), file_count, total_bytes);
+                PairingOfferEvent { transfer_id, from_name, file_count, total_bytes }.emit(app)
             }
-            .emit(app),
             P::Accepted => PairingAccepted.emit(app),
-            P::Declined => PairingDeclined.emit(app),
+            P::Declined { busy } => PairingDeclined { busy }.emit(app),
             P::Request { fingerprint, suggested_name, sas, via } => {
                 PairingRequest { fingerprint, suggested_name, sas, via }.emit(app)
             }
             P::Paired { name } => PairingPaired { name }.emit(app),
             P::Error { message } => PairingError { message }.emit(app),
         };
+    }
+}
+
+impl TauriPairingEmitter {
+    /// Show an OS notification for an incoming offer, but only while the window
+    /// is unfocused — a foregrounded app already shows the in-app prompt. Like
+    /// `notify_done`, everything that touches the window is queued onto the main
+    /// thread and not waited on: `is_focused()` blocks on the UI event loop, and
+    /// this runs on a pairing task that must not stall there.
+    fn notify_offer(&self, from_name: String, file_count: u64, total_bytes: u64) {
+        let files = if file_count <= 1 { "a file".to_string() } else { format!("{file_count} files") };
+        let who = if from_name.is_empty() { "Someone".to_string() } else { from_name };
+        let title = format!("{who} wants to send you {files}");
+        let body = if total_bytes > 0 { format_bytes(total_bytes) } else { String::new() };
+
+        let app = self.app.clone();
+        let _ = self.app.run_on_main_thread(move || {
+            use tauri_plugin_notification::NotificationExt;
+
+            let focused = app
+                .get_webview_window("main")
+                .and_then(|w| w.is_focused().ok())
+                .unwrap_or(false);
+            if focused {
+                return;
+            }
+            let mut builder = app.notification().builder().title(title);
+            if !body.is_empty() {
+                builder = builder.body(body);
+            }
+            let _ = builder.show();
+        });
     }
 }
 
@@ -528,6 +559,9 @@ pub fn run() {
                 // for a build launched outside it.
                 broker_url: std::env::var("FLOPPY_BROKER_URL")
                     .unwrap_or_else(|_| "ws://127.0.0.1:8787/ws".to_string()),
+                // A passive send that no one accepts stops serving after this,
+                // freeing the slot and unpinning its files.
+                send_ttl: std::time::Duration::from_secs(300),
             };
             let broker_url = config.broker_url.clone();
             let emitter = Arc::new(TauriEmitter {

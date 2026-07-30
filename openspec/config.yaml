@@ -51,13 +51,20 @@ context: |
   - Send is passive: files are imported into the blob store as a collection, a
     ticket is handed out, and the iroh Router serves fetches. Send progress comes
     from the provider event stream (`RequestMode::NotifyLog`) — no polling, no race.
+    Completion is not inferred from served bytes alone (a deduped/resumed receive
+    moves few or no bytes): the receiver returns a signed completion (over `/fp`
+    for trusted, a sealed frame over `/ws` for code) that finishes the send. A
+    passive send also expires on a TTL (`Config::send_ttl`) if never accepted.
   - Receive is an owned task: connect → verified size → fetch with iroh's native
     progress stream → export files. Cancel drops the task (prompt QUIC reset) and
     emits **no** terminal event.
   - Resume is by BLAKE3 hash from the on-disk store; there is no per-code folder
     and no process-CWD ownership (both were croc-era rules).
   - Destination: `dest_root/<ticket-hash-prefix>/`; the app uses `~/Downloads/floppy`.
-  - One send and one receive may run concurrently, never two of the same kind.
+  - The device runs one transfer at a time (send XOR receive): a live transfer
+    blocks a new one of either kind with the `Busy` sentinel, and a busy device
+    auto-declines an incoming trusted offer (distinct `busy` reason). Simultaneous
+    mutual offers (glare) resolve by fingerprint — lower sends, higher receives.
   - Sentinel `StartError` text is frontend contract (`errors.ts` matches on it) —
     keep stable: "transfer already running", "previous transfer still stopping",
     "no files selected", "invalid code phrase". Mid-transfer failures emit an

@@ -46,6 +46,12 @@ use crate::transport::progress::{self, RateTracker};
 /// to finish unwinding before giving up with `Unwinding`.
 const CANCEL_GRACE: Duration = Duration::from_secs(20);
 
+/// Fired once a receive has fully received and exported its content — never on
+/// cancel or failure. The trusted path uses it to signal completion back to the
+/// sender, whose passive send may not otherwise know it finished (a deduped or
+/// resumed receive moves fewer bytes than the send holds).
+type CompleteCb = Box<dyn FnOnce() + Send>;
+
 /// Relay configuration. Tests use `DisableRelay` for a hermetic, offline,
 /// direct-loopback round-trip; the app uses `Default` (n0 public relays).
 /// `Custom` (self-hosting) is wired but not yet exposed in the UI.
@@ -76,6 +82,12 @@ pub struct Config {
     /// leaves this `None`; hermetic tests set `127.0.0.1:0` so the advertised
     /// address is loopback-routable without a relay.
     pub bind_addr: Option<String>,
+    /// How long a passive send keeps serving with no completion and no progress
+    /// before it expires — freeing its slot and unpinning its content, so a
+    /// never-accepted offer or a peer that vanished mid-fetch cannot hold the
+    /// single send slot forever. Reset by any progress, so an active transfer is
+    /// never cut off. Expiry emits no `Done` (nothing was delivered).
+    pub send_ttl: Duration,
 }
 
 /// A blob store that is either in-memory or on-disk; both deref to `Store`.
@@ -104,6 +116,10 @@ struct SendSlot {
     cancel: CancellationToken,
     done: CancellationToken,
     cancelled: bool,
+    /// Last time this send made progress (or was claimed, before any). The TTL
+    /// reaper reads it: an idle send past `send_ttl` expires; progress keeps it
+    /// alive.
+    last_active: Instant,
     // Pins imported content against GC for the send's lifetime.
     _pins: Vec<TempTag>,
 }
@@ -127,6 +143,7 @@ struct Inner {
     emit: Arc<dyn Emitter>,
     dest_root: PathBuf,
     broker_url: String,
+    send_ttl: Duration,
     // Kept alive for the process; dropping it stops serving.
     _router: Router,
     slots: Mutex<Slots>,
@@ -140,6 +157,15 @@ impl Inner {
 
     fn next_id(&self, kind: Kind) -> String {
         format!("{}-{}", kind.as_str(), self.seq.fetch_add(1, Ordering::Relaxed) + 1)
+    }
+
+    /// Mark the live send `id` as active now, so the TTL reaper does not expire
+    /// a transfer that is still moving bytes.
+    fn touch_send(&self, id: &str) {
+        let mut slots = self.slots.lock().unwrap();
+        if let Some(s) = slots.send.as_mut().filter(|s| s.id == id) {
+            s.last_active = Instant::now();
+        }
     }
 }
 
@@ -156,6 +182,12 @@ impl Manager {
         std::fs::create_dir_all(&config.dest_root)?;
 
         let endpoint = build_endpoint(&config.relay, config.bind_addr.as_deref()).await?;
+        // Warm the endpoint (relay pick + holepunch) in the background, so the
+        // first send's ticket address is ready at once instead of the send having
+        // to block on `wait_for_addr` while discovery runs. This is also what
+        // makes a trusted-device offer go out promptly rather than after warm-up.
+        let warm = endpoint.clone();
+        tokio::spawn(async move { warm.online().await });
         let store = match &config.store_path {
             Some(path) => {
                 std::fs::create_dir_all(path)?;
@@ -183,6 +215,7 @@ impl Manager {
             emit,
             dest_root: config.dest_root,
             broker_url: config.broker_url,
+            send_ttl: config.send_ttl,
             _router: router,
             slots: Mutex::new(Slots::default()),
             seq: AtomicU64::new(0),
@@ -209,7 +242,7 @@ impl Manager {
         if paths.is_empty() {
             return Err(StartError::NoFiles);
         }
-        self.await_free_slot(Kind::Send).await?;
+        self.await_free_slot().await?;
 
         // Import files and build the collection before claiming the slot, so a
         // failure here doesn't leave a half-registered send.
@@ -226,7 +259,8 @@ impl Manager {
         let ticket = BlobTicket::new(addr, root, BlobFormat::HashSeq);
 
         let mut slots = self.inner.slots.lock().unwrap();
-        if slots.send.is_some() {
+        // Single active session: a live receive blocks a new send too.
+        if slots.send.is_some() || slots.recv.is_some() {
             return Err(StartError::Busy);
         }
         let id = self.inner.next_id(Kind::Send);
@@ -237,9 +271,14 @@ impl Manager {
             cancel: CancellationToken::new(),
             done: CancellationToken::new(),
             cancelled: false,
+            last_active: Instant::now(),
             _pins: pins,
         });
         drop(slots);
+
+        // Reap this send if it sits idle past the TTL (never accepted, or a peer
+        // that vanished mid-fetch) so it does not hold the slot and its pins.
+        tokio::spawn(expire_send_loop(Arc::downgrade(&self.inner), id.clone(), self.inner.send_ttl));
 
         tracing::info!(id = %id, files = paths.len(), total, "send: serving");
         Ok((id, ticket.to_string(), total))
@@ -257,14 +296,28 @@ impl Manager {
     /// The folder is named after a fresh code phrase — a pasted ticket carries
     /// nothing a person would recognise.
     pub async fn receive(&self, ticket: String) -> Result<String, StartError> {
-        self.receive_labelled(ticket, None, &codegen::generate()).await
+        self.receive_labelled(ticket, None, &codegen::generate(), None).await
     }
 
     /// Receive from a named peer: the files land under `<dest>/<peer>/<tag>`.
-    /// Used by the trusted-device path, where the sender has a name worth
-    /// filing the transfer under.
+    /// The trusted path uses `receive_from_notify` (it also signals completion);
+    /// this plain variant is kept for a named receive that needs no ack.
+    #[allow(dead_code)]
     pub async fn receive_from(&self, ticket: String, peer: &str) -> Result<String, StartError> {
-        self.receive_labelled(ticket, Some(peer), &codegen::generate()).await
+        self.receive_labelled(ticket, Some(peer), &codegen::generate(), None).await
+    }
+
+    /// Like `receive_from`, but runs `on_complete` once the content is fully
+    /// received and exported (not on cancel or failure). The trusted path passes
+    /// a closure that signs and sends a completion back to the sender.
+    pub async fn receive_from_notify(
+        &self,
+        ticket: String,
+        peer: &str,
+        on_complete: impl FnOnce() + Send + 'static,
+    ) -> Result<String, StartError> {
+        self.receive_labelled(ticket, Some(peer), &codegen::generate(), Some(Box::new(on_complete)))
+            .await
     }
 
     async fn receive_labelled(
@@ -272,12 +325,13 @@ impl Manager {
         ticket: String,
         peer: Option<&str>,
         tag: &str,
+        on_complete: Option<CompleteCb>,
     ) -> Result<String, StartError> {
         let ticket: BlobTicket = ticket.trim().parse().map_err(|_| StartError::BadCode)?;
-        self.await_free_slot(Kind::Receive).await?;
+        self.await_free_slot().await?;
         let (id, cancel, done) = self.claim_receive()?;
         let dest = receive_dest(&self.inner.dest_root, peer, tag);
-        self.spawn_receive(ticket, dest, id.clone(), cancel, done);
+        self.spawn_receive(ticket, dest, id.clone(), cancel, done, on_complete);
         Ok(id)
     }
 
@@ -286,7 +340,8 @@ impl Manager {
     /// and its cancel/done tokens.
     fn claim_receive(&self) -> Result<(String, CancellationToken, CancellationToken), StartError> {
         let mut slots = self.inner.slots.lock().unwrap();
-        if slots.recv.is_some() {
+        // Single active session: a live send blocks a new receive too.
+        if slots.recv.is_some() || slots.send.is_some() {
             return Err(StartError::Busy);
         }
         let id = self.inner.next_id(Kind::Receive);
@@ -309,11 +364,12 @@ impl Manager {
         id: String,
         cancel: CancellationToken,
         done: CancellationToken,
+        on_complete: Option<CompleteCb>,
     ) {
         tracing::info!(id = %id, dest = %dest.display(), "receive: starting");
         let inner = self.inner.clone();
         tokio::spawn(async move {
-            run_receive(inner, ticket, dest, id, cancel, done).await;
+            run_receive(inner, ticket, dest, id, cancel, done, on_complete).await;
         });
     }
 
@@ -328,8 +384,20 @@ impl Manager {
 
         let inner = self.inner.clone();
         let run_id = id.clone();
+        // The send's done token ends the completion wait the moment the send
+        // finishes any other way.
+        let done = self
+            .inner
+            .slots
+            .lock()
+            .unwrap()
+            .send
+            .as_ref()
+            .filter(|s| s.id == id)
+            .map(|s| s.done.clone())
+            .unwrap_or_default();
         tokio::spawn(async move {
-            if let Err(err) = rendezvous_send(&inner, &phrase, &ticket).await {
+            if let Err(err) = rendezvous_send(&inner, &phrase, &ticket, &run_id, done).await {
                 tracing::error!(id = %run_id, error = %err, "quick share: rendezvous failed");
                 let mut slots = inner.slots.lock().unwrap();
                 if slots.send.as_ref().is_some_and(|s| s.id == run_id) {
@@ -354,7 +422,7 @@ impl Manager {
         if !codegen::looks_like_code(&normalized) {
             return Err(StartError::BadCode);
         }
-        self.await_free_slot(Kind::Receive).await?;
+        self.await_free_slot().await?;
         let (id, cancel, done) = self.claim_receive()?;
 
         let inner = self.inner.clone();
@@ -373,11 +441,24 @@ impl Manager {
                     inner.slots.lock().unwrap().recv = None;
                     done.cancel();
                 }
-                Some(Ok(ticket)) => {
+                Some(Ok((ticket, mailbox, key))) => {
                     // The code phrase is this transfer's name: single-use, and
                     // the one thing both sides recognise.
                     let dest = receive_dest(&inner.dest_root, None, &normalized);
-                    run_receive(inner.clone(), ticket, dest, run_id, cancel, done).await;
+                    // On full receipt, seal a "done" back over the same mailbox
+                    // so the sender finishes even if this fetch moved few or no
+                    // bytes (dedup/resume). If sealing fails the mailbox just
+                    // closes and the sender falls back to byte count / TTL.
+                    let on_complete: Option<CompleteCb> =
+                        pake::seal(&key, b"done").ok().map(|sealed| {
+                            let mut mailbox = mailbox;
+                            Box::new(move || {
+                                tokio::spawn(async move {
+                                    let _ = mailbox.send(&sealed).await;
+                                });
+                            }) as CompleteCb
+                        });
+                    run_receive(inner.clone(), ticket, dest, run_id, cancel, done, on_complete).await;
                 }
                 Some(Err(err)) => {
                     inner.slots.lock().unwrap().recv = None;
@@ -419,20 +500,49 @@ impl Manager {
         }
     }
 
-    /// Wait out a same-kind transfer that was cancelled but has not finished
-    /// unwinding, so the next one can take its place. A live, non-cancelled
-    /// transfer is not waited for — that becomes `Busy` at the claim check.
-    async fn await_free_slot(&self, kind: Kind) -> Result<(), StartError> {
+    /// Which kind of transfer currently holds the session, if any. `None` means
+    /// idle. Used by the pairing layer to decide whether to auto-decline an
+    /// incoming offer (the device runs one transfer at a time).
+    pub fn busy_kind(&self) -> Option<Kind> {
+        let slots = self.inner.slots.lock().unwrap();
+        if slots.send.is_some() {
+            Some(Kind::Send)
+        } else if slots.recv.is_some() {
+            Some(Kind::Receive)
+        } else {
+            None
+        }
+    }
+
+    /// Whether a transfer (send or receive) currently holds the session.
+    pub fn is_busy(&self) -> bool {
+        self.busy_kind().is_some()
+    }
+
+    /// Finish the live send with id `id` — the receiver reported it has the
+    /// content in full. Idempotent: a no-op if that send already finished (by
+    /// byte count or cancel) or never existed, so a completion racing the
+    /// byte-count path cannot emit a second `Done`.
+    pub fn complete_send(&self, id: &str) {
+        finish_send_by_id(&self.inner, id);
+    }
+
+    /// Wait out a transfer of EITHER kind that was cancelled but has not finished
+    /// unwinding, so the next one can take the single session. A live,
+    /// non-cancelled transfer is not waited for — that becomes `Busy` at the
+    /// claim check.
+    async fn await_free_slot(&self) -> Result<(), StartError> {
         let done = {
             let slots = self.inner.slots.lock().unwrap();
-            let slot_done = match kind {
-                Kind::Send => slots.send.as_ref().filter(|s| s.cancelled).map(|s| s.done.clone()),
-                Kind::Receive => slots.recv.as_ref().filter(|s| s.cancelled).map(|s| s.done.clone()),
-            };
-            slot_done
+            slots
+                .recv
+                .as_ref()
+                .filter(|s| s.cancelled)
+                .map(|s| s.done.clone())
+                .or_else(|| slots.send.as_ref().filter(|s| s.cancelled).map(|s| s.done.clone()))
         };
         let Some(done) = done else { return Ok(()) };
-        tracing::info!(kind = kind.as_str(), "waiting for cancelled transfer to unwind");
+        tracing::info!("waiting for a cancelled transfer to unwind");
         match tokio::time::timeout(CANCEL_GRACE, done.cancelled()).await {
             Ok(()) => Ok(()),
             Err(_) => Err(StartError::Unwinding),
@@ -524,6 +634,7 @@ async fn run_receive(
     id: String,
     cancel: CancellationToken,
     done: CancellationToken,
+    on_complete: Option<CompleteCb>,
 ) {
     let result = tokio::select! {
         biased;
@@ -539,6 +650,11 @@ async fn run_receive(
         Some(Ok(())) => {
             tracing::info!(id = %id, "receive: complete");
             inner.emit(Event::Done { id: id.clone(), kind: Kind::Receive, dest: dest.to_string_lossy().into_owned() });
+            // Tell the sender we have it all — its passive send may not otherwise
+            // know (a deduped/resumed receive moves fewer bytes than it holds).
+            if let Some(cb) = on_complete {
+                cb();
+            }
         }
         Some(Err(err)) => {
             tracing::error!(id = %id, error = %err, "receive: failed");
@@ -738,6 +854,7 @@ async fn provider_pump(mut rx: mpsc::Receiver<ProviderMessage>, inner: Weak<Inne
                                 index,
                                 file_count,
                             ) {
+                                inner_arc.touch_send(&id);
                                 inner_arc.emit(Event::Progress {
                                     id: id.clone(),
                                     kind: Kind::Send,
@@ -783,6 +900,57 @@ async fn provider_pump(mut rx: mpsc::Receiver<ProviderMessage>, inner: Weak<Inne
             }
         });
     }
+}
+
+/// Expire a passive send that sits idle past the TTL. Sleeps until the send's
+/// idle time would reach the TTL, re-checking on each wake (progress pushes the
+/// deadline out). When the deadline passes it frees the slot — dropping the pins
+/// so the content can be GC'd — cancels the serve, and signals `done` so a
+/// waiting retry can proceed. It emits no `Done`: an expired send delivered
+/// nothing. Exits early once the send has finished or been cancelled by any
+/// other path (the slot is gone or a different id holds it).
+async fn expire_send_loop(inner: Weak<Inner>, id: String, ttl: Duration) {
+    loop {
+        let wait = {
+            let Some(inner) = inner.upgrade() else { return };
+            let slots = inner.slots.lock().unwrap();
+            match slots.send.as_ref() {
+                Some(s) if s.id == id && !s.cancelled => ttl.checked_sub(s.last_active.elapsed()),
+                _ => return, // completed, cancelled, or replaced
+            }
+        };
+        match wait {
+            // Still within the idle window: sleep the remainder and re-check.
+            Some(remaining) if !remaining.is_zero() => tokio::time::sleep(remaining).await,
+            // Idle past the TTL — expire it.
+            _ => {
+                let Some(inner) = inner.upgrade() else { return };
+                let mut slots = inner.slots.lock().unwrap();
+                if let Some(s) = slots.send.as_ref().filter(|s| s.id == id && !s.cancelled) {
+                    let (cancel, done) = (s.cancel.clone(), s.done.clone());
+                    slots.send = None; // drops the pins with the slot
+                    drop(slots);
+                    cancel.cancel();
+                    done.cancel();
+                    tracing::info!(id = %id, "send: expired (idle past ttl)");
+                }
+                return;
+            }
+        }
+    }
+}
+
+/// Finish the live send with id `id`, reading its total/file-count from the
+/// slot. Idempotent: a no-op if that send already finished or never existed.
+fn finish_send_by_id(inner: &Inner, id: &str) {
+    let (total, file_count) = {
+        let slots = inner.slots.lock().unwrap();
+        match &slots.send {
+            Some(s) if s.id == id => (s.total, s.names.len() as u64),
+            _ => return,
+        }
+    };
+    finish_send(inner, id, total, file_count);
 }
 
 /// Emit the final 100% progress + Done for a send and free the slot.
@@ -855,8 +1023,18 @@ fn sanitize_name(name: &str) -> String {
 // ---- quick-share rendezvous (SPAKE2 over the broker mailbox) ----
 
 /// Sender side: join the mailbox, run SPAKE2, and hand the receiver the iroh
-/// ticket sealed under the derived key.
-async fn rendezvous_send(inner: &Inner, code: &str, ticket: &str) -> Result<(), TransferError> {
+/// ticket sealed under the derived key. Then hold the mailbox open until the
+/// receiver returns a sealed "done", which finishes a deduped or resumed send
+/// whose byte counter never reaches the total. The wait ends the moment the
+/// send finishes by any path (`done` fires from the byte-count path, a cancel,
+/// or the send-slot TTL), so it can never outlive the send.
+async fn rendezvous_send(
+    inner: &Inner,
+    code: &str,
+    ticket: &str,
+    id: &str,
+    done: CancellationToken,
+) -> Result<(), TransferError> {
     let room = codegen::room(code).ok_or_else(|| TransferError::of(TransferErrorCode::Other))?;
     let mut mailbox = client::join(&inner.broker_url, &room).await.map_err(broker_err)?;
     let (handshake, my_msg) = pake::start(code, &room);
@@ -866,12 +1044,31 @@ async fn rendezvous_send(inner: &Inner, code: &str, ticket: &str) -> Result<(), 
     let sealed = pake::seal(&key, ticket.as_bytes())
         .map_err(|_| TransferError::of(TransferErrorCode::Other))?;
     mailbox.send(&sealed).await.map_err(broker_err)?;
+
+    // The ticket is delivered — the PAKE cannot fail the send from here. Wait for
+    // the receiver's completion, but stop as soon as the send finishes some other
+    // way. A frame that opens under the shared key is the ack; anything else (a
+    // dropped connection, an unopenable frame) just ends the wait.
+    tokio::select! {
+        _ = done.cancelled() => {}
+        frame = mailbox.recv() => {
+            if frame.is_ok_and(|f| pake::open(&key, &f).is_ok()) {
+                finish_send_by_id(inner, id);
+            }
+        }
+    }
     Ok(())
 }
 
 /// Receiver side: join the mailbox, run SPAKE2, and decrypt the sender's ticket.
-/// A wrong code fails the PAKE/AEAD, so no ticket is ever revealed.
-async fn rendezvous_receive(inner: &Inner, code: &str, room: &str) -> Result<BlobTicket, TransferError> {
+/// A wrong code fails the PAKE/AEAD, so no ticket is ever revealed. The mailbox
+/// and derived key are handed back so the caller can seal a "done" over the same
+/// session once the content is received.
+async fn rendezvous_receive(
+    inner: &Inner,
+    code: &str,
+    room: &str,
+) -> Result<(BlobTicket, client::Mailbox, [u8; 32]), TransferError> {
     let mut mailbox = client::join(&inner.broker_url, room).await.map_err(broker_err)?;
     let (handshake, my_msg) = pake::start(code, room);
     mailbox.send(&my_msg).await.map_err(broker_err)?;
@@ -880,10 +1077,11 @@ async fn rendezvous_receive(inner: &Inner, code: &str, room: &str) -> Result<Blo
     let sealed = mailbox.recv().await.map_err(broker_err)?;
     let plaintext = pake::open(&key, &sealed).map_err(|_| wrong_code_err())?;
     let ticket = String::from_utf8(plaintext).map_err(|_| wrong_code_err())?;
-    ticket
+    let ticket = ticket
         .trim()
         .parse::<BlobTicket>()
-        .map_err(|_| TransferError::new(TransferErrorCode::BadTicket, "The sender's ticket was invalid."))
+        .map_err(|_| TransferError::new(TransferErrorCode::BadTicket, "The sender's ticket was invalid."))?;
+    Ok((ticket, mailbox, key))
 }
 
 /// Map a broker-client string error to a classified transfer error.
@@ -955,6 +1153,7 @@ mod tests {
                 relay: RelayConfig::DisableRelay,
                 bind_addr: Some("127.0.0.1:0".into()),
                 broker_url: "ws://127.0.0.1:1/ws".into(), // unused by these tests
+                send_ttl: Duration::from_secs(300), // long: these tests don't exercise expiry
             },
             emit,
         )
@@ -1425,6 +1624,117 @@ mod tests {
         out
     }
 
+    /// Single active session: a live send blocks a new receive on the same
+    /// device. A trusted offer waiting for accept is exactly this — a held send.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn a_live_send_blocks_a_new_receive() {
+        let tmp = tempfile::tempdir().unwrap();
+        let src = write_file(tmp.path(), "hold.bin", &vec![1u8; 100_000]);
+        let se = Collector::default();
+        let m = manager(tmp.path(), "m", Arc::new(se.clone())).await;
+
+        // The passive send holds the session (no receiver; the TTL is long here).
+        m.send(vec![src]).await.unwrap();
+        wait_for(&se, |e| e.iter().any(|x| matches!(x, Event::Code { .. }))).await;
+        let ticket = ticket_of(&se.events());
+
+        assert_eq!(m.receive(ticket).await.unwrap_err(), StartError::Busy);
+    }
+
+    /// Single active session: a live receive blocks a new send on the same
+    /// device. The receive holds the session by blocking in rendezvous for a
+    /// sender that never joins.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn a_live_receive_blocks_a_new_send() {
+        let tmp = tempfile::tempdir().unwrap();
+        let broker = spawn_mock_broker().await;
+        let m = quick_manager(tmp.path(), "m", &broker, Arc::new(Collector::default())).await;
+
+        // Claims the session, then blocks awaiting a peer that never comes.
+        m.quick_receive("4821-crayon-mimic-otter").await.unwrap();
+
+        let src = write_file(tmp.path(), "x.bin", &vec![2u8; 20_000]);
+        assert_eq!(m.send(vec![src]).await.unwrap_err(), StartError::Busy);
+    }
+
+    /// The session frees on a terminal event: a device can send once the receive
+    /// it just finished has released the session.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn session_frees_after_a_terminal_event() {
+        let tmp = tempfile::tempdir().unwrap();
+        let src = write_file(tmp.path(), "c.bin", &vec![3u8; 150_000]);
+        let se = Collector::default();
+        let re = Collector::default();
+        let sender = manager(tmp.path(), "s", Arc::new(se.clone())).await;
+        let receiver = manager(tmp.path(), "r", Arc::new(re.clone())).await;
+
+        sender.send(vec![src]).await.unwrap();
+        wait_for(&se, |e| e.iter().any(|x| matches!(x, Event::Code { .. }))).await;
+        receiver.receive(ticket_of(&se.events())).await.unwrap();
+        wait_for(&re, |e| e.iter().any(|x| matches!(x, Event::Done { .. }))).await;
+        wait_for_manager_idle(&receiver).await;
+
+        // Session free again → the receiver can now start a send.
+        let out = write_file(tmp.path(), "reply.bin", &vec![4u8; 40_000]);
+        receiver.send(vec![out]).await.unwrap();
+    }
+
+    /// A passive send no one fetches expires on the TTL — freeing the slot and
+    /// emitting no `Done` — while a send that keeps making progress is left
+    /// alone.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn idle_send_expires_but_active_send_survives() {
+        let tmp = tempfile::tempdir().unwrap();
+        let ttl = Duration::from_millis(200);
+        let se = Collector::default();
+        let sender = Manager::new(
+            Config {
+                store_path: Some(tmp.path().join("s")),
+                dest_root: tmp.path().join("s-dl"),
+                relay: RelayConfig::DisableRelay,
+                bind_addr: Some("127.0.0.1:0".into()),
+                broker_url: "ws://127.0.0.1:1/ws".into(),
+                send_ttl: ttl,
+            },
+            Arc::new(se.clone()),
+        )
+        .await
+        .unwrap();
+
+        // Never fetched: the send expires and frees the slot.
+        let src = write_file(tmp.path(), "idle.bin", &vec![1u8; 50_000]);
+        sender.send(vec![src]).await.unwrap();
+        let mut freed = false;
+        for _ in 0..200 {
+            if sender.inner.slots.lock().unwrap().send.is_none() {
+                freed = true;
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(25)).await;
+        }
+        assert!(freed, "an idle send should expire and free the slot");
+        // Expiry delivered nothing, so there is no send `Done`.
+        assert!(
+            !se.events().iter().any(|e| matches!(e, Event::Done { kind: Kind::Send, .. })),
+            "an expired send must not emit Done"
+        );
+
+        // The freed slot accepts a new send (not Busy).
+        let src2 = write_file(tmp.path(), "next.bin", &vec![2u8; 20_000]);
+        let id2 = sender.send(vec![src2]).await.unwrap();
+
+        // Keep it active — touch faster than the TTL over a span exceeding it —
+        // and it must not be reaped.
+        for _ in 0..8 {
+            tokio::time::sleep(ttl / 2).await;
+            sender.inner.touch_send(&id2);
+        }
+        assert!(
+            sender.inner.slots.lock().unwrap().send.is_some(),
+            "an actively-progressing send must not expire"
+        );
+    }
+
     // ---- quick share (code phrase over a mock broker + real iroh) ----
 
     async fn quick_manager(dir: &Path, name: &str, broker: &str, emit: Arc<dyn Emitter>) -> Manager {
@@ -1435,6 +1745,7 @@ mod tests {
                 relay: RelayConfig::DisableRelay,
                 bind_addr: Some("127.0.0.1:0".into()),
                 broker_url: broker.to_string(),
+                send_ttl: Duration::from_secs(300),
             },
             emit,
         )
@@ -1565,6 +1876,50 @@ mod tests {
             .expect("quick.bin was not exported");
         assert_eq!(std::fs::read(&file).unwrap(), payload);
         assert_eq!(file.parent().unwrap(), tmp.path().join("r-dl").join(&phrase));
+    }
+
+    /// The code-share twin of the trusted dedup regression: the second time the
+    /// same file is shared to the same receiver, its fetch moves ~no bytes
+    /// (BLAKE3 dedup), so the sender's byte counter never trips. Only the
+    /// receiver's sealed "done" over the mailbox finishes the send.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn deduped_quick_share_still_completes() {
+        let tmp = tempfile::tempdir().unwrap();
+        let broker = spawn_mock_broker().await;
+        let src = write_file(tmp.path(), "dup.bin", &vec![9u8; 250_000]);
+
+        let se = Collector::default();
+        let re = Collector::default();
+        let sender = quick_manager(tmp.path(), "s", &broker, Arc::new(se.clone())).await;
+        let receiver = quick_manager(tmp.path(), "r", &broker, Arc::new(re.clone())).await;
+
+        let send_dones = |e: &[Event]| {
+            e.iter().filter(|x| matches!(x, Event::Done { kind: Kind::Send, .. })).count()
+        };
+        let recv_dones = |e: &[Event]| {
+            e.iter().filter(|x| matches!(x, Event::Done { kind: Kind::Receive, .. })).count()
+        };
+        let latest_code = |c: &Collector| {
+            c.events().iter().rev().find_map(|e| match e {
+                Event::Code { code, .. } => Some(code.clone()),
+                _ => None,
+            })
+        };
+
+        for round in 1..=2 {
+            sender.quick_share(vec![src.clone()]).await.unwrap();
+            wait_for(&se, |e| {
+                e.iter().filter(|x| matches!(x, Event::Code { .. })).count() >= round
+            })
+            .await;
+            let phrase = latest_code(&se).unwrap();
+            receiver.quick_receive(&phrase).await.unwrap();
+            wait_for(&re, move |e| recv_dones(e) >= round).await;
+            // The crux: round 2 is deduped on the receiver, yet the sender still
+            // reaches a Send `Done` — via the sealed completion, not byte count.
+            wait_for(&se, move |e| send_dones(e) >= round).await;
+            wait_for_manager_idle(&receiver).await;
+        }
     }
 
     /// Live cross-language check: quick share over a REAL Go broker (mailbox

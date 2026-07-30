@@ -72,6 +72,90 @@ func register(t *testing.T, url string, d device) *websocket.Conn {
 	return conn
 }
 
+// fpServerURLFast is fpServerURL with a fast keepalive so eviction is testable
+// in milliseconds rather than the production tens of seconds.
+func fpServerURLFast(t *testing.T, interval, timeout time.Duration) string {
+	t.Helper()
+	s := NewFpServer()
+	s.pingInterval = interval
+	s.pingTimeout = timeout
+	ts := httptest.NewServer(s.Handler())
+	t.Cleanup(ts.Close)
+	return "ws" + strings.TrimPrefix(ts.URL, "http") + "/fp"
+}
+
+// readLoop drains conn in the background, keeping it responsive (the WebSocket
+// library answers pings only while a read is in flight) and surfacing routed
+// messages on the returned channel.
+func readLoop(conn *websocket.Conn) <-chan FpMsg {
+	ch := make(chan FpMsg, 8)
+	go func() {
+		for {
+			var m FpMsg
+			if err := wsjson.Read(context.Background(), conn, &m); err != nil {
+				close(ch)
+				return
+			}
+			ch <- m
+		}
+	}()
+	return ch
+}
+
+// A registered device that stops reading cannot pong, so the heartbeat closes
+// it and frees its fingerprint slot for a fresh registration.
+func TestFpKeepaliveEvictsSilentConnection(t *testing.T) {
+	url := fpServerURLFast(t, 50*time.Millisecond, 50*time.Millisecond)
+	a := newDevice(t)
+	ca := register(t, url, a)
+	defer ca.CloseNow()
+
+	// Stay silent so no pong is sent; the broker pings, times out, and closes.
+	time.Sleep(300 * time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	start := time.Now()
+	if _, _, err := ca.Read(ctx); err == nil {
+		t.Fatal("expected the silent connection to be closed by the heartbeat")
+	} else if time.Since(start) > time.Second {
+		t.Fatalf("read did not return promptly (%v) — connection was not evicted", time.Since(start))
+	}
+
+	// The freed slot is immediately reusable: the same fingerprint re-registers.
+	reuse := register(t, url, a)
+	reuse.CloseNow()
+}
+
+// A registered device that keeps reading (idle but responsive) is pinged,
+// pongs, and stays reachable well past the heartbeat window.
+func TestFpKeepaliveIdleResponsiveStaysRegistered(t *testing.T) {
+	url := fpServerURLFast(t, 50*time.Millisecond, 50*time.Millisecond)
+	a := newDevice(t)
+	b := newDevice(t)
+	ca := register(t, url, a)
+	defer ca.CloseNow()
+	cb := register(t, url, b)
+	defer cb.CloseNow()
+	aMsgs := readLoop(ca) // A idle but responsive across the window
+	_ = readLoop(cb)      // B likewise, so it survives to probe A
+
+	// Let several heartbeat windows pass, then B routes a signal to A.
+	time.Sleep(400 * time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := wsjson.Write(ctx, cb, FpMsg{Type: fpSignal, To: a.fingerprint(), Blob: []byte("still-here")}); err != nil {
+		t.Fatalf("send: %v", err)
+	}
+	select {
+	case m, ok := <-aMsgs:
+		if !ok || m.Type != fpSignal || string(m.Blob) != "still-here" {
+			t.Fatalf("A got (%+v, ok=%v), want the routed signal", m, ok)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("A received nothing — it was evicted while idle but responsive")
+	}
+}
+
 func TestFpRoutesSignalByFingerprint(t *testing.T) {
 	url := fpServerURL(t)
 	a := newDevice(t)

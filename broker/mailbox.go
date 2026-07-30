@@ -15,6 +15,7 @@ import (
 	"log/slog"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
@@ -61,10 +62,17 @@ type room struct {
 type Server struct {
 	mu    sync.Mutex
 	rooms map[string]*room
+	// Keepalive cadence; seeded from the defaults, overridable in tests.
+	pingInterval time.Duration
+	pingTimeout  time.Duration
 }
 
 func New() *Server {
-	return &Server{rooms: make(map[string]*room)}
+	return &Server{
+		rooms:        make(map[string]*room),
+		pingInterval: defaultPingInterval,
+		pingTimeout:  defaultPingTimeout,
+	}
 }
 
 func (s *Server) Handler() http.Handler {
@@ -77,7 +85,9 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 		return // Accept already wrote the response
 	}
 	defer conn.CloseNow()
-	ctx := r.Context()
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
+	go keepalive(ctx, cancel, conn, s.pingInterval, s.pingTimeout)
 
 	// First message must be a join naming a non-empty room.
 	var join Msg

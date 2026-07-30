@@ -92,9 +92,13 @@ pub struct PairingOfferEvent {
 #[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
 pub struct PairingAccepted;
 
-/// The peer declined a trusted-device offer.
+/// The peer declined a trusted-device offer. `busy` is true when it was an
+/// automatic busy-decline (they were mid-transfer), false for a deliberate "no".
 #[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
-pub struct PairingDeclined;
+#[serde(rename_all = "camelCase")]
+pub struct PairingDeclined {
+    pub busy: bool,
+}
 
 /// A device redeemed a code this device is showing and awaits confirmation
 /// before it is trusted. `sas` is the short auth string to compare; `via` is how

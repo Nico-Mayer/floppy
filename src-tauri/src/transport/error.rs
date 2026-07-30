@@ -14,10 +14,11 @@ use std::fmt;
 /// Errors returned synchronously when starting or cancelling a transfer.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum StartError {
-    /// A transfer of the same kind is already running and was not cancelled.
+    /// A transfer is already running (send or receive — the device runs one at a
+    /// time) and was not cancelled.
     Busy,
-    /// The previous transfer of this kind was cancelled but has not finished
-    /// stopping within the grace period. Retry shortly.
+    /// The previous transfer was cancelled but has not finished stopping within
+    /// the grace period. Retry shortly.
     Unwinding,
     /// `send` was called with an empty path list.
     NoFiles,

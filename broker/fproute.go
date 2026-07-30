@@ -12,6 +12,7 @@ import (
 	"log/slog"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
@@ -50,10 +51,17 @@ func (c *fpClient) send(ctx context.Context, m FpMsg) error {
 type FpServer struct {
 	mu      sync.RWMutex
 	clients map[string]*fpClient
+	// Keepalive cadence; seeded from the defaults, overridable in tests.
+	pingInterval time.Duration
+	pingTimeout  time.Duration
 }
 
 func NewFpServer() *FpServer {
-	return &FpServer{clients: make(map[string]*fpClient)}
+	return &FpServer{
+		clients:      make(map[string]*fpClient),
+		pingInterval: defaultPingInterval,
+		pingTimeout:  defaultPingTimeout,
+	}
 }
 
 func (s *FpServer) Handler() http.Handler {
@@ -66,7 +74,9 @@ func (s *FpServer) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer conn.CloseNow()
-	ctx := r.Context()
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
+	go keepalive(ctx, cancel, conn, s.pingInterval, s.pingTimeout)
 
 	// First message must be a valid registration.
 	var reg FpMsg

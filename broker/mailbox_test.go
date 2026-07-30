@@ -54,6 +54,47 @@ func testServer(t *testing.T) string {
 	return "ws" + strings.TrimPrefix(ts.URL, "http") + "/ws"
 }
 
+// mailboxURLFast is testServer with a fast keepalive so eviction is testable in
+// milliseconds.
+func mailboxURLFast(t *testing.T, interval, timeout time.Duration) string {
+	t.Helper()
+	s := New()
+	s.pingInterval = interval
+	s.pingTimeout = timeout
+	ts := httptest.NewServer(s.Handler())
+	t.Cleanup(ts.Close)
+	return "ws" + strings.TrimPrefix(ts.URL, "http") + "/ws"
+}
+
+// A party that joins a room then goes silent is evicted by the heartbeat,
+// freeing the room slot so two fresh parties can still pair there.
+func TestMailboxKeepaliveEvictsSilentJoiner(t *testing.T) {
+	url := mailboxURLFast(t, 50*time.Millisecond, 50*time.Millisecond)
+	// One silent joiner takes a slot in the room, then stops responding.
+	c1 := dial(t, url, "room-z")
+	defer c1.CloseNow()
+
+	time.Sleep(300 * time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	start := time.Now()
+	if _, _, err := c1.Read(ctx); err == nil {
+		t.Fatal("expected the silent joiner to be closed by the heartbeat")
+	} else if time.Since(start) > time.Second {
+		t.Fatalf("read did not return promptly (%v) — joiner was not evicted", time.Since(start))
+	}
+
+	// The room slot is free again: two fresh parties pair without hitting "full".
+	a := dial(t, url, "room-z")
+	defer a.CloseNow()
+	b := dial(t, url, "room-z")
+	defer b.CloseNow()
+	send(t, a, []byte("after-eviction"))
+	if got := recv(t, b); string(got.Data) != "after-eviction" {
+		t.Fatalf("b got %q, want the room reusable after eviction", got.Data)
+	}
+}
+
 func TestMailboxRelaysBothDirections(t *testing.T) {
 	url := testServer(t)
 	a := dial(t, url, "7-crayon-mimic")

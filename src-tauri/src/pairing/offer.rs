@@ -41,14 +41,42 @@ pub struct Offer {
     pub sig: Vec<u8>,
 }
 
+/// Why an offer was declined. Distinguishes a user's "no" from a device that was
+/// busy with another transfer or an unanswered prompt, so the sender can say
+/// "they're busy, try again" instead of "they said no". `None` on an accept.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DeclineReason {
+    /// The user declined.
+    Manual,
+    /// The device was busy (another transfer, or an offer prompt already open).
+    Busy,
+}
+
 /// The receiver's signed answer to an offer, authenticated the same way — the
 /// sender checks trust + signature before acting on `accept`, so a third party
-/// cannot spoof an acceptance.
+/// cannot spoof an acceptance. A decline carries a `reason`; an accept sets it
+/// to `None`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Response {
     pub from: PublicKey,
     pub transfer_id: String,
     pub accept: bool,
+    #[serde(default)]
+    pub reason: Option<DeclineReason>,
+    pub sig: Vec<u8>,
+}
+
+/// The receiver's signed "I have it all" for an accepted transfer, sent after
+/// the content is fully received and exported. It is what completes a passive
+/// send whose byte counter never reaches the total — a deduped or resumed
+/// receive moves fewer bytes than the send holds (sometimes zero), so the
+/// sender cannot tell it finished from served bytes alone. Authenticated like a
+/// response, so a third party cannot forge a completion.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Completion {
+    pub from: PublicKey,
+    pub transfer_id: String,
     pub sig: Vec<u8>,
 }
 
@@ -78,16 +106,29 @@ impl Identity {
         o
     }
 
-    /// Build and sign a response.
-    pub fn sign_response(&self, transfer_id: &str, accept: bool) -> Response {
+    /// Build and sign a response. `reason` accompanies a decline (`accept =
+    /// false`) and is `None` on an accept.
+    pub fn sign_response(&self, transfer_id: &str, accept: bool, reason: Option<DeclineReason>) -> Response {
         let mut r = Response {
             from: self.public(),
             transfer_id: transfer_id.to_string(),
             accept,
+            reason,
             sig: Vec::new(),
         };
         r.sig = self.sign(&r.signing_bytes());
         r
+    }
+
+    /// Build and sign a completion for a received transfer.
+    pub fn sign_completion(&self, transfer_id: &str) -> Completion {
+        let mut c = Completion {
+            from: self.public(),
+            transfer_id: transfer_id.to_string(),
+            sig: Vec::new(),
+        };
+        c.sig = self.sign(&c.signing_bytes());
+        c
     }
 }
 
@@ -139,6 +180,38 @@ impl Response {
         append_bytes(&mut b, &self.from.kex);
         append_bytes(&mut b, self.transfer_id.as_bytes());
         b.push(self.accept as u8);
+        // The decline reason is signed too, so a busy auto-decline cannot be
+        // rewritten into a user decline (or vice versa) in flight.
+        b.push(match self.reason {
+            None => 0,
+            Some(DeclineReason::Manual) => 1,
+            Some(DeclineReason::Busy) => 2,
+        });
+        b
+    }
+}
+
+impl Completion {
+    pub fn verify(&self, trust: &TrustStore) -> Result<(), VerifyError> {
+        if !trust.trusted(&self.from) {
+            return Err(VerifyError::Untrusted);
+        }
+        if verify(&self.from, &self.signing_bytes(), &self.sig) {
+            Ok(())
+        } else {
+            Err(VerifyError::BadSignature)
+        }
+    }
+
+    /// The bytes the signature covers. A trailing domain byte separates a
+    /// completion from a response over the same transfer id, so neither
+    /// signature can ever be replayed as the other.
+    fn signing_bytes(&self) -> Vec<u8> {
+        let mut b = Vec::new();
+        append_bytes(&mut b, &self.from.sign);
+        append_bytes(&mut b, &self.from.kex);
+        append_bytes(&mut b, self.transfer_id.as_bytes());
+        b.push(0xC0);
         b
     }
 }
@@ -207,11 +280,15 @@ mod tests {
         let receiver = ident();
         let trust = TrustStore::in_memory();
         trust.add(receiver.public(), "receiver").unwrap();
-        let ok = receiver.sign_response("t1", true);
+        let ok = receiver.sign_response("t1", true, None);
         assert_eq!(ok.verify(&trust), Ok(()));
 
+        // A decline carries a reason and still verifies.
+        let busy = receiver.sign_response("t1", false, Some(DeclineReason::Busy));
+        assert_eq!(busy.verify(&trust), Ok(()));
+
         let stranger = ident();
-        let spoof = stranger.sign_response("t1", true);
+        let spoof = stranger.sign_response("t1", true, None);
         assert_eq!(spoof.verify(&trust), Err(VerifyError::Untrusted));
     }
 }

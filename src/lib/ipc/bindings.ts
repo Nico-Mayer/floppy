@@ -105,8 +105,13 @@ export type FileEntry = {
 /**  The peer accepted a trusted-device offer. */
 export type PairingAccepted = null;
 
-/**  The peer declined a trusted-device offer. */
-export type PairingDeclined = null;
+/**
+ *  The peer declined a trusted-device offer. `busy` is true when it was an
+ *  automatic busy-decline (they were mid-transfer), false for a deliberate "no".
+ */
+export type PairingDeclined = {
+	busy: boolean,
+};
 
 /**  A pairing/signalling error surfaced as a toast. */
 export type PairingError = {

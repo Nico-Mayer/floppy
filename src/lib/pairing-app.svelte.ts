@@ -65,9 +65,9 @@ class PairingApp {
 				void goto(resolve('/'))
 				toast.success('They said yes')
 			}),
-			events.pairingDeclined.listen(() => {
+			events.pairingDeclined.listen((e) => {
 				this.#resetPendingSend()
-				toast.info('They turned it down')
+				toast.info(e.payload.busy ? "They're busy. Try again in a bit." : 'They turned it down')
 			}),
 			events.pairingError.listen((e) => {
 				this.#resetPendingSend()
