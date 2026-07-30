@@ -42,6 +42,9 @@ type Links = Arc<Mutex<HashMap<String, LinkSession>>>;
 /// Opener-side waiters: room → the channel `open_pair_link` blocks on for the
 /// initiator's SPAKE2 reply.
 type Waiters = Arc<Mutex<HashMap<String, oneshot::Sender<Vec<u8>>>>>;
+/// Initiator-side pairings awaiting the user's confirm: fingerprint → the peer's
+/// verified identity + the name it suggested. Trust is written only on confirm.
+type PendingPairs = Arc<Mutex<HashMap<String, (PublicKey, String)>>>;
 
 /// What the service tells the UI. Translated to frontend events by the caller.
 pub enum PairingEvent {
@@ -51,6 +54,9 @@ pub enum PairingEvent {
     Accepted,
     /// The peer declined our offer.
     Declined,
+    /// A device completed the pairing handshake against a link we are showing
+    /// and awaits our confirmation before we trust it.
+    Request { fingerprint: String, suggested_name: String },
     /// A one-sided pairing completed; `name` is the newly trusted device.
     Paired { name: String },
     /// A pairing/signalling error to surface (e.g. device offline).
@@ -74,6 +80,8 @@ pub struct PairingService {
     links: Links,
     /// Pairing exchanges this device initiated by opening a link.
     waiters: Waiters,
+    /// Completed handshakes awaiting the user's confirm before we trust them.
+    pending_pairs: PendingPairs,
 }
 
 impl PairingService {
@@ -100,6 +108,7 @@ impl PairingService {
             pending: Arc::new(Mutex::new(HashMap::new())),
             links: Arc::new(Mutex::new(HashMap::new())),
             waiters: Arc::new(Mutex::new(HashMap::new())),
+            pending_pairs: Arc::new(Mutex::new(HashMap::new())),
         };
 
         // Background loop: verify and dispatch every incoming signal.
@@ -112,6 +121,7 @@ impl PairingService {
             pending: svc.pending.clone(),
             links: svc.links.clone(),
             waiters: svc.waiters.clone(),
+            pending_pairs: svc.pending_pairs.clone(),
         }));
         Ok(svc)
     }
@@ -230,6 +240,31 @@ impl PairingService {
         self.trust.remove(fingerprint)
     }
 
+    /// Approve a pending pairing (raised as `PairingEvent::Request`): trust the
+    /// peer under `name` and report it paired. Unknown fingerprint means the
+    /// request expired or was already handled.
+    pub fn confirm_pair(&self, fingerprint: &str, name: &str) -> Result<(), String> {
+        let (key, _) = self
+            .pending_pairs
+            .lock()
+            .unwrap()
+            .remove(fingerprint)
+            .ok_or("no such pairing request")?;
+        self.trust.add(key, name)?;
+        self.emit.emit(PairingEvent::Paired { name: self.trust.get(fingerprint).map_or_else(|| name.to_string(), |d| d.name) });
+        Ok(())
+    }
+
+    /// Discard a pending pairing without trusting the peer.
+    pub fn dismiss_pair(&self, fingerprint: &str) {
+        self.pending_pairs.lock().unwrap().remove(fingerprint);
+    }
+
+    /// Rename an already-trusted device.
+    pub fn rename_device(&self, fingerprint: &str, name: &str) -> Result<(), String> {
+        self.trust.rename(fingerprint, name)
+    }
+
     /// Offer files to a trusted device. Serves the files, signs an offer with
     /// the resulting ticket, and routes it by fingerprint. The transfer starts
     /// when the peer accepts (it fetches the ticket); a decline cancels it.
@@ -288,6 +323,7 @@ struct Loop {
     pending: Arc<Mutex<HashMap<String, Offer>>>,
     links: Links,
     waiters: Waiters,
+    pending_pairs: PendingPairs,
 }
 
 async fn incoming_loop(mut l: Loop) {
@@ -363,32 +399,34 @@ fn on_pair_init(l: &Loop, init: PairInit) {
 }
 
 /// Initiator's handling of the opener's `PairSeal`: decrypt the identity the
-/// opener sealed under the PAKE key, trust it, and report the pairing done.
+/// opener sealed under the PAKE key, then hold it pending the user's confirm —
+/// trust is not written until they approve.
 fn on_pair_seal(l: &Loop, seal: PairSeal) {
     let Some((key, _)) = l.links.lock().unwrap().get(&seal.room).and_then(|s| s.established.clone())
     else {
         return; // no matching pending link
     };
-    let name = match open_pair_payload(&key, &seal.sealed, &l.trust) {
-        Ok(name) => name,
+    let (peer, suggested_name) = match decode_pair_payload(&key, &seal.sealed) {
+        Ok(v) => v,
         Err(e) => {
-            tracing::warn!(error = %e, "pairing: could not complete from seal");
+            tracing::warn!(error = %e, "pairing: could not open seal");
             return;
         }
     };
     l.links.lock().unwrap().remove(&seal.room);
-    l.emit.emit(PairingEvent::Paired { name });
+    let fingerprint = peer.fingerprint();
+    l.pending_pairs.lock().unwrap().insert(fingerprint.clone(), (peer, suggested_name.clone()));
+    l.emit.emit(PairingEvent::Request { fingerprint, suggested_name });
 }
 
-/// Decrypt and trust the identity an opener sealed under the PAKE key. Returns
-/// the newly trusted device's name.
-fn open_pair_payload(key: &[u8; 32], sealed: &[u8], trust: &TrustStore) -> Result<String, String> {
+/// Decrypt an opener's sealed identity under the PAKE key: returns the peer's
+/// public key and the name it suggested for itself.
+fn decode_pair_payload(key: &[u8; 32], sealed: &[u8]) -> Result<(PublicKey, String), String> {
     let payload = pake::open(key, sealed)?;
     let payload: PairPayload =
         serde_json::from_slice(&payload).map_err(|e| format!("bad pairing payload: {e}"))?;
     let peer = PublicKey::decode(&payload.id)?;
-    trust.add(peer, &payload.name)?;
-    Ok(payload.name)
+    Ok((peer, payload.name))
 }
 
 fn now_unix() -> i64 {
@@ -411,6 +449,7 @@ mod tests {
                 PairingEvent::Offer { transfer_id, .. } => format!("offer:{transfer_id}"),
                 PairingEvent::Accepted => "accepted".into(),
                 PairingEvent::Declined => "declined".into(),
+                PairingEvent::Request { fingerprint, .. } => format!("request:{fingerprint}"),
                 PairingEvent::Paired { name } => format!("paired:{name}"),
                 PairingEvent::Error { message } => format!("error:{message}"),
             };
@@ -643,21 +682,35 @@ mod tests {
         // Let both register with the broker before the exchange routes by fp.
         tokio::time::sleep(Duration::from_millis(200)).await;
 
-        // A shows a link; B opens it. One action → mutual trust.
+        // A shows a link; B opens it.
         let link = a.create_pair_link().unwrap();
         b.open_pair_link(&link).await.unwrap();
 
-        // A completes the exchange (over fp) and trusts B.
-        wait_until(Duration::from_secs(10), || {
-            a_ev.tags().iter().any(|t| t.starts_with("paired"))
-        })
-        .await;
-
         let a_fp = PublicKey::decode(&a.identity()).unwrap().fingerprint();
         let b_fp = PublicKey::decode(&b.identity()).unwrap().fingerprint();
-        assert!(a.trusted_devices().iter().any(|d| d.fingerprint() == b_fp), "A should trust B");
-        assert!(b.trusted_devices().iter().any(|d| d.fingerprint() == a_fp), "B should trust A");
+
+        // B (the opener) consents by opening: it trusts A right away.
+        assert!(b.trusted_devices().iter().any(|d| d.fingerprint() == a_fp), "B (opener) trusts A");
         assert!(b_ev.tags().iter().any(|t| t.starts_with("paired")), "B emits paired");
+
+        // A (showing the link) does NOT trust yet — it raises a confirm request.
+        wait_until(Duration::from_secs(10), || {
+            a_ev.tags().iter().any(|t| t == &format!("request:{b_fp}"))
+        })
+        .await;
+        assert!(!a.trusted_devices().iter().any(|d| d.fingerprint() == b_fp), "A must not trust B before confirm");
+
+        // A confirms with a chosen name → trust becomes mutual.
+        a.confirm_pair(&b_fp, "my-phone").unwrap();
+        let b_entry = a.trusted_devices().into_iter().find(|d| d.fingerprint() == b_fp);
+        assert_eq!(b_entry.map(|d| d.name).as_deref(), Some("my-phone"), "A trusts B under the given name");
+        assert!(a_ev.tags().iter().any(|t| t.starts_with("paired")), "A emits paired after confirm");
+
+        // Dismiss path: a pending request can be dropped without trusting.
+        let some_key = PublicKey::decode(&b.identity()).unwrap();
+        a.pending_pairs.lock().unwrap().insert("deadbeef".into(), (some_key, "x".into()));
+        a.dismiss_pair("deadbeef");
+        assert!(a.pending_pairs.lock().unwrap().get("deadbeef").is_none(), "dismiss drops the pending pair");
     }
 
     async fn wait_until<F: Fn() -> bool>(timeout: Duration, cond: F) {

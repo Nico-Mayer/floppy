@@ -68,6 +68,17 @@ impl TrustStore {
         self.save()
     }
 
+    /// Rename a trusted device and persist. Unknown fingerprint is an error so
+    /// the UI can tell a rename of a device that was un-trusted underneath it.
+    pub fn rename(&self, fingerprint: &str, name: &str) -> Result<(), String> {
+        {
+            let mut devices = self.devices.lock().unwrap();
+            let device = devices.get_mut(fingerprint).ok_or("no such trusted device")?;
+            device.name = normalize_name(name, &device.key);
+        }
+        self.save()
+    }
+
     /// Un-trust a device by fingerprint and persist. Unknown fingerprint is a
     /// no-op (still persists — keeps the call idempotent).
     pub fn remove(&self, fingerprint: &str) -> Result<(), String> {

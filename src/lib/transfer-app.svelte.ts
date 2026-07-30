@@ -102,6 +102,16 @@ class SendTransfer {
 		this.status = 'starting'
 	}
 
+	/**
+	 * The peer accepted a trusted offer. Leave the 'waiting for a yes' screen for
+	 * the accepted/connecting state; the first progress event takes it to
+	 * 'sending'. A trusted send emits no code phrase, so this (and progress) are
+	 * the only things that move it off 'starting'.
+	 */
+	accepted() {
+		if (this.status === 'starting') this.status = 'waiting'
+	}
+
 	async cancel() {
 		// CancelSend resolves as soon as croc has been told to stop, not once
 		// it has finished unwinding — so the button never appears to hang.
@@ -264,9 +274,13 @@ class TransferApp {
 			events.progressEvent.listen((e) => {
 				const p = e.payload
 				if (p.kind === 'send') {
-					// Progress only makes sense once the code phrase exists —
-					// never let a stray progress line hide the code screen.
-					if (this.send.status === 'waiting' || this.send.status === 'sending') {
+					// A code send's phrase event flips 'starting' → 'waiting' before
+					// any bytes move, so it is never in 'starting' here — this can't
+					// hide the code screen. A trusted send has no phrase event, so it
+					// sits in 'starting' until bytes move: treat the first progress as
+					// the signal that it is now sending.
+					const s = this.send.status
+					if (s === 'starting' || s === 'waiting' || s === 'sending') {
 						this.send.stats = p
 						this.send.progress = p.percent
 						this.send.status = 'sending'

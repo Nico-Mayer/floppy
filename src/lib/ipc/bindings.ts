@@ -19,6 +19,15 @@ export const commands = {
 	trust: (encoded: string, name: string) => typedError<null, string>(__TAURI_INVOKE("trust", { encoded, name })),
 	untrust: (fingerprint: string) => typedError<null, string>(__TAURI_INVOKE("untrust", { fingerprint })),
 	/**
+	 *  Approve a pending pairing (from a `PairingRequest`) and trust the peer under
+	 *  `name`.
+	 */
+	confirmPair: (fingerprint: string, name: string) => typedError<null, string>(__TAURI_INVOKE("confirm_pair", { fingerprint, name })),
+	/**  Discard a pending pairing without trusting the peer. */
+	dismissPair: (fingerprint: string) => typedError<null, string>(__TAURI_INVOKE("dismiss_pair", { fingerprint })),
+	/**  Rename an already-trusted device. */
+	renameDevice: (fingerprint: string, name: string) => typedError<null, string>(__TAURI_INVOKE("rename_device", { fingerprint, name })),
+	/**
 	 *  Create a one-sided pairing link (show as text/QR). Whoever opens it pairs
 	 *  with this device in a single step.
 	 */
@@ -41,6 +50,7 @@ export const events = {
 	pairingError: makeEvent<PairingError>("pairing-error"),
 	pairingOfferEvent: makeEvent<PairingOfferEvent>("pairing-offer-event"),
 	pairingPaired: makeEvent<PairingPaired>("pairing-paired"),
+	pairingRequest: makeEvent<PairingRequest>("pairing-request"),
 	progressEvent: makeEvent<ProgressEvent>("progress-event"),
 };
 
@@ -112,6 +122,15 @@ export type PairingPreview = {
 	fingerprint: string,
 	sas: string,
 	name: string,
+};
+
+/**
+ *  A device completed the pairing handshake against a link this device is
+ *  showing and awaits confirmation before it is trusted.
+ */
+export type PairingRequest = {
+	fingerprint: string,
+	suggestedName: string,
 };
 
 /**  Byte/file progress for the active transfer. */

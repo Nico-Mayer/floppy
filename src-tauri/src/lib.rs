@@ -14,7 +14,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use events::{CodeEvent, DeepLink, DoneEvent, ErrorEvent, PairingAccepted, PairingDeclined,
-    PairingError, PairingOfferEvent, PairingPaired, ProgressEvent, TransferKind};
+    PairingError, PairingOfferEvent, PairingPaired, PairingRequest, ProgressEvent, TransferKind};
 use specta_typescript::Number;
 use pairing::{PairingEmitter, PairingEvent, PairingService};
 use tauri::{AppHandle, Manager as _, State};
@@ -67,6 +67,9 @@ impl PairingEmitter for TauriPairingEmitter {
             .emit(app),
             P::Accepted => PairingAccepted.emit(app),
             P::Declined => PairingDeclined.emit(app),
+            P::Request { fingerprint, suggested_name } => {
+                PairingRequest { fingerprint, suggested_name }.emit(app)
+            }
             P::Paired { name } => PairingPaired { name }.emit(app),
             P::Error { message } => PairingError { message }.emit(app),
         };
@@ -361,6 +364,29 @@ async fn untrust(pairing: State<'_, PairingService>, fingerprint: String) -> Res
     pairing.untrust(&fingerprint)
 }
 
+/// Approve a pending pairing (from a `PairingRequest`) and trust the peer under
+/// `name`.
+#[tauri::command]
+#[specta::specta]
+async fn confirm_pair(pairing: State<'_, PairingService>, fingerprint: String, name: String) -> Result<(), String> {
+    pairing.confirm_pair(&fingerprint, &name)
+}
+
+/// Discard a pending pairing without trusting the peer.
+#[tauri::command]
+#[specta::specta]
+async fn dismiss_pair(pairing: State<'_, PairingService>, fingerprint: String) -> Result<(), String> {
+    pairing.dismiss_pair(&fingerprint);
+    Ok(())
+}
+
+/// Rename an already-trusted device.
+#[tauri::command]
+#[specta::specta]
+async fn rename_device(pairing: State<'_, PairingService>, fingerprint: String, name: String) -> Result<(), String> {
+    pairing.rename_device(&fingerprint, &name)
+}
+
 #[tauri::command]
 #[specta::specta]
 async fn accept(pairing: State<'_, PairingService>, transfer_id: String) -> Result<(), String> {
@@ -403,6 +429,9 @@ fn specta_builder() -> Builder<tauri::Wry> {
             preview_pairing,
             trust,
             untrust,
+            confirm_pair,
+            dismiss_pair,
+            rename_device,
             create_pair_link,
             open_pair_link,
             accept,
@@ -417,6 +446,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
             PairingOfferEvent,
             PairingAccepted,
             PairingDeclined,
+            PairingRequest,
             PairingPaired,
             PairingError,
             DeepLink,

@@ -1,10 +1,13 @@
 import {
 	Accept,
+	ConfirmPair,
 	CreatePairLink,
 	Decline,
+	DismissPair,
 	Identity,
 	OpenPairLink,
 	PreviewPairing,
+	RenameDevice,
 	SendTo,
 	Trust,
 	TrustedDevices,
@@ -12,7 +15,8 @@ import {
 	events,
 	type DeviceInfo,
 	type PairingOfferEvent,
-	type PairingPreview
+	type PairingPreview,
+	type PairingRequest
 } from '$lib/ipc'
 import { toast } from 'svelte-sonner'
 import { app } from './transfer-app.svelte'
@@ -29,6 +33,8 @@ class PairingApp {
 	devices = $state<DeviceInfo[]>([])
 	/** A verified incoming offer awaiting the user's accept/decline. */
 	incoming = $state<PairingOfferEvent | null>(null)
+	/** A device that paired against our link, awaiting our confirm-and-name. */
+	request = $state<PairingRequest | null>(null)
 
 	/** Whether the pairing backend came up (broker reachable, identity loaded). */
 	get available() {
@@ -46,8 +52,10 @@ class PairingApp {
 		const subs = [
 			events.pairingOfferEvent.listen((e) => (this.incoming = e.payload)),
 			events.pairingAccepted.listen(() => {
-				// On the sender the code/progress events take the send panel from
-				// here; nothing to do but clear a lingering incoming prompt.
+				// Move the send panel off "waiting for a yes" into the accepted state;
+				// progress events then carry it to sending/done. Also clear any
+				// lingering incoming prompt.
+				app.send.accepted()
 				this.incoming = null
 				toast.success('They said yes')
 			}),
@@ -59,6 +67,9 @@ class PairingApp {
 				this.#resetPendingSend()
 				toast.error(e.payload.message)
 			}),
+			// A device paired against a link we are showing: hold it for the
+			// confirm-and-name prompt instead of trusting silently.
+			events.pairingRequest.listen((e) => (this.request = e.payload)),
 			// One-sided pairing completed on this device (either side).
 			events.pairingPaired.listen((e) => {
 				void this.refresh()
@@ -151,6 +162,43 @@ class PairingApp {
 
 	async trust(encoded: string, name: string) {
 		await Trust(encoded, name)
+		await this.refresh()
+	}
+
+	/**
+	 * Approve a device that paired against our link, trusting it under `name`.
+	 * The pairing:paired event refreshes the list and toasts; clear the prompt.
+	 */
+	async confirmPair(name: string) {
+		const req = this.request
+		if (!req) return
+		this.request = null
+		try {
+			await ConfirmPair(req.fingerprint, name)
+		} catch (e) {
+			toast.error(`Could not add that device: ${e}`)
+		}
+	}
+
+	/** Turn down a device that paired against our link. */
+	async dismissPair() {
+		const req = this.request
+		if (!req) return
+		this.request = null
+		try {
+			await DismissPair(req.fingerprint)
+		} catch {
+			// Best-effort: the request is already gone from the UI either way.
+		}
+	}
+
+	/** Rename a trusted device. Refresh either way so the list matches the store. */
+	async rename(fingerprint: string, name: string) {
+		try {
+			await RenameDevice(fingerprint, name)
+		} catch (e) {
+			toast.error(`Could not rename that device: ${e}`)
+		}
 		await this.refresh()
 	}
 

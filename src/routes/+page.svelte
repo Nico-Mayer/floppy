@@ -1,6 +1,7 @@
 <script lang="ts">
 	import AccountSheet from '$lib/components/account/AccountSheet.svelte'
 	import IncomingOfferDialog from '$lib/components/IncomingOfferDialog.svelte'
+	import IncomingPairDialog from '$lib/components/IncomingPairDialog.svelte'
 	import ModeSwitcher from '$lib/components/ModeSwitcher.svelte'
 	import TitleBar from '$lib/components/TitleBar.svelte'
 	import ReceivePanel from '$lib/components/transfer/receive/ReceivePanel.svelte'
@@ -155,6 +156,7 @@
 
 <!-- Trusted-device incoming transfer prompt — opens whenever an offer arrives. -->
 <IncomingOfferDialog />
+<IncomingPairDialog />
 
 <!-- Ephemeral pairing notifications (accepted / declined / errors).
      The offset clears the titlebar: sonner's default is 24px from the viewport

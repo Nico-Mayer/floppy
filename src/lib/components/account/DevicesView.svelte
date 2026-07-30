@@ -2,6 +2,7 @@
 	import { QRCode } from '$lib/components/spell/qrcode'
 	import { Button } from '$lib/components/ui/button'
 	import * as Empty from '$lib/components/ui/empty'
+	import { Input } from '$lib/components/ui/input'
 	import * as Item from '$lib/components/ui/item'
 	import { Separator } from '$lib/components/ui/separator'
 	import { pairing } from '$lib/pairing-app.svelte'
@@ -12,10 +13,29 @@
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off'
 	import LaptopIcon from '@lucide/svelte/icons/laptop'
 	import MonitorSmartphoneIcon from '@lucide/svelte/icons/monitor-smartphone'
+	import PencilIcon from '@lucide/svelte/icons/pencil'
 	import PlusIcon from '@lucide/svelte/icons/plus'
 	import Trash2Icon from '@lucide/svelte/icons/trash-2'
+	import XIcon from '@lucide/svelte/icons/x'
 	import { Clipboard } from '$lib/ipc'
 	import AddDeviceDialog from './AddDeviceDialog.svelte'
+
+	// Inline rename: the fingerprint being edited, plus its draft name. Only one
+	// device edits at a time.
+	let editing = $state<string | null>(null)
+	let draft = $state('')
+
+	function startRename(fingerprint: string, name: string) {
+		editing = fingerprint
+		draft = name
+	}
+
+	async function saveRename() {
+		const fingerprint = editing
+		if (!fingerprint) return
+		editing = null
+		await pairing.rename(fingerprint, draft.trim())
+	}
 
 	// The QR is always mounted; a veil hides it by default so it isn't exposed
 	// to onlookers or a screen-share until the user reveals it on purpose.
@@ -149,22 +169,53 @@
 							<Item.Media variant="icon">
 								<LaptopIcon />
 							</Item.Media>
-							<Item.Content>
-								<Item.Title class="truncate">{device.name}</Item.Title>
-								<Item.Description class="truncate font-mono text-[10px]">
-									{device.fingerprint.slice(0, 16)}
-								</Item.Description>
-							</Item.Content>
-							<Item.Actions>
-								<Button
-									variant="destructive"
-									size="icon"
-									aria-label="Remove {device.name}"
-									onclick={() => pairing.untrust(device.fingerprint)}
-								>
-									<Trash2Icon />
-								</Button>
-							</Item.Actions>
+							{#if editing === device.fingerprint}
+								<Item.Content>
+									<Input
+										bind:value={draft}
+										aria-label="Rename {device.name}"
+										class="h-8"
+										autofocus
+										onkeydown={(e: KeyboardEvent) => {
+											if (e.key === 'Enter') saveRename()
+											if (e.key === 'Escape') (editing = null)
+										}}
+									/>
+								</Item.Content>
+								<Item.Actions>
+									<Button variant="ghost" size="icon" aria-label="Cancel rename" onclick={() => (editing = null)}>
+										<XIcon />
+									</Button>
+									<Button variant="secondary" size="icon" aria-label="Save name" onclick={saveRename}>
+										<CheckIcon />
+									</Button>
+								</Item.Actions>
+							{:else}
+								<Item.Content>
+									<Item.Title class="truncate">{device.name}</Item.Title>
+									<Item.Description class="truncate font-mono text-[10px]">
+										{device.fingerprint.slice(0, 16)}
+									</Item.Description>
+								</Item.Content>
+								<Item.Actions>
+									<Button
+										variant="ghost"
+										size="icon"
+										aria-label="Rename {device.name}"
+										onclick={() => startRename(device.fingerprint, device.name)}
+									>
+										<PencilIcon />
+									</Button>
+									<Button
+										variant="destructive"
+										size="icon"
+										aria-label="Remove {device.name}"
+										onclick={() => pairing.untrust(device.fingerprint)}
+									>
+										<Trash2Icon />
+									</Button>
+								</Item.Actions>
+							{/if}
 						</Item.Root>
 					{/each}
 				</Item.Group>
