@@ -1,9 +1,9 @@
 <script lang="ts">
 	import './layout.css'
-	import IncomingOfferDialog from '$lib/components/IncomingOfferDialog.svelte'
-	import IncomingPairDialog from '$lib/components/IncomingPairDialog.svelte'
-	import AppSidebar from '$lib/components/nav/AppSidebar.svelte'
-	import TitleBar from '$lib/components/TitleBar.svelte'
+	import IncomingOfferDialog from '$lib/components/prompts/IncomingOfferDialog.svelte'
+	import IncomingPairDialog from '$lib/components/prompts/IncomingPairDialog.svelte'
+	import AppSidebar from '$lib/components/shell/AppSidebar.svelte'
+	import TitleBar from '$lib/components/shell/TitleBar.svelte'
 	import * as Sidebar from '$lib/components/ui/sidebar'
 	import { Toaster } from '$lib/components/ui/sonner'
 	import { nav } from '$lib/nav.svelte'

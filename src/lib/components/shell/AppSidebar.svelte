@@ -3,7 +3,7 @@
 	import * as Dialog from '$lib/components/ui/dialog'
 	import * as Sidebar from '$lib/components/ui/sidebar'
 	import { useSidebar } from '$lib/components/ui/sidebar'
-	import LoginView from '$lib/components/account/LoginView.svelte'
+	import LoginView from '$lib/components/auth/LoginView.svelte'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import { resolve } from '$app/paths'
 	import { page } from '$app/state'

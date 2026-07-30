@@ -1,5 +1,5 @@
 <script lang="ts">
-	import ModeSwitcher from '$lib/components/ModeSwitcher.svelte'
+	import ModeSwitcher from '$lib/components/transfer/ModeSwitcher.svelte'
 	import ReceivePanel from '$lib/components/transfer/receive/ReceivePanel.svelte'
 	import SendPanel from '$lib/components/transfer/send/SendPanel.svelte'
 	import * as Alert from '$lib/components/ui/alert'

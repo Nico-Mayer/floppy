@@ -2,7 +2,7 @@
 	import BorderBeam from '$lib/components/magic/border-beam/border-beam.svelte'
 	import { QRCode } from '$lib/components/spell/qrcode'
 	import * as InputGroup from '$lib/components/ui/input-group'
-	import { Spinner } from '$lib/components/ui/spinner'
+	import WaitingHint from '../WaitingHint.svelte'
 	import { fast, motionOK, normal } from '$lib/motion'
 	import CheckIcon from '@lucide/svelte/icons/check'
 	import CopyIcon from '@lucide/svelte/icons/copy'
@@ -76,8 +76,5 @@
 		</div>
 	</div>
 
-	<div class="flex items-center gap-2 font-mono text-[11px] tracking-wider text-muted-foreground uppercase">
-		<Spinner class="size-3.5" />
-		waiting for them
-	</div>
+	<WaitingHint label="waiting for them" />
 </div>

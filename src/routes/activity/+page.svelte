@@ -1,5 +1,5 @@
 <script lang="ts">
-	import ActivityView from '$lib/components/account/ActivityView.svelte'
+	import ActivityView from '$lib/components/activity/ActivityView.svelte'
 </script>
 
 <div class="h-full overflow-y-auto">

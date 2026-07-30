@@ -218,6 +218,7 @@ impl PairingService {
 
     /// Trust a device from its encoded public identity. A test helper for
     /// seeding a mutual trust relationship without running the code exchange.
+    #[cfg(test)]
     pub fn trust(&self, encoded: &str, name: &str) -> Result<(), String> {
         let pk = crate::pairing::identity::PublicKey::decode(encoded)?;
         self.trust.add(pk, name)

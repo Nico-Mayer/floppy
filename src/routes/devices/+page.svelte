@@ -6,9 +6,10 @@
 	import * as Field from '$lib/components/ui/field'
 	import { Input } from '$lib/components/ui/input'
 	import * as Item from '$lib/components/ui/item'
+	import * as ResponsiveDialog from '$lib/components/ui/responsive-dialog'
 	import { Separator } from '$lib/components/ui/separator'
 	import { isCompleteCode } from '$lib/code'
-	import { Clipboard } from '$lib/ipc'
+	import { Clipboard, type DeviceInfo } from '$lib/ipc'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import { cn } from '$lib/utils'
 	import CheckIcon from '@lucide/svelte/icons/check'
@@ -113,7 +114,26 @@
 		editing = null
 		await pairing.rename(fingerprint, draft.trim())
 	}
+
+	// --- Remove a paired device (confirm first) ---------------------------------
+	let removing = $state<DeviceInfo | null>(null)
+	async function confirmRemove() {
+		const device = removing
+		removing = null
+		if (device) await pairing.untrust(device.fingerprint)
+	}
 </script>
+
+<!-- The cancel/save pair shared by both inline edit fields (this device's name
+     and a paired device's name). -->
+{#snippet editActions(onsave: () => void, oncancel: () => void)}
+	<Button variant="ghost" size="icon" aria-label="Cancel rename" onclick={oncancel}>
+		<XIcon />
+	</Button>
+	<Button variant="secondary" size="icon" aria-label="Save name" onclick={onsave}>
+		<CheckIcon />
+	</Button>
+{/snippet}
 
 <div class="h-full overflow-y-auto">
 	<div
@@ -151,12 +171,7 @@
 								if (e.key === 'Escape') editingSelf = false
 							}}
 						/>
-						<Button variant="ghost" size="icon" aria-label="Cancel" onclick={() => (editingSelf = false)}>
-							<XIcon />
-						</Button>
-						<Button variant="secondary" size="icon" aria-label="Save name" onclick={saveSelf}>
-							<CheckIcon />
-						</Button>
+						{@render editActions(saveSelf, () => (editingSelf = false))}
 					</div>
 				{:else}
 					<Item.Root variant="outline" size="sm">
@@ -301,17 +316,7 @@
 										/>
 									</Item.Content>
 									<Item.Actions>
-										<Button
-											variant="ghost"
-											size="icon"
-											aria-label="Cancel rename"
-											onclick={() => (editing = null)}
-										>
-											<XIcon />
-										</Button>
-										<Button variant="secondary" size="icon" aria-label="Save name" onclick={saveRename}>
-											<CheckIcon />
-										</Button>
+										{@render editActions(saveRename, () => (editing = null))}
 									</Item.Actions>
 								{:else}
 									<Item.Content>
@@ -330,7 +335,7 @@
 											variant="destructive"
 											size="icon"
 											aria-label="Remove {device.name}"
-											onclick={() => pairing.untrust(device.fingerprint)}
+											onclick={() => (removing = device)}
 										>
 											<Trash2Icon />
 										</Button>
@@ -344,3 +349,21 @@
 		{/if}
 	</div>
 </div>
+
+<!-- Removing a device is destructive (it can't send without a code again), so
+     confirm first. Centered dialog on desktop, bottom drawer on mobile. -->
+<ResponsiveDialog.Root open={removing !== null} onOpenChange={(next) => !next && (removing = null)}>
+	<ResponsiveDialog.Content class="sm:max-w-sm">
+		<ResponsiveDialog.Header>
+			<ResponsiveDialog.Title>Remove {removing?.name}?</ResponsiveDialog.Title>
+			<ResponsiveDialog.Description>You'll need a new code to send to it again.</ResponsiveDialog.Description>
+		</ResponsiveDialog.Header>
+		<ResponsiveDialog.Footer>
+			<Button variant="outline" onclick={() => (removing = null)}>Keep</Button>
+			<Button variant="destructive" onclick={confirmRemove}>
+				<Trash2Icon data-icon="inline-start" />
+				Remove
+			</Button>
+		</ResponsiveDialog.Footer>
+	</ResponsiveDialog.Content>
+</ResponsiveDialog.Root>

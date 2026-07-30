@@ -8,11 +8,10 @@
 	import SquareIcon from '@lucide/svelte/icons/square'
 	import XIcon from '@lucide/svelte/icons/x'
 	import { Window } from '$lib/ipc'
+	import { isMac, isWindows } from '$lib/platform'
 
 	// On Windows the window is frameless (see main.go) and we render our own
 	// window controls; on macOS the native traffic lights need a spacer.
-	const isWindows = navigator.userAgent.includes('Windows')
-	const isMac = navigator.userAgent.includes('Mac')
 
 	// A hamburger toggles the nav (a drawer on mobile, a collapse on desktop) — a
 	// clearer affordance than an avatar. On Windows it sits on the left, away from

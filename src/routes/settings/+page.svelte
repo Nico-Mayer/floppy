@@ -1,5 +1,5 @@
 <script lang="ts">
-	import SettingsView from '$lib/components/account/SettingsView.svelte'
+	import SettingsView from '$lib/components/settings/SettingsView.svelte'
 </script>
 
 <div class="h-full overflow-y-auto">

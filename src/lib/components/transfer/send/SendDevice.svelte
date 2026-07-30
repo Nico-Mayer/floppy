@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { Spinner } from '$lib/components/ui/spinner'
+	import DeviceGlyph from '../DeviceGlyph.svelte'
+	import WaitingHint from '../WaitingHint.svelte'
 	import { normal } from '$lib/motion'
-	import LaptopIcon from '@lucide/svelte/icons/laptop'
 	import { fade } from 'svelte/transition'
 
 	let {
@@ -9,18 +9,16 @@
 		accepted
 	}: {
 		name: string
-		/** croc has a room, so the peer said yes and is joining it. */
+		/** The peer said yes and is joining, so we're connecting rather than waiting. */
 		accepted: boolean
 	} = $props()
 </script>
 
 <!-- Both pre-transfer states of a device send. Deliberately no code and no QR:
-     the phrase is derived from the pairing keys and only this one peer is meant
-     to have it, so there is nothing here for a human to read out. -->
+     the connection is derived from the pairing keys and only this one peer is
+     meant to have it, so there is nothing here for a human to read out. -->
 <div class="flex flex-1 flex-col items-center justify-center gap-6" in:fade={{ duration: normal() }}>
-	<div class="flex size-20 items-center justify-center rounded-2xl border bg-muted/40">
-		<LaptopIcon class="size-9 text-(--tint-fg)" />
-	</div>
+	<DeviceGlyph />
 
 	<div class="flex flex-col items-center gap-1.5 text-center">
 		<p class="animate-pop text-lg font-bold tracking-tight">
@@ -36,8 +34,5 @@
 		</p>
 	</div>
 
-	<div class="flex items-center gap-2 font-mono text-[11px] tracking-wider text-muted-foreground uppercase">
-		<Spinner class="size-3.5" />
-		{accepted ? 'connecting' : 'waiting for a yes'}
-	</div>
+	<WaitingHint label={accepted ? 'connecting' : 'waiting for a yes'} />
 </div>
