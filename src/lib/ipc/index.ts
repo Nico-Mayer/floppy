@@ -38,7 +38,7 @@ export const DismissPair = (fingerprint: string) => ok(commands.dismissPair(fing
 export const RenameDevice = (fingerprint: string, name: string) =>
 	ok(commands.renameDevice(fingerprint, name))
 export const CreatePairLink = () => ok(commands.createPairLink())
-export const OpenPairLink = (link: string) => ok(commands.openPairLink(link))
+export const OpenPairLink = (link: string, name: string) => ok(commands.openPairLink(link, name))
 export const Accept = (transferId: string) => ok(commands.accept(transferId))
 export const Decline = (transferId: string) => ok(commands.decline(transferId))
 export const SendTo = (fingerprint: string, paths: string[]) => ok(commands.sendTo(fingerprint, paths))

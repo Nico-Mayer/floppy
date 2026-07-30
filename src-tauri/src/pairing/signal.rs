@@ -6,7 +6,6 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::pairing::link::{PairInit, PairResp, PairSeal};
 use crate::pairing::offer::{Offer, Response};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -14,13 +13,6 @@ use crate::pairing::offer::{Offer, Response};
 pub enum Signal {
     Offer(Offer),
     Response(Response),
-    /// Opener → initiator: "I opened your link" + SPAKE2 message (one-sided
-    /// pairing, run over this same fp channel instead of a separate mailbox).
-    PairInit(PairInit),
-    /// Initiator → opener: the initiator's SPAKE2 reply.
-    PairResp(PairResp),
-    /// Opener → initiator: the opener's identity, sealed under the PAKE key.
-    PairSeal(PairSeal),
 }
 
 impl Signal {

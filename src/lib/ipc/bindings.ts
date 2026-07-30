@@ -14,6 +14,13 @@ export const commands = {
 	describe: (paths: string[]) => typedError<FileEntry[], string>(__TAURI_INVOKE("describe", { paths })),
 	openPath: (path: string) => typedError<null, string>(__TAURI_INVOKE("open_path", { path })),
 	identity: () => typedError<string, string>(__TAURI_INVOKE("identity")),
+	/**  This device's own name, shown to peers during pairing and on transfers. */
+	selfName: () => typedError<string, string>(__TAURI_INVOKE("self_name")),
+	/**
+	 *  Rename this device. The new name is advertised to peers on the next pairing
+	 *  or transfer.
+	 */
+	setSelfName: (name: string) => typedError<null, string>(__TAURI_INVOKE("set_self_name", { name })),
 	trustedDevices: () => typedError<DeviceInfo[], string>(__TAURI_INVOKE("trusted_devices")),
 	previewPairing: (encoded: string) => typedError<PairingPreview, string>(__TAURI_INVOKE("preview_pairing", { encoded })),
 	trust: (encoded: string, name: string) => typedError<null, string>(__TAURI_INVOKE("trust", { encoded, name })),
@@ -28,12 +35,15 @@ export const commands = {
 	/**  Rename an already-trusted device. */
 	renameDevice: (fingerprint: string, name: string) => typedError<null, string>(__TAURI_INVOKE("rename_device", { fingerprint, name })),
 	/**
-	 *  Create a one-sided pairing link (show as text/QR). Whoever opens it pairs
-	 *  with this device in a single step.
+	 *  Show a pairing code on this device (also rendered as a QR). Another device
+	 *  redeems it to pair; this device confirms the request before trust is written.
 	 */
-	createPairLink: () => typedError<string, string>(__TAURI_INVOKE("create_pair_link")),
-	/**  Open a pairing link from another device: trust it and become mutually paired. */
-	openPairLink: (link: string) => typedError<null, string>(__TAURI_INVOKE("open_pair_link", { link })),
+	showPairCode: () => typedError<string, string>(__TAURI_INVOKE("show_pair_code")),
+	/**
+	 *  Redeem a pairing code shown on another device. `via` is "qr" when scanned or
+	 *  "code" when typed, so the other device knows whether to show an SAS.
+	 */
+	redeemPairCode: (code: string, via: string) => typedError<null, string>(__TAURI_INVOKE("redeem_pair_code", { code, via })),
 	accept: (transferId: string) => typedError<null, string>(__TAURI_INVOKE("accept", { transferId })),
 	decline: (transferId: string) => typedError<null, string>(__TAURI_INVOKE("decline", { transferId })),
 	sendTo: (fingerprint: string, paths: string[]) => typedError<null, string>(__TAURI_INVOKE("send_to", { fingerprint, paths })),
@@ -125,12 +135,15 @@ export type PairingPreview = {
 };
 
 /**
- *  A device completed the pairing handshake against a link this device is
- *  showing and awaits confirmation before it is trusted.
+ *  A device redeemed a code this device is showing and awaits confirmation
+ *  before it is trusted. `sas` is the short auth string to compare; `via` is how
+ *  the peer redeemed ("qr" | "code") — the UI shows the SAS only for "code".
  */
 export type PairingRequest = {
 	fingerprint: string,
 	suggestedName: string,
+	sas: string,
+	via: string,
 };
 
 /**  Byte/file progress for the active transfer. */

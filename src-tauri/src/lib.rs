@@ -67,8 +67,8 @@ impl PairingEmitter for TauriPairingEmitter {
             .emit(app),
             P::Accepted => PairingAccepted.emit(app),
             P::Declined => PairingDeclined.emit(app),
-            P::Request { fingerprint, suggested_name } => {
-                PairingRequest { fingerprint, suggested_name }.emit(app)
+            P::Request { fingerprint, suggested_name, sas, via } => {
+                PairingRequest { fingerprint, suggested_name, sas, via }.emit(app)
             }
             P::Paired { name } => PairingPaired { name }.emit(app),
             P::Error { message } => PairingError { message }.emit(app),
@@ -200,16 +200,9 @@ fn route_deep_link(app: &AppHandle, url: &str) {
         {
             let _ = DeepLink { code }.emit(app);
         }
-    } else if rest.starts_with("pair/") {
-        // The whole URL is the pairing link (PairLink::decode strips the prefix).
-        let app = app.clone();
-        let link = url.to_string();
-        tauri::async_runtime::spawn(async move {
-            if let Some(pairing) = app.try_state::<PairingService>() {
-                let _ = pairing.open_pair_link(&link).await;
-            }
-        });
     }
+    // Pairing is no longer a deep link: devices pair by scanning a QR or typing a
+    // code on the Devices page (see redeem_pair_code).
 }
 
 /// Decimal byte sizes, matching the frontend's `formatBytes` (format.ts).
@@ -323,7 +316,7 @@ async fn trusted_devices(pairing: State<'_, PairingService>) -> Result<Vec<Devic
     Ok(pairing
         .trusted_devices()
         .into_iter()
-        .map(|d| DeviceInfo { fingerprint: d.fingerprint(), name: d.name })
+        .map(|d| DeviceInfo { fingerprint: d.fingerprint(), name: d.label() })
         .collect())
 }
 
@@ -343,19 +336,35 @@ async fn trust(pairing: State<'_, PairingService>, encoded: String, name: String
     pairing.trust(&encoded, &name)
 }
 
-/// Create a one-sided pairing link (show as text/QR). Whoever opens it pairs
-/// with this device in a single step.
+/// Show a pairing code on this device (also rendered as a QR). Another device
+/// redeems it to pair; this device confirms the request before trust is written.
 #[tauri::command]
 #[specta::specta]
-async fn create_pair_link(pairing: State<'_, PairingService>) -> Result<String, String> {
-    pairing.create_pair_link()
+async fn show_pair_code(pairing: State<'_, PairingService>) -> Result<String, String> {
+    pairing.show_pair_code()
 }
 
-/// Open a pairing link from another device: trust it and become mutually paired.
+/// Redeem a pairing code shown on another device. `via` is "qr" when scanned or
+/// "code" when typed, so the other device knows whether to show an SAS.
 #[tauri::command]
 #[specta::specta]
-async fn open_pair_link(pairing: State<'_, PairingService>, link: String) -> Result<(), String> {
-    pairing.open_pair_link(&link).await
+async fn redeem_pair_code(pairing: State<'_, PairingService>, code: String, via: String) -> Result<(), String> {
+    pairing.redeem_pair_code(&code, &via).await
+}
+
+/// This device's own name, shown to peers during pairing and on transfers.
+#[tauri::command]
+#[specta::specta]
+async fn self_name(pairing: State<'_, PairingService>) -> Result<String, String> {
+    Ok(pairing.self_name())
+}
+
+/// Rename this device. The new name is advertised to peers on the next pairing
+/// or transfer.
+#[tauri::command]
+#[specta::specta]
+async fn set_self_name(pairing: State<'_, PairingService>, name: String) -> Result<(), String> {
+    pairing.set_self_name(&name)
 }
 
 #[tauri::command]
@@ -425,6 +434,8 @@ fn specta_builder() -> Builder<tauri::Wry> {
             describe,
             open_path,
             identity,
+            self_name,
+            set_self_name,
             trusted_devices,
             preview_pairing,
             trust,
@@ -432,8 +443,8 @@ fn specta_builder() -> Builder<tauri::Wry> {
             confirm_pair,
             dismiss_pair,
             rename_device,
-            create_pair_link,
-            open_pair_link,
+            show_pair_code,
+            redeem_pair_code,
             accept,
             decline,
             send_to,
@@ -532,7 +543,13 @@ pub fn run() {
             );
             let pairing_emitter = Arc::new(TauriPairingEmitter { app: handle.clone() });
             let pairing = tauri::async_runtime::block_on(async {
-                PairingService::new(&data_dir, manager.clone(), fp_broker_url, pairing_emitter)
+                PairingService::new(
+                    &data_dir,
+                    manager.clone(),
+                    fp_broker_url,
+                    broker_url.clone(),
+                    pairing_emitter,
+                )
             })?;
 
             app.manage(manager);

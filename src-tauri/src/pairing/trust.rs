@@ -11,16 +11,39 @@ use serde::{Deserialize, Serialize};
 
 use crate::pairing::identity::{write_file_atomic, PublicKey};
 
-/// One trust-store entry: a peer's public identity plus a human name.
+/// One trust-store entry: a peer's public identity, the self-name it last
+/// advertised, and an optional local override the user set on this device.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TrustedDevice {
     pub key: PublicKey,
-    pub name: String,
+    /// The peer's most-recently-advertised self-name.
+    pub advertised_name: String,
+    /// A local rename. When set it wins over the advertised name and is never
+    /// sent to the peer.
+    #[serde(default)]
+    pub local_override: Option<String>,
 }
 
 impl TrustedDevice {
     pub fn fingerprint(&self) -> String {
         self.key.fingerprint()
+    }
+
+    /// The name to show: local override wins, then the advertised self-name,
+    /// then a fingerprint-derived fallback so a device is never nameless.
+    pub fn label(&self) -> String {
+        if let Some(o) = &self.local_override {
+            let o = o.trim();
+            if !o.is_empty() {
+                return o.to_string();
+            }
+        }
+        let advertised = self.advertised_name.trim();
+        if !advertised.is_empty() {
+            advertised.to_string()
+        } else {
+            format!("device-{}", &self.fingerprint()[..8])
+        }
     }
 }
 
@@ -58,23 +81,48 @@ impl TrustStore {
         TrustStore { path: None, devices: Mutex::new(HashMap::new()) }
     }
 
-    /// Record (or rename) a trusted device and persist.
-    pub fn add(&self, key: PublicKey, name: &str) -> Result<(), String> {
+    /// Record a trusted device under the self-name it advertised, or refresh
+    /// that advertised name if it is already trusted. A re-add keeps any local
+    /// override the user set. Persists.
+    pub fn add(&self, key: PublicKey, advertised_name: &str) -> Result<(), String> {
         {
             let mut devices = self.devices.lock().unwrap();
             let fp = key.fingerprint();
-            devices.insert(fp.clone(), TrustedDevice { name: normalize_name(name, &key), key });
+            let advertised = advertised_name.trim().to_string();
+            devices
+                .entry(fp)
+                .and_modify(|d| d.advertised_name = advertised.clone())
+                .or_insert(TrustedDevice { key, advertised_name: advertised, local_override: None });
         }
         self.save()
     }
 
-    /// Rename a trusted device and persist. Unknown fingerprint is an error so
-    /// the UI can tell a rename of a device that was un-trusted underneath it.
+    /// Refresh a trusted device's advertised self-name (e.g. from an incoming
+    /// offer). A device with a local override is left untouched so the user's
+    /// chosen name wins. Unknown fingerprints are ignored. Persists on a change.
+    pub fn refresh_advertised(&self, fingerprint: &str, advertised_name: &str) -> Result<(), String> {
+        {
+            let mut devices = self.devices.lock().unwrap();
+            let Some(device) = devices.get_mut(fingerprint) else { return Ok(()) };
+            let next = advertised_name.trim();
+            if device.local_override.is_some() || device.advertised_name == next {
+                return Ok(());
+            }
+            device.advertised_name = next.to_string();
+        }
+        self.save()
+    }
+
+    /// Set or clear a device's local override name. An empty name clears the
+    /// override, letting the advertised self-name show through. Unknown
+    /// fingerprint is an error so the UI can tell a rename of a device that was
+    /// un-trusted underneath it. Persists.
     pub fn rename(&self, fingerprint: &str, name: &str) -> Result<(), String> {
         {
             let mut devices = self.devices.lock().unwrap();
             let device = devices.get_mut(fingerprint).ok_or("no such trusted device")?;
-            device.name = normalize_name(name, &device.key);
+            let n = name.trim();
+            device.local_override = if n.is_empty() { None } else { Some(n.to_string()) };
         }
         self.save()
     }
@@ -109,17 +157,6 @@ impl TrustStore {
     }
 }
 
-/// Trim a pairing display name; empty falls back to a fingerprint prefix so a
-/// device is never nameless in the UI.
-pub fn normalize_name(name: &str, key: &PublicKey) -> String {
-    let n = name.trim();
-    if !n.is_empty() {
-        n.to_string()
-    } else {
-        format!("device-{}", &key.fingerprint()[..8])
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -134,7 +171,7 @@ mod tests {
             let store = TrustStore::load(dir.path()).unwrap();
             store.add(peer.clone(), "laptop").unwrap();
             assert!(store.trusted(&peer));
-            assert_eq!(store.get(&fp).unwrap().name, "laptop");
+            assert_eq!(store.get(&fp).unwrap().label(), "laptop");
         }
         // Reload from disk: the trust survived.
         let store = TrustStore::load(dir.path()).unwrap();
@@ -148,6 +185,33 @@ mod tests {
         let peer = Identity::load_or_create(tempfile::tempdir().unwrap().path()).unwrap().public();
         let store = TrustStore::in_memory();
         store.add(peer.clone(), "   ").unwrap();
-        assert!(store.get(&peer.fingerprint()).unwrap().name.starts_with("device-"));
+        assert!(store.get(&peer.fingerprint()).unwrap().label().starts_with("device-"));
+    }
+
+    #[test]
+    fn local_override_wins_and_survives_refresh() {
+        let peer = Identity::load_or_create(tempfile::tempdir().unwrap().path()).unwrap().public();
+        let fp = peer.fingerprint();
+        let store = TrustStore::in_memory();
+        store.add(peer.clone(), "NicoPC").unwrap();
+        store.rename(&fp, "Work PC").unwrap();
+        assert_eq!(store.get(&fp).unwrap().label(), "Work PC");
+        // A later advertised name does not disturb the override.
+        store.refresh_advertised(&fp, "NicoDesktop").unwrap();
+        assert_eq!(store.get(&fp).unwrap().label(), "Work PC");
+        // Clearing the override falls back to the advertised name (unchanged,
+        // since refresh skipped the overridden entry).
+        store.rename(&fp, "  ").unwrap();
+        assert_eq!(store.get(&fp).unwrap().label(), "NicoPC");
+    }
+
+    #[test]
+    fn refresh_updates_advertised_without_override() {
+        let peer = Identity::load_or_create(tempfile::tempdir().unwrap().path()).unwrap().public();
+        let fp = peer.fingerprint();
+        let store = TrustStore::in_memory();
+        store.add(peer.clone(), "NicoPC").unwrap();
+        store.refresh_advertised(&fp, "NicoDesktop").unwrap();
+        assert_eq!(store.get(&fp).unwrap().label(), "NicoDesktop");
     }
 }

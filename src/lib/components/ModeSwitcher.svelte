@@ -47,7 +47,7 @@
 	</Tabs.Trigger>
 {/snippet}
 
-<Tabs.List class="h-12! w-full max-sm:order-last">
+<Tabs.List class="h-12! w-full shadow max-sm:order-last">
 	{@render trigger('send', 'Send', SendIcon, `${modKey}1`)}
 	{@render trigger('receive', 'Receive', DownloadIcon, `${modKey}2`)}
 </Tabs.List>

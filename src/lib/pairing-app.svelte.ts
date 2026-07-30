@@ -18,6 +18,7 @@ import {
 	type PairingPreview,
 	type PairingRequest
 } from '$lib/ipc'
+import { goto } from '$app/navigation'
 import { toast } from 'svelte-sonner'
 import { app } from './transfer-app.svelte'
 
@@ -53,10 +54,12 @@ class PairingApp {
 			events.pairingOfferEvent.listen((e) => (this.incoming = e.payload)),
 			events.pairingAccepted.listen(() => {
 				// Move the send panel off "waiting for a yes" into the accepted state;
-				// progress events then carry it to sending/done. Also clear any
+				// progress events then carry it to sending/done. Route to the transfer
+				// panel so the progress it drives is actually on screen. Also clear any
 				// lingering incoming prompt.
 				app.send.accepted()
 				this.incoming = null
+				void goto('/')
 				toast.success('They said yes')
 			}),
 			events.pairingDeclined.listen(() => {
@@ -68,11 +71,17 @@ class PairingApp {
 				toast.error(e.payload.message)
 			}),
 			// A device paired against a link we are showing: hold it for the
-			// confirm-and-name prompt instead of trusting silently.
-			events.pairingRequest.listen((e) => (this.request = e.payload)),
-			// One-sided pairing completed on this device (either side).
+			// confirm-and-name prompt, and bring the pair page up behind it so the
+			// confirm has its context.
+			events.pairingRequest.listen((e) => {
+				this.request = e.payload
+				void goto('/pair')
+			}),
+			// One-sided pairing completed on this device (either side): show it on
+			// the pair page, where the new device now appears.
 			events.pairingPaired.listen((e) => {
 				void this.refresh()
+				void goto('/pair')
 				toast.success(`Paired with ${e.payload.name}`)
 			})
 		]
@@ -92,9 +101,9 @@ class PairingApp {
 		return CreatePairLink()
 	}
 
-	async openLink(link: string) {
+	async openLink(link: string, name: string) {
 		try {
-			await OpenPairLink(link)
+			await OpenPairLink(link, name)
 		} catch (e) {
 			toast.error(`Pairing did not work: ${e}`)
 		}
@@ -105,9 +114,11 @@ class PairingApp {
 		const offer = this.incoming
 		this.incoming = null
 		// Switch to the receive view and show it connecting — the transfer's
-		// progress and completion land there once the sender starts. The offer
-		// travels with it so the panel can say who is sending, and what.
+		// progress and completion land there once the sender starts. Route to the
+		// transfer panel too, since the prompt can be accepted from any page. The
+		// offer travels with it so the panel can say who is sending, and what.
 		app.mode = 'receive'
+		void goto('/')
 		app.receive.beginTrusted({
 			name: offer.fromName,
 			fileCount: offer.fileCount,

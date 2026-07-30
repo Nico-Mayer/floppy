@@ -6,9 +6,9 @@
 
 pub mod broker;
 pub mod identity;
-pub mod link;
 pub mod offer;
 pub mod sas;
+pub mod self_name;
 pub mod service;
 pub mod signal;
 pub mod trust;

@@ -22,7 +22,12 @@
 		if (!next && pairing.request) pairing.dismissPair()
 	}
 
+	// A blank name would trust the device under an unidentifiable label, so the
+	// name is required here just as it is on the pair page.
+	const nameOk = $derived(name.trim().length > 0)
+
 	function confirm() {
+		if (!nameOk) return
 		pairing.confirmPair(name.trim())
 	}
 </script>
@@ -32,8 +37,8 @@
 		<ResponsiveDialog.Header>
 			<ResponsiveDialog.Title>Add this device?</ResponsiveDialog.Title>
 			<ResponsiveDialog.Description>
-				A device paired using your link. Give it a name you'll recognize, then add it to
-				trust it for code-free transfers.
+				A device paired using your link. Give it a name you'll recognize, then add it to trust it for
+				code-free transfers.
 			</ResponsiveDialog.Description>
 		</ResponsiveDialog.Header>
 
@@ -51,7 +56,7 @@
 				<XIcon data-icon="inline-start" />
 				Not now
 			</Button>
-			<Button onclick={confirm}>
+			<Button onclick={confirm} disabled={!nameOk}>
 				<CheckIcon data-icon="inline-start" />
 				Add
 			</Button>

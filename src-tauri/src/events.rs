@@ -96,13 +96,16 @@ pub struct PairingAccepted;
 #[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
 pub struct PairingDeclined;
 
-/// A device completed the pairing handshake against a link this device is
-/// showing and awaits confirmation before it is trusted.
+/// A device redeemed a code this device is showing and awaits confirmation
+/// before it is trusted. `sas` is the short auth string to compare; `via` is how
+/// the peer redeemed ("qr" | "code") — the UI shows the SAS only for "code".
 #[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
 #[serde(rename_all = "camelCase")]
 pub struct PairingRequest {
     pub fingerprint: String,
     pub suggested_name: String,
+    pub sas: String,
+    pub via: String,
 }
 
 /// A one-sided pairing completed; `name` is the newly trusted device.

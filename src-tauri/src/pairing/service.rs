@@ -10,41 +10,40 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use base64::engine::general_purpose::STANDARD as B64;
-use base64::Engine;
+use serde::{Deserialize, Serialize};
 use tokio::sync::oneshot;
+use tokio::time::timeout;
 
 use crate::pairing::broker::{connect, FpClient, Incoming};
 use crate::pairing::identity::{Identity, PublicKey};
-use crate::pairing::link::{PairInit, PairLink, PairPayload, PairResp, PairSeal};
 use crate::pairing::offer::{Offer, VerifyError};
 use crate::pairing::sas::sas;
+use crate::pairing::self_name::SelfName;
 use crate::pairing::signal::Signal;
 use crate::pairing::trust::{TrustStore, TrustedDevice};
-use crate::rendezvous::pake;
+use crate::rendezvous::{client, code, pake};
 use crate::transport::Manager;
 
-/// How long a shown pairing link stays valid — the initiator keeps the session
-/// this long, then drops it silently (showing a link you never use is not an
-/// error). Also bounds how long the opener waits for the initiator's reply.
+/// How long a shown pairing code stays valid — the device keeps the mailbox
+/// session this long, then drops it silently (showing a code you never use is
+/// not an error). Also bounds how long a redeemer waits for the other side.
 const PAIR_TIMEOUT: Duration = Duration::from_secs(120);
 
-/// Initiator-side state for one outstanding pairing link, keyed by room. Holds
-/// the link secret until an opener arrives, then the PAKE key + opener
-/// fingerprint until the sealed identity lands.
-struct LinkSession {
-    secret: String,
-    established: Option<(/* key */ [u8; 32], /* opener_fp */ String)>,
-}
+/// Pairings shown on this device awaiting the user's confirm: fingerprint → the
+/// channel the mailbox task blocks on. `Some(name)` confirms and trusts the peer
+/// under `name`; `None` declines. Trust is written only on confirm.
+type PendingConfirms = Arc<Mutex<HashMap<String, oneshot::Sender<Option<String>>>>>;
 
-/// Shared pairing state, threaded into the incoming-signal loop.
-type Links = Arc<Mutex<HashMap<String, LinkSession>>>;
-/// Opener-side waiters: room → the channel `open_pair_link` blocks on for the
-/// initiator's SPAKE2 reply.
-type Waiters = Arc<Mutex<HashMap<String, oneshot::Sender<Vec<u8>>>>>;
-/// Initiator-side pairings awaiting the user's confirm: fingerprint → the peer's
-/// verified identity + the name it suggested. Trust is written only on confirm.
-type PendingPairs = Arc<Mutex<HashMap<String, (PublicKey, String)>>>;
+/// What each device seals to the other during a code pairing: its public
+/// identity, its self-name, and how the code was redeemed ("qr" | "code") so the
+/// device that showed the code can decide whether to show an SAS to compare.
+#[derive(Serialize, Deserialize)]
+struct CodePairPayload {
+    id: String,
+    name: String,
+    #[serde(default)]
+    via: String,
+}
 
 /// What the service tells the UI. Translated to frontend events by the caller.
 pub enum PairingEvent {
@@ -54,10 +53,12 @@ pub enum PairingEvent {
     Accepted,
     /// The peer declined our offer.
     Declined,
-    /// A device completed the pairing handshake against a link we are showing
-    /// and awaits our confirmation before we trust it.
-    Request { fingerprint: String, suggested_name: String },
-    /// A one-sided pairing completed; `name` is the newly trusted device.
+    /// A device redeemed a code we are showing and awaits our confirmation
+    /// before we trust it. `sas` is the short auth string to compare; `via` is
+    /// how the peer redeemed ("qr" | "code") — the UI shows the SAS only for a
+    /// typed code.
+    Request { fingerprint: String, suggested_name: String, sas: String, via: String },
+    /// A pairing completed; `name` is the newly trusted device.
     Paired { name: String },
     /// A pairing/signalling error to surface (e.g. device offline).
     Error { message: String },
@@ -70,18 +71,17 @@ pub trait PairingEmitter: Send + Sync + 'static {
 /// The trusted-device service. Cheap to hold in app state.
 pub struct PairingService {
     identity: Arc<Identity>,
+    self_name: Arc<SelfName>,
     trust: Arc<TrustStore>,
     manager: Manager,
     broker: FpClient,
     emit: Arc<dyn PairingEmitter>,
+    /// The broker's code-mailbox URL (`…/ws`), used to rendezvous a code pairing.
+    mailbox_url: String,
     /// Verified incoming offers keyed by transfer id, awaiting accept/decline.
     pending: Arc<Mutex<HashMap<String, Offer>>>,
-    /// Outstanding pairing links this device is showing.
-    links: Links,
-    /// Pairing exchanges this device initiated by opening a link.
-    waiters: Waiters,
-    /// Completed handshakes awaiting the user's confirm before we trust them.
-    pending_pairs: PendingPairs,
+    /// Codes shown on this device whose redeemer awaits our confirm.
+    pending_confirms: PendingConfirms,
 }
 
 impl PairingService {
@@ -93,129 +93,125 @@ impl PairingService {
         dir: &Path,
         manager: Manager,
         fp_url: String,
+        mailbox_url: String,
         emit: Arc<dyn PairingEmitter>,
     ) -> Result<PairingService, String> {
         let identity = Arc::new(Identity::load_or_create(dir)?);
+        let self_name = Arc::new(SelfName::load_or_create(dir)?);
         let trust = Arc::new(TrustStore::load(dir)?);
         let (broker, incoming) = connect(fp_url, &identity);
 
         let svc = PairingService {
             identity,
+            self_name,
             trust: trust.clone(),
             manager: manager.clone(),
             broker: broker.clone(),
             emit: emit.clone(),
+            mailbox_url,
             pending: Arc::new(Mutex::new(HashMap::new())),
-            links: Arc::new(Mutex::new(HashMap::new())),
-            waiters: Arc::new(Mutex::new(HashMap::new())),
-            pending_pairs: Arc::new(Mutex::new(HashMap::new())),
+            pending_confirms: Arc::new(Mutex::new(HashMap::new())),
         };
 
-        // Background loop: verify and dispatch every incoming signal.
+        // Background loop: verify and dispatch every incoming offer/response.
         tokio::spawn(incoming_loop(Loop {
             incoming,
             trust,
             manager,
-            broker,
             emit,
             pending: svc.pending.clone(),
-            links: svc.links.clone(),
-            waiters: svc.waiters.clone(),
-            pending_pairs: svc.pending_pairs.clone(),
         }));
         Ok(svc)
     }
 
-    /// A default device name for pairing, derived from the fingerprint. Users
-    /// rename in the Devices list.
-    fn default_name(&self) -> String {
-        format!("device-{}", &self.identity.fingerprint()[..8])
-    }
-
-    /// Create a one-sided pairing link to show (as text/QR) on this device. When
-    /// another device opens it, both end up trusting each other. Registers the
-    /// link so the incoming-signal loop can complete the exchange; showing a
-    /// link opens no socket and raises no error if it goes unused — it just
-    /// expires quietly after `PAIR_TIMEOUT`.
-    pub fn create_pair_link(&self) -> Result<String, String> {
-        let mut room = [0u8; 8];
-        let mut secret = [0u8; 16];
-        getrandom::fill(&mut room).map_err(|e| format!("rng: {e}"))?;
-        getrandom::fill(&mut secret).map_err(|e| format!("rng: {e}"))?;
-        let room = hex::encode(room);
-        let secret = B64.encode(secret);
-
-        let link = PairLink {
-            v: 1,
-            room: room.clone(),
-            secret: secret.clone(),
-            id: self.identity.public().encode(),
-            name: self.default_name(),
+    /// Show a pairing code on this device (also encode it as a QR). A background
+    /// task joins the broker's code-mailbox for the code's room and completes one
+    /// pairing: it waits for a redeemer, runs SPAKE2, learns the redeemer's
+    /// identity, raises a confirm request, and — once the user confirms — seals
+    /// this device's identity back so both sides end up trusting each other.
+    /// Single-use, and bounded by `PAIR_TIMEOUT`; an unredeemed code expires
+    /// quietly with no error to the UI.
+    pub fn show_pair_code(&self) -> Result<String, String> {
+        let phrase = code::generate();
+        let room = code::room(&phrase).ok_or("could not derive a room from the code")?;
+        let task = ShowTask {
+            mailbox_url: self.mailbox_url.clone(),
+            code: phrase.clone(),
+            room,
+            identity: self.identity.clone(),
+            self_name: self.self_name.clone(),
+            trust: self.trust.clone(),
+            emit: self.emit.clone(),
+            pending_confirms: self.pending_confirms.clone(),
         };
-
-        self.links.lock().unwrap().insert(room.clone(), LinkSession { secret, established: None });
-
-        // Expire the session quietly — no error to the UI. A link left on screen
-        // and never scanned should just stop working, not toast a failure.
-        let links = self.links.clone();
         tokio::spawn(async move {
-            tokio::time::sleep(PAIR_TIMEOUT).await;
-            links.lock().unwrap().remove(&room);
+            if let Err(e) = timeout(PAIR_TIMEOUT, task.run()).await.unwrap_or(Ok(())) {
+                tracing::debug!(error = %e, "pairing: show-code session ended");
+            }
         });
-
-        Ok(link.encode())
+        Ok(phrase)
     }
 
-    /// Open a pairing link from another device: trust the initiator immediately
-    /// (the link is the authenticated out-of-band channel), then run the SPAKE2
-    /// exchange over the fp channel so the initiator trusts this device too. The
-    /// initiator's fingerprint comes from the link, and it is already registered
-    /// on the broker, so the reply routes straight back — no mailbox socket.
-    pub async fn open_pair_link(&self, link: &str) -> Result<(), String> {
-        let link = PairLink::decode(link)?;
-        let initiator = PublicKey::decode(&link.id)?;
-        let initiator_fp = initiator.fingerprint();
-        // Trust the initiator now; the exchange below makes it mutual.
-        self.trust.add(initiator, &link.name)?;
+    /// Redeem a pairing code shown on another device. `via` records how the code
+    /// arrived ("qr" | "code") so the other device can decide whether to show an
+    /// SAS. Runs SPAKE2 over the mailbox, sends this device's identity, and on the
+    /// other side's confirmed reply trusts it and reports paired.
+    pub async fn redeem_pair_code(&self, raw_code: &str, via: &str) -> Result<(), String> {
+        let phrase = code::normalize(raw_code);
+        let room = code::room(&phrase).ok_or("that does not look like a code")?;
+        let mut mailbox = client::join(&self.mailbox_url, &room).await?;
 
-        let (handshake, my_msg) = pake::start(&link.secret, &link.room);
-        let (tx, rx) = oneshot::channel();
-        self.waiters.lock().unwrap().insert(link.room.clone(), tx);
-
-        self.broker.send(
-            &initiator_fp,
-            &Signal::PairInit(PairInit {
-                room: link.room.clone(),
-                from_fp: self.identity.public().fingerprint(),
-                pake: my_msg,
-            }),
-        );
-
-        // Wait for the initiator's SPAKE2 reply, delivered by the signal loop.
-        let peer_msg = match tokio::time::timeout(PAIR_TIMEOUT, rx).await {
-            Ok(Ok(msg)) => msg,
-            _ => {
-                self.waiters.lock().unwrap().remove(&link.room);
-                return Err("The other device didn't respond. Make sure it's online and showing the link, then try again.".into());
-            }
-        };
-
+        // SPAKE2 — the redeemer speaks first.
+        let (handshake, my_msg) = pake::start(&phrase, &room);
+        mailbox.send(&my_msg).await?;
+        let peer_msg = timeout(PAIR_TIMEOUT, mailbox.recv()).await.map_err(|_| pair_wait_timeout())??;
         let key = handshake.finish(&peer_msg)?;
-        let payload = serde_json::to_vec(&PairPayload {
+
+        // Seal and send our identity + self-name + how we redeemed.
+        let payload = serde_json::to_vec(&CodePairPayload {
             id: self.identity.public().encode(),
-            name: self.default_name(),
+            name: self.self_name.get(),
+            via: via.to_string(),
         })
         .map_err(|e| e.to_string())?;
-        let sealed = pake::seal(&key, &payload)?;
-        self.broker.send(&initiator_fp, &Signal::PairSeal(PairSeal { room: link.room, sealed }));
+        mailbox.send(&pake::seal(&key, &payload)?).await?;
 
-        self.emit.emit(PairingEvent::Paired { name: link.name });
-        Ok(())
+        // Wait for the shower's reply: `0x01 ‖ sealed(identity)` on confirm, or a
+        // lone `0x00` on decline.
+        let reply = timeout(PAIR_TIMEOUT, mailbox.recv()).await.map_err(|_| pair_wait_timeout())??;
+        match reply.split_first() {
+            Some((1, sealed)) => {
+                let opened = pake::open(&key, sealed)?;
+                let peer: CodePairPayload =
+                    serde_json::from_slice(&opened).map_err(|e| format!("bad pairing reply: {e}"))?;
+                let peer_key = PublicKey::decode(&peer.id)?;
+                let fingerprint = peer_key.fingerprint();
+                self.trust.add(peer_key, &peer.name)?;
+                let name = self.trust.get(&fingerprint).map_or(peer.name, |d| d.label());
+                self.emit.emit(PairingEvent::Paired { name });
+                Ok(())
+            }
+            Some((0, _)) => Err("The other device didn't add this one.".into()),
+            _ => Err("The other device sent something unexpected.".into()),
+        }
     }
 
     /// This device's encoded public identity (QR / copy).
     pub fn identity(&self) -> String {
         self.identity.public().encode()
+    }
+
+    /// This device's current self-name, advertised to peers during pairing and
+    /// on transfer offers.
+    #[allow(dead_code)] // wired to a Tauri command in the device-management slice
+    pub fn self_name(&self) -> String {
+        self.self_name.get()
+    }
+
+    /// Rename this device. The new self-name is advertised to peers thereafter.
+    #[allow(dead_code)] // wired to a Tauri command in the device-management slice
+    pub fn set_self_name(&self, name: &str) -> Result<(), String> {
+        self.self_name.set(name)
     }
 
     pub fn trusted_devices(&self) -> Vec<TrustedDevice> {
@@ -244,20 +240,23 @@ impl PairingService {
     /// peer under `name` and report it paired. Unknown fingerprint means the
     /// request expired or was already handled.
     pub fn confirm_pair(&self, fingerprint: &str, name: &str) -> Result<(), String> {
-        let (key, _) = self
-            .pending_pairs
+        let tx = self
+            .pending_confirms
             .lock()
             .unwrap()
             .remove(fingerprint)
             .ok_or("no such pairing request")?;
-        self.trust.add(key, name)?;
-        self.emit.emit(PairingEvent::Paired { name: self.trust.get(fingerprint).map_or_else(|| name.to_string(), |d| d.name) });
-        Ok(())
+        // The mailbox task trusts the peer and seals our identity back once it
+        // sees the name; a send failure means the code already expired.
+        tx.send(Some(name.to_string())).map_err(|_| "that pairing request expired".to_string())
     }
 
-    /// Discard a pending pairing without trusting the peer.
+    /// Discard a pending pairing without trusting the peer. The mailbox task
+    /// tells the other side it was declined, then ends.
     pub fn dismiss_pair(&self, fingerprint: &str) {
-        self.pending_pairs.lock().unwrap().remove(fingerprint);
+        if let Some(tx) = self.pending_confirms.lock().unwrap().remove(fingerprint) {
+            let _ = tx.send(None);
+        }
     }
 
     /// Rename an already-trusted device.
@@ -279,7 +278,8 @@ impl PairingService {
         let (id, ticket, _served) =
             self.manager.start_send(paths).await.map_err(|e| e.to_string())?;
         let ts = now_unix();
-        let offer = self.identity.sign_offer(&id, ts, file_count, total_bytes, &ticket);
+        let offer =
+            self.identity.sign_offer(&id, ts, file_count, total_bytes, &ticket, &self.self_name.get());
         self.broker.send(fingerprint, &Signal::Offer(offer));
         Ok(id)
     }
@@ -312,18 +312,91 @@ impl PairingService {
     }
 }
 
-/// Everything the incoming-signal loop needs. Bundled because pairing added
-/// enough shared state that a positional argument list stopped being readable.
+/// A code-pairing session for a code this device is showing. Owns the mailbox
+/// for its whole life so it can pause between learning the redeemer's identity
+/// and the user's confirm, then seal our identity back. Holds Arc clones of the
+/// service state so it outlives the `show_pair_code` call.
+struct ShowTask {
+    mailbox_url: String,
+    code: String,
+    room: String,
+    identity: Arc<Identity>,
+    self_name: Arc<SelfName>,
+    trust: Arc<TrustStore>,
+    emit: Arc<dyn PairingEmitter>,
+    pending_confirms: PendingConfirms,
+}
+
+impl ShowTask {
+    async fn run(self) -> Result<(), String> {
+        let mut mailbox = client::join(&self.mailbox_url, &self.room).await?;
+
+        // SPAKE2 — the redeemer speaks first; we reply.
+        let peer_msg = mailbox.recv().await?;
+        let (handshake, my_msg) = pake::start(&self.code, &self.room);
+        mailbox.send(&my_msg).await?;
+        let key = handshake.finish(&peer_msg)?;
+
+        // Open the redeemer's sealed identity. A wrong code yields a different
+        // key, so this fails and the session ends without touching trust.
+        let opened = pake::open(&key, &mailbox.recv().await?)?;
+        let peer: CodePairPayload =
+            serde_json::from_slice(&opened).map_err(|e| format!("bad pairing payload: {e}"))?;
+        let peer_key = PublicKey::decode(&peer.id)?;
+        let fingerprint = peer_key.fingerprint();
+        // SAS from the ECDH shared secret; the UI shows it only for a typed code.
+        let sas = self.identity.shared_secret(&peer_key).map(|s| sas(&s)).unwrap_or_default();
+
+        // Raise the confirm and wait for the user's decision.
+        let (tx, rx) = oneshot::channel::<Option<String>>();
+        self.pending_confirms.lock().unwrap().insert(fingerprint.clone(), tx);
+        self.emit.emit(PairingEvent::Request {
+            fingerprint: fingerprint.clone(),
+            suggested_name: peer.name.clone(),
+            sas,
+            via: peer.via.clone(),
+        });
+
+        match rx.await {
+            Ok(Some(name)) => {
+                self.trust.add(peer_key, &name)?;
+                let reply = serde_json::to_vec(&CodePairPayload {
+                    id: self.identity.public().encode(),
+                    name: self.self_name.get(),
+                    via: String::new(),
+                })
+                .map_err(|e| e.to_string())?;
+                let mut blob = vec![1u8];
+                blob.extend_from_slice(&pake::seal(&key, &reply)?);
+                mailbox.send(&blob).await?;
+                let name = self.trust.get(&fingerprint).map_or(name, |d| d.label());
+                self.emit.emit(PairingEvent::Paired { name });
+            }
+            // Declined or the confirm channel dropped: tell the redeemer so it
+            // stops waiting, then end.
+            _ => {
+                self.pending_confirms.lock().unwrap().remove(&fingerprint);
+                let _ = mailbox.send(&[0u8]).await;
+            }
+        }
+        Ok(())
+    }
+}
+
+/// The friendly timeout message a redeemer sees when the other device never
+/// completes the exchange.
+fn pair_wait_timeout() -> String {
+    "The other device didn't respond. Make sure it's showing the code, then try again.".to_string()
+}
+
+/// What the incoming-signal loop needs: it now only routes verified offers and
+/// responses over the fingerprint channel (pairing moved to the code mailbox).
 struct Loop {
     incoming: tokio::sync::mpsc::UnboundedReceiver<Incoming>,
     trust: Arc<TrustStore>,
     manager: Manager,
-    broker: FpClient,
     emit: Arc<dyn PairingEmitter>,
     pending: Arc<Mutex<HashMap<String, Offer>>>,
-    links: Links,
-    waiters: Waiters,
-    pending_pairs: PendingPairs,
 }
 
 async fn incoming_loop(mut l: Loop) {
@@ -331,11 +404,11 @@ async fn incoming_loop(mut l: Loop) {
         match msg {
             Incoming::Signal(Signal::Offer(offer)) => match offer.verify(&l.trust) {
                 Ok(()) => {
-                    let from_name = l
-                        .trust
-                        .get(&offer.from.fingerprint())
-                        .map(|d| d.name)
-                        .unwrap_or_default();
+                    // Refresh the peer's advertised name from the signed offer
+                    // (a no-op if the user set a local override), then show it.
+                    let fp = offer.from.fingerprint();
+                    let _ = l.trust.refresh_advertised(&fp, &offer.self_name);
+                    let from_name = l.trust.get(&fp).map(|d| d.label()).unwrap_or_default();
                     let ev = PairingEvent::Offer {
                         transfer_id: offer.transfer_id.clone(),
                         from_name,
@@ -358,75 +431,12 @@ async fn incoming_loop(mut l: Loop) {
                     }
                 }
             }
-            // Initiator side: someone opened our link. Finish our half of the
-            // SPAKE2 and reply so they can seal their identity back to us.
-            Incoming::Signal(Signal::PairInit(init)) => on_pair_init(&l, init),
-            // Opener side: hand the initiator's reply to the waiting call.
-            Incoming::Signal(Signal::PairResp(resp)) => {
-                if let Some(tx) = l.waiters.lock().unwrap().remove(&resp.room) {
-                    let _ = tx.send(resp.pake);
-                }
-            }
-            // Initiator side: open the opener's sealed identity and trust it.
-            Incoming::Signal(Signal::PairSeal(seal)) => on_pair_seal(&l, seal),
             Incoming::Unreachable(fp) => {
                 tracing::info!(fp = %fp, "pairing: target offline");
                 l.emit.emit(PairingEvent::Error { message: "The device is offline.".into() });
             }
         }
     }
-}
-
-/// Initiator's response to an opener's `PairInit`: derive the shared key from
-/// the link secret, stash it against the seal that follows, and reply.
-fn on_pair_init(l: &Loop, init: PairInit) {
-    let secret = match l.links.lock().unwrap().get(&init.room) {
-        Some(s) => s.secret.clone(),
-        None => return, // unknown or expired link — ignore
-    };
-    let (handshake, my_msg) = pake::start(&secret, &init.room);
-    let key = match handshake.finish(&init.pake) {
-        Ok(k) => k,
-        Err(e) => {
-            tracing::warn!(error = %e, "pairing: PAKE finish failed");
-            return;
-        }
-    };
-    if let Some(s) = l.links.lock().unwrap().get_mut(&init.room) {
-        s.established = Some((key, init.from_fp.clone()));
-    }
-    l.broker.send(&init.from_fp, &Signal::PairResp(PairResp { room: init.room, pake: my_msg }));
-}
-
-/// Initiator's handling of the opener's `PairSeal`: decrypt the identity the
-/// opener sealed under the PAKE key, then hold it pending the user's confirm —
-/// trust is not written until they approve.
-fn on_pair_seal(l: &Loop, seal: PairSeal) {
-    let Some((key, _)) = l.links.lock().unwrap().get(&seal.room).and_then(|s| s.established.clone())
-    else {
-        return; // no matching pending link
-    };
-    let (peer, suggested_name) = match decode_pair_payload(&key, &seal.sealed) {
-        Ok(v) => v,
-        Err(e) => {
-            tracing::warn!(error = %e, "pairing: could not open seal");
-            return;
-        }
-    };
-    l.links.lock().unwrap().remove(&seal.room);
-    let fingerprint = peer.fingerprint();
-    l.pending_pairs.lock().unwrap().insert(fingerprint.clone(), (peer, suggested_name.clone()));
-    l.emit.emit(PairingEvent::Request { fingerprint, suggested_name });
-}
-
-/// Decrypt an opener's sealed identity under the PAKE key: returns the peer's
-/// public key and the name it suggested for itself.
-fn decode_pair_payload(key: &[u8; 32], sealed: &[u8]) -> Result<(PublicKey, String), String> {
-    let payload = pake::open(key, sealed)?;
-    let payload: PairPayload =
-        serde_json::from_slice(&payload).map_err(|e| format!("bad pairing payload: {e}"))?;
-    let peer = PublicKey::decode(&payload.id)?;
-    Ok((peer, payload.name))
 }
 
 fn now_unix() -> i64 {
@@ -573,6 +583,112 @@ mod tests {
         format!("ws://{addr}/fp")
     }
 
+    /// In-process stand-in for the Go broker's code-mailbox mode: join a room,
+    /// pair up to two clients in it, and relay `msg` blobs between them (mirrors
+    /// broker/mailbox.go). Enough to exercise the code-pairing exchange without
+    /// the Go broker.
+    async fn spawn_mock_mailbox_broker() -> String {
+        use futures_util::{SinkExt, StreamExt as _};
+        use std::collections::HashMap;
+        use tokio::sync::mpsc;
+        use tokio::sync::Mutex as AsyncMutex;
+        use tokio_tungstenite::tungstenite::Message;
+
+        #[derive(serde::Deserialize)]
+        struct In {
+            #[serde(rename = "type")]
+            typ: String,
+            room: Option<String>,
+            data: Option<String>,
+        }
+
+        // Like broker/mailbox.go: buffer blobs sent before the second party
+        // arrives so SPAKE2's first message is not lost to a connect race.
+        #[derive(Default)]
+        struct RoomState {
+            peers: Vec<mpsc::UnboundedSender<Message>>,
+            buffered: Vec<String>,
+        }
+
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let rooms: Arc<AsyncMutex<HashMap<String, RoomState>>> =
+            Arc::new(AsyncMutex::new(HashMap::new()));
+
+        fn relay_frame(data: &str) -> Message {
+            Message::text(serde_json::json!({ "type": "msg", "data": data }).to_string())
+        }
+
+        tokio::spawn(async move {
+            while let Ok((stream, _)) = listener.accept().await {
+                let rooms = rooms.clone();
+                tokio::spawn(async move {
+                    let ws = match tokio_tungstenite::accept_async(stream).await {
+                        Ok(ws) => ws,
+                        Err(_) => return,
+                    };
+                    let (mut write, mut read) = ws.split();
+                    let (tx, mut rx) = mpsc::unbounded_channel::<Message>();
+                    tokio::spawn(async move {
+                        while let Some(m) = rx.recv().await {
+                            if write.send(m).await.is_err() {
+                                break;
+                            }
+                        }
+                    });
+
+                    // First frame joins a room; the newcomer drains any backlog.
+                    let room = match futures_util::StreamExt::next(&mut read).await {
+                        Some(Ok(Message::Text(t))) => {
+                            let m: In = serde_json::from_str(&t).unwrap();
+                            m.room.unwrap_or_default()
+                        }
+                        _ => return,
+                    };
+                    let backlog = {
+                        let mut g = rooms.lock().await;
+                        let rm = g.entry(room.clone()).or_default();
+                        if rm.peers.len() >= 2 {
+                            let _ = tx.send(Message::text(r#"{"type":"full"}"#.to_string()));
+                            return;
+                        }
+                        rm.peers.push(tx.clone());
+                        std::mem::take(&mut rm.buffered)
+                    };
+                    for d in backlog {
+                        let _ = tx.send(relay_frame(&d));
+                    }
+
+                    // Relay each message to the other party, or buffer it if the
+                    // peer has not joined yet.
+                    while let Some(Ok(Message::Text(t))) =
+                        futures_util::StreamExt::next(&mut read).await
+                    {
+                        let m: In = serde_json::from_str(&t)
+                            .unwrap_or(In { typ: String::new(), room: None, data: None });
+                        if m.typ != "msg" {
+                            continue;
+                        }
+                        let data = m.data.unwrap_or_default();
+                        let mut g = rooms.lock().await;
+                        if let Some(rm) = g.get_mut(&room) {
+                            let others: Vec<_> =
+                                rm.peers.iter().filter(|p| !p.same_channel(&tx)).cloned().collect();
+                            if others.is_empty() {
+                                rm.buffered.push(data);
+                            } else {
+                                for p in others {
+                                    let _ = p.send(relay_frame(&data));
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        });
+        format!("ws://{addr}/ws")
+    }
+
     fn write_file(dir: &Path, name: &str, bytes: &[u8]) -> PathBuf {
         let p = dir.join(name);
         std::fs::File::create(&p).unwrap().write_all(bytes).unwrap();
@@ -595,8 +711,9 @@ mod tests {
         let b_events = PairCollector::default();
         let dir_a = tmp.path().join("id-a");
         let dir_b = tmp.path().join("id-b");
-        let a = PairingService::new(&dir_a, a_mgr, broker.clone(), Arc::new(a_events.clone())).unwrap();
-        let b = PairingService::new(&dir_b, b_mgr, broker.clone(), Arc::new(b_events.clone())).unwrap();
+        let dummy_mailbox = "ws://127.0.0.1:1/ws".to_string();
+        let a = PairingService::new(&dir_a, a_mgr, broker.clone(), dummy_mailbox.clone(), Arc::new(a_events.clone())).unwrap();
+        let b = PairingService::new(&dir_b, b_mgr, broker.clone(), dummy_mailbox, Arc::new(b_events.clone())).unwrap();
 
         // Give both clients a moment to register with the broker.
         tokio::time::sleep(Duration::from_millis(200)).await;
@@ -645,8 +762,8 @@ mod tests {
         let b_mgr = manager(tmp.path(), "lb", Arc::new(b_done.clone())).await;
         let a_events = PairCollector::default();
         let b_events = PairCollector::default();
-        let a = PairingService::new(&tmp.path().join("lid-a"), a_mgr, broker.clone(), Arc::new(a_events.clone())).unwrap();
-        let b = PairingService::new(&tmp.path().join("lid-b"), b_mgr, broker.clone(), Arc::new(b_events.clone())).unwrap();
+        let a = PairingService::new(&tmp.path().join("lid-a"), a_mgr, broker.clone(), ws.clone(), Arc::new(a_events.clone())).unwrap();
+        let b = PairingService::new(&tmp.path().join("lid-b"), b_mgr, broker.clone(), ws.clone(), Arc::new(b_events.clone())).unwrap();
         tokio::time::sleep(Duration::from_millis(400)).await; // register with the real broker
 
         let b_fp = PublicKey::decode(&b.identity()).unwrap().fingerprint();
@@ -667,33 +784,30 @@ mod tests {
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-    async fn one_sided_pairing_makes_trust_mutual() {
+    async fn code_pairing_makes_trust_mutual() {
         let tmp = tempfile::tempdir().unwrap();
-        // Pairing rides the fp channel now, so both devices share one fp broker.
-        let broker = spawn_mock_fp_broker().await;
+        // Construction registers on the fp broker; the pairing itself rides the
+        // code mailbox.
+        let fp = spawn_mock_fp_broker().await;
+        let mailbox = spawn_mock_mailbox_broker().await;
 
         let a_mgr = manager(tmp.path(), "pa", Arc::new(DoneFlag::default())).await;
         let b_mgr = manager(tmp.path(), "pb", Arc::new(DoneFlag::default())).await;
         let a_ev = PairCollector::default();
         let b_ev = PairCollector::default();
-        let a = PairingService::new(&tmp.path().join("id-a"), a_mgr, broker.clone(), Arc::new(a_ev.clone())).unwrap();
-        let b = PairingService::new(&tmp.path().join("id-b"), b_mgr, broker.clone(), Arc::new(b_ev.clone())).unwrap();
-
-        // Let both register with the broker before the exchange routes by fp.
-        tokio::time::sleep(Duration::from_millis(200)).await;
-
-        // A shows a link; B opens it.
-        let link = a.create_pair_link().unwrap();
-        b.open_pair_link(&link).await.unwrap();
+        let a = PairingService::new(&tmp.path().join("id-a"), a_mgr, fp.clone(), mailbox.clone(), Arc::new(a_ev.clone())).unwrap();
+        let b = Arc::new(PairingService::new(&tmp.path().join("id-b"), b_mgr, fp.clone(), mailbox.clone(), Arc::new(b_ev.clone())).unwrap());
 
         let a_fp = PublicKey::decode(&a.identity()).unwrap().fingerprint();
         let b_fp = PublicKey::decode(&b.identity()).unwrap().fingerprint();
 
-        // B (the opener) consents by opening: it trusts A right away.
-        assert!(b.trusted_devices().iter().any(|d| d.fingerprint() == a_fp), "B (opener) trusts A");
-        assert!(b_ev.tags().iter().any(|t| t.starts_with("paired")), "B emits paired");
+        // A shows a code; B redeems it (typed). Redeem blocks until A confirms,
+        // so it runs in a task while the test drives A's side.
+        let code = a.show_pair_code().unwrap();
+        let b2 = b.clone();
+        let redeem = tokio::spawn(async move { b2.redeem_pair_code(&code, "code").await });
 
-        // A (showing the link) does NOT trust yet — it raises a confirm request.
+        // A raises a confirm request for B and does not trust it yet.
         wait_until(Duration::from_secs(10), || {
             a_ev.tags().iter().any(|t| t == &format!("request:{b_fp}"))
         })
@@ -702,15 +816,21 @@ mod tests {
 
         // A confirms with a chosen name → trust becomes mutual.
         a.confirm_pair(&b_fp, "my-phone").unwrap();
-        let b_entry = a.trusted_devices().into_iter().find(|d| d.fingerprint() == b_fp);
-        assert_eq!(b_entry.map(|d| d.name).as_deref(), Some("my-phone"), "A trusts B under the given name");
-        assert!(a_ev.tags().iter().any(|t| t.starts_with("paired")), "A emits paired after confirm");
+        redeem.await.unwrap().expect("redeem completes");
 
-        // Dismiss path: a pending request can be dropped without trusting.
-        let some_key = PublicKey::decode(&b.identity()).unwrap();
-        a.pending_pairs.lock().unwrap().insert("deadbeef".into(), (some_key, "x".into()));
-        a.dismiss_pair("deadbeef");
-        assert!(a.pending_pairs.lock().unwrap().get("deadbeef").is_none(), "dismiss drops the pending pair");
+        let a_view = a.trusted_devices().into_iter().find(|d| d.fingerprint() == b_fp);
+        assert_eq!(a_view.map(|d| d.label()), Some("my-phone".to_string()), "A trusts B under the chosen name");
+        assert!(b.trusted_devices().iter().any(|d| d.fingerprint() == a_fp), "B trusts A");
+        assert!(a_ev.tags().iter().any(|t| t.starts_with("paired")), "A emits paired");
+        assert!(b_ev.tags().iter().any(|t| t.starts_with("paired")), "B emits paired");
+
+        // Decline path: a fresh request can be dropped, and the redeemer is told.
+        let code2 = a.show_pair_code().unwrap();
+        let b3 = b.clone();
+        let redeem2 = tokio::spawn(async move { b3.redeem_pair_code(&code2, "code").await });
+        wait_until(Duration::from_secs(10), || a.pending_confirms.lock().unwrap().contains_key(&b_fp)).await;
+        a.dismiss_pair(&b_fp);
+        assert!(redeem2.await.unwrap().is_err(), "redeemer learns it was declined");
     }
 
     async fn wait_until<F: Fn() -> bool>(timeout: Duration, cond: F) {

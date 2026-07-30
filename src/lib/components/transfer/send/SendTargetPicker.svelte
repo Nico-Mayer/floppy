@@ -1,10 +1,12 @@
 <script lang="ts">
-	import PairDeviceButton from '$lib/components/account/PairDeviceButton.svelte'
+	import { buttonVariants } from '$lib/components/ui/button'
 	import * as Field from '$lib/components/ui/field'
 	import * as Select from '$lib/components/ui/select'
+	import * as Tooltip from '$lib/components/ui/tooltip'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import GlobeIcon from '@lucide/svelte/icons/globe'
 	import LaptopIcon from '@lucide/svelte/icons/laptop'
+	import ShieldPlusIcon from '@lucide/svelte/icons/shield-plus'
 
 	/** 'code' for the classic phrase send, otherwise a trusted device's fingerprint. */
 	let { value = $bindable() }: { value: string } = $props()
@@ -28,12 +30,30 @@
      With nothing paired the Select would be a one-option control, so the link
      stands alone and carries the explanation instead. -->
 {#if pairing.devices.length === 0}
-	<PairDeviceButton class="self-start" label="Pair a device and skip the code" />
+	<!-- Pairing lives on its own page now; this is the way in from the send flow. -->
+	<a href="/pair" class={buttonVariants({ variant: 'link', size: 'sm' })}>
+		<ShieldPlusIcon data-icon="inline-start" />
+		Pair a device and skip the code
+	</a>
 {:else}
 	<Field.Field class="gap-2">
 		<div class="flex items-center justify-between gap-2">
 			<Field.FieldLabel for="send-target" class="font-normal">Send to</Field.FieldLabel>
-			<PairDeviceButton iconOnly label="Pair a device" class="-my-1" />
+			<Tooltip.Provider delayDuration={150}>
+				<Tooltip.Root>
+					<Tooltip.Trigger
+						class={buttonVariants({ variant: 'ghost', size: 'icon' }) + ' -my-1'}
+						aria-label="Pair a device"
+					>
+						{#snippet child({ props })}
+							<a href="/pair" {...props}>
+								<ShieldPlusIcon />
+							</a>
+						{/snippet}
+					</Tooltip.Trigger>
+					<Tooltip.Content>Pair a device</Tooltip.Content>
+				</Tooltip.Root>
+			</Tooltip.Provider>
 		</div>
 		<Select.Root type="single" bind:value>
 			<Select.Trigger id="send-target" class="w-full">

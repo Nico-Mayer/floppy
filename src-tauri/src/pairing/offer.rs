@@ -28,6 +28,9 @@ pub enum VerifyError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Offer {
     pub from: PublicKey,
+    /// The sender's current self-name, so the receiver can refresh the label it
+    /// shows for this device without a separate exchange.
+    pub self_name: String,
     pub transfer_id: String,
     pub ts: i64,
     pub file_count: u64,
@@ -59,9 +62,11 @@ impl Identity {
         file_count: u64,
         total_bytes: u64,
         ticket: &str,
+        self_name: &str,
     ) -> Offer {
         let mut o = Offer {
             from: self.public(),
+            self_name: self_name.to_string(),
             transfer_id: transfer_id.to_string(),
             ts,
             file_count,
@@ -108,6 +113,7 @@ impl Offer {
         append_bytes(&mut b, &self.from.kex);
         append_bytes(&mut b, self.transfer_id.as_bytes());
         append_bytes(&mut b, self.ticket.as_bytes());
+        append_bytes(&mut b, self.self_name.as_bytes());
         b.extend_from_slice(&(self.ts as u64).to_be_bytes());
         b.extend_from_slice(&self.file_count.to_be_bytes());
         b.extend_from_slice(&self.total_bytes.to_be_bytes());
@@ -157,7 +163,7 @@ mod tests {
         let sender = ident();
         let trust = TrustStore::in_memory();
         trust.add(sender.public(), "sender").unwrap();
-        let offer = sender.sign_offer("t1", 123, 3, 900, "blob-ticket-with-nodeid");
+        let offer = sender.sign_offer("t1", 123, 3, 900, "blob-ticket-with-nodeid", "sender-self");
         assert_eq!(offer.verify(&trust), Ok(()));
     }
 
@@ -165,7 +171,7 @@ mod tests {
     fn untrusted_sender_rejected() {
         let sender = ident();
         let empty = TrustStore::in_memory();
-        let offer = sender.sign_offer("t1", 123, 1, 10, "ticket");
+        let offer = sender.sign_offer("t1", 123, 1, 10, "ticket", "sender-self");
         assert_eq!(offer.verify(&empty), Err(VerifyError::Untrusted));
     }
 
@@ -174,7 +180,7 @@ mod tests {
         let sender = ident();
         let trust = TrustStore::in_memory();
         trust.add(sender.public(), "sender").unwrap();
-        let mut offer = sender.sign_offer("t1", 123, 1, 10, "real-node-ticket");
+        let mut offer = sender.sign_offer("t1", 123, 1, 10, "real-node-ticket", "sender-self");
         // A rendezvous swaps in its own node's ticket, keeping the signature.
         offer.ticket = "attacker-node-ticket".into();
         assert_eq!(offer.verify(&trust), Err(VerifyError::BadSignature));
@@ -191,7 +197,7 @@ mod tests {
         trust.add(sender.public(), "sender").unwrap();
         // Attacker signs its own offer but claims to be the trusted sender by
         // copying `from` — the signature no longer matches that key.
-        let mut forged = attacker.sign_offer("t1", 1, 1, 1, "attacker-ticket");
+        let mut forged = attacker.sign_offer("t1", 1, 1, 1, "attacker-ticket", "attacker-self");
         forged.from = sender.public();
         assert_eq!(forged.verify(&trust), Err(VerifyError::BadSignature));
     }
