@@ -1,14 +1,15 @@
 <script lang="ts">
-	import { QRCode } from '$lib/components/spell/qrcode'
+	import { isCompleteCode } from '$lib/code'
 	import CodeInput from '$lib/components/CodeInput.svelte'
+	import { QRCode } from '$lib/components/spell/qrcode'
 	import { Button } from '$lib/components/ui/button'
+	import * as Card from '$lib/components/ui/card/index.js'
 	import * as Empty from '$lib/components/ui/empty'
 	import * as Field from '$lib/components/ui/field'
 	import { Input } from '$lib/components/ui/input'
 	import * as Item from '$lib/components/ui/item'
 	import * as ResponsiveDialog from '$lib/components/ui/responsive-dialog'
 	import { Separator } from '$lib/components/ui/separator'
-	import { isCompleteCode } from '$lib/code'
 	import { Clipboard, type DeviceInfo } from '$lib/ipc'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import { cn } from '$lib/utils'
@@ -205,39 +206,36 @@
 						onclick={() => (qrHidden = !qrHidden)}
 						aria-label={revealLabel}
 						aria-pressed={!qrHidden}
-						class="group bg-qr-background relative cursor-pointer overflow-hidden rounded-2xl border p-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+						class="w-full rounded-4xl outline-none focus-visible:ring-2 focus-visible:ring-ring"
 					>
-						<QRCode value={code} class={cn('size-44', qrHidden && 'select-none')} />
-						<span
-							aria-hidden="true"
-							class={cn(
-								'pointer-events-none absolute inset-0 backdrop-blur-md transition-opacity duration-200',
-								!qrHidden && 'opacity-0'
-							)}
-						></span>
-						<span
-							class="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-150 group-hover:opacity-100"
-						>
-							<span class="rounded-full bg-background/80 p-2.5 text-foreground shadow-sm backdrop-blur">
-								{#if qrHidden}
-									<EyeIcon class="size-5" />
-								{:else}
-									<EyeOffIcon class="size-5" />
-								{/if}
+						<Card.Root class="relative w-full cursor-pointer items-center">
+							<Card.Content class="bg-qr-background rounded-2xl border p-4">
+								<QRCode value={code} class="size-44" />
+							</Card.Content>
+							<Card.Footer class="font-mono text-lg font-medium tracking-wide">
+								{code}
+							</Card.Footer>
+							<span
+								aria-hidden="true"
+								class={cn(
+									'pointer-events-none absolute inset-0 backdrop-blur-md transition-opacity duration-200',
+									!qrHidden && 'opacity-0'
+								)}
+							></span>
+							<span
+								class="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-150 group-hover/card:opacity-100"
+							>
+								<span class="rounded-full bg-background/80 p-2.5 text-foreground shadow-sm backdrop-blur">
+									{#if qrHidden}
+										<EyeIcon class="size-5" />
+									{:else}
+										<EyeOffIcon class="size-5" />
+									{/if}
+								</span>
 							</span>
-						</span>
+						</Card.Root>
 					</button>
-					<button
-						type="button"
-						onclick={() => (qrHidden = !qrHidden)}
-						aria-label={revealLabel}
-						class={cn(
-							'font-mono text-lg font-medium tracking-wide transition',
-							qrHidden ? 'blur-sm select-none' : 'select-all'
-						)}
-					>
-						{code}
-					</button>
+
 					<p class="text-sm text-muted-foreground">Type or scan this on your other device.</p>
 					<div class="flex items-center gap-2">
 						<Button variant="secondary" size="sm" onclick={copyCode}>

@@ -59,11 +59,11 @@ class PairingApp {
 				// Move the send panel off "waiting for a yes" into the accepted state;
 				// progress events then carry it to sending/done. Route to the transfer
 				// panel so the progress it drives is actually on screen. Also clear any
-				// lingering incoming prompt.
+				// lingering incoming prompt. The panel visibly progressing is the "yes";
+				// no toast.
 				app.send.accepted()
 				this.incoming = null
 				void goto(resolve('/'))
-				toast.success('They said yes')
 			}),
 			events.pairingDeclined.listen((e) => {
 				this.#resetPendingSend()
@@ -80,11 +80,11 @@ class PairingApp {
 				void goto(resolve('/devices'))
 			}),
 			// A pairing completed on this device (either side): show it on the
-			// Devices page, where the new device now appears.
-			events.pairingPaired.listen((e) => {
+			// Devices page, where the new device now appears in the list — that
+			// arrival is the confirmation, so no toast.
+			events.pairingPaired.listen(() => {
 				void this.refresh()
 				void goto(resolve('/devices'))
-				toast.success(`Paired with ${e.payload.name}`)
 			})
 		]
 		return () => subs.forEach((sub) => sub.then((unlisten) => unlisten()))
