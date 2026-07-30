@@ -10,6 +10,7 @@
 	import * as Item from '$lib/components/ui/item'
 	import * as ResponsiveDialog from '$lib/components/ui/responsive-dialog'
 	import { Separator } from '$lib/components/ui/separator'
+	import { Spinner } from '$lib/components/ui/spinner'
 	import { Clipboard, type DeviceInfo } from '$lib/ipc'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import { cn } from '$lib/utils'
@@ -195,12 +196,26 @@
 			<Separator />
 
 			<!-- Show a code for the other device to type or scan. -->
-			<section class="flex flex-col items-center gap-3 text-center">
-				<h2 class="self-start text-base font-medium">Add a device</h2>
+			<section class="flex flex-col gap-3">
+				<!-- Heading, instruction, and the way to replace the code all sit above
+				     the card: the card is the secret, everything else is chrome. -->
+				<div class="flex items-start justify-between gap-2">
+					<div class="flex flex-col gap-1">
+						<h2 class="text-base font-medium">Add a device</h2>
+						<p class="text-sm text-muted-foreground">Scan or type this code on your other device.</p>
+					</div>
+					{#if code}
+						<Button variant="ghost" size="sm" onclick={showCode} disabled={makingCode}>
+							<RefreshCwIcon data-icon="inline-start" class={cn(makingCode && 'animate-spin')} />
+							New code
+						</Button>
+					{/if}
+				</div>
+
 				{#if code}
 					{@const revealLabel = qrHidden ? 'Show the code' : 'Hide the code'}
-					<!-- One toggle hides or reveals both the QR and the code text: they're
-					     the same secret, kept behind a blur until the user shows it. -->
+					<!-- One toggle hides or reveals the whole card — QR and code text are
+					     the same secret, so the veil covers all of it. -->
 					<button
 						type="button"
 						onclick={() => (qrHidden = !qrHidden)}
@@ -222,8 +237,13 @@
 									!qrHidden && 'opacity-0'
 								)}
 							></span>
+							<!-- Hidden is the resting state, so the eye is always visible there:
+							     on touch there is no hover to discover the toggle with. -->
 							<span
-								class="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-150 group-hover/card:opacity-100"
+								class={cn(
+									'pointer-events-none absolute inset-0 flex items-center justify-center transition-opacity duration-150',
+									!qrHidden && 'opacity-0 group-hover/card:opacity-100'
+								)}
 							>
 								<span class="rounded-full bg-background/80 p-2.5 text-foreground shadow-sm backdrop-blur">
 									{#if qrHidden}
@@ -236,47 +256,53 @@
 						</Card.Root>
 					</button>
 
-					<p class="text-sm text-muted-foreground">Type or scan this on your other device.</p>
-					<div class="flex items-center gap-2">
-						<Button variant="secondary" size="sm" onclick={copyCode}>
-							{#if copied}
-								<CheckIcon data-icon="inline-start" />
-								Copied
-							{:else}
-								<CopyIcon data-icon="inline-start" />
-								Copy
-							{/if}
-						</Button>
-						<Button
-							variant="ghost"
-							size="icon-sm"
-							aria-label="New code"
-							onclick={showCode}
-							disabled={makingCode}
-						>
-							<RefreshCwIcon />
-						</Button>
-					</div>
+					<Button variant="secondary" size="lg" class="w-full" onclick={copyCode}>
+						{#if copied}
+							<CheckIcon data-icon="inline-start" />
+							Copied
+						{:else}
+							<CopyIcon data-icon="inline-start" />
+							Copy code
+						{/if}
+					</Button>
 				{:else}
 					<Button class="self-start" onclick={showCode} disabled={makingCode}>
-						{makingCode ? 'Making a code…' : 'Show a code'}
+						{#if makingCode}
+							<Spinner data-icon="inline-start" />
+							Making a code…
+						{:else}
+							Show a code
+						{/if}
 					</Button>
 				{/if}
+			</section>
 
-				<!-- Or go the other way: type the code the other device is showing. -->
-				<div class="flex w-full flex-col gap-2 pt-2">
-					<Field.Field>
-						<Field.FieldLabel for="pair-code">Enter a code</Field.FieldLabel>
-						<div class="flex items-center gap-2">
-							<div class="flex-1">
-								<CodeInput id="pair-code" bind:value={typed} disabled={connecting} onsubmit={connect} />
-							</div>
-							<Button disabled={!isCompleteCode(typed) || connecting} onclick={connect}>
-								{connecting ? 'Linking…' : 'Connect'}
-							</Button>
-						</div>
-					</Field.Field>
+			<Separator />
+
+			<!-- The same pairing from the other side: type the code that device shows. -->
+			<section class="flex flex-col gap-3">
+				<div class="flex flex-col gap-1">
+					<h2 class="text-base font-medium">Enter a code</h2>
+					<p class="text-sm text-muted-foreground">Use the code your other device is showing.</p>
 				</div>
+				<Field.Field>
+					<!-- The heading above names this field; the label repeats it for
+					     screen readers without doubling it on screen. -->
+					<Field.FieldLabel for="pair-code" class="sr-only">Enter a code</Field.FieldLabel>
+					<div class="flex items-center gap-2">
+						<div class="flex-1">
+							<CodeInput id="pair-code" bind:value={typed} disabled={connecting} onsubmit={connect} />
+						</div>
+						<Button disabled={!isCompleteCode(typed) || connecting} onclick={connect}>
+							{#if connecting}
+								<Spinner data-icon="inline-start" />
+								Linking…
+							{:else}
+								Connect
+							{/if}
+						</Button>
+					</div>
+				</Field.Field>
 			</section>
 
 			<Separator />
