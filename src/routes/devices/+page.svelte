@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { QRCode } from '$lib/components/spell/qrcode'
+	import CodeInput from '$lib/components/CodeInput.svelte'
 	import { Button } from '$lib/components/ui/button'
 	import * as Empty from '$lib/components/ui/empty'
 	import * as Field from '$lib/components/ui/field'
 	import { Input } from '$lib/components/ui/input'
 	import * as Item from '$lib/components/ui/item'
 	import { Separator } from '$lib/components/ui/separator'
+	import { isCompleteCode } from '$lib/code'
 	import { Clipboard } from '$lib/ipc'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import { cn } from '$lib/utils'
@@ -82,7 +84,7 @@
 	let connecting = $state(false)
 	async function connect() {
 		const value = typed.trim()
-		if (!value || connecting) return
+		if (!isCompleteCode(value) || connecting) return
 		connecting = true
 		try {
 			await pairing.redeemCode(value, 'code')
@@ -119,9 +121,7 @@
 	>
 		<div class="flex flex-col gap-1">
 			<h1 class="text-2xl font-semibold tracking-tight">Devices</h1>
-			<p class="text-sm text-muted-foreground">
-				Link a device once, then send to it without a code. Either side can start.
-			</p>
+			<p class="text-sm text-muted-foreground">Add a device to send without a code.</p>
 		</div>
 
 		{#if !pairing.available}
@@ -165,7 +165,7 @@
 						</Item.Media>
 						<Item.Content>
 							<Item.Title class="truncate">{pairing.selfName}</Item.Title>
-							<Item.Description>The name other devices see for this one.</Item.Description>
+							<Item.Description>The name other devices see.</Item.Description>
 						</Item.Content>
 						<Item.Actions>
 							<Button variant="ghost" size="icon" aria-label="Rename this device" onclick={startEditSelf}>
@@ -182,12 +182,13 @@
 			<section class="flex flex-col items-center gap-3 text-center">
 				<h2 class="self-start text-base font-medium">Add a device</h2>
 				{#if code}
-					<!-- The QR is the toggle: click reveals or hides it. It encodes the same
-					     code shown below, so the other device can scan instead of typing. -->
+					{@const revealLabel = qrHidden ? 'Show the code' : 'Hide the code'}
+					<!-- One toggle hides or reveals both the QR and the code text: they're
+					     the same secret, kept behind a blur until the user shows it. -->
 					<button
 						type="button"
 						onclick={() => (qrHidden = !qrHidden)}
-						aria-label={qrHidden ? 'Show the code' : 'Hide the code'}
+						aria-label={revealLabel}
 						aria-pressed={!qrHidden}
 						class="group bg-qr-background relative cursor-pointer overflow-hidden rounded-2xl border p-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
 					>
@@ -211,25 +212,36 @@
 							</span>
 						</span>
 					</button>
-					<p class="text-sm text-muted-foreground">
-						On your other device, open Add a device and type this code
-						{qrHidden ? '(or tap to show the QR and scan it)' : '(or scan this QR)'}. You'll say yes here
-						before it's added.
-					</p>
-					<p class="font-mono text-lg font-medium tracking-wide select-all">{code}</p>
-					<div class="flex gap-2">
+					<button
+						type="button"
+						onclick={() => (qrHidden = !qrHidden)}
+						aria-label={revealLabel}
+						class={cn(
+							'font-mono text-lg font-medium tracking-wide transition',
+							qrHidden ? 'blur-sm select-none' : 'select-all'
+						)}
+					>
+						{code}
+					</button>
+					<p class="text-sm text-muted-foreground">Type or scan this on your other device.</p>
+					<div class="flex items-center gap-2">
 						<Button variant="secondary" size="sm" onclick={copyCode}>
 							{#if copied}
 								<CheckIcon data-icon="inline-start" />
 								Copied
 							{:else}
 								<CopyIcon data-icon="inline-start" />
-								Copy code
+								Copy
 							{/if}
 						</Button>
-						<Button variant="outline" size="sm" onclick={showCode} disabled={makingCode}>
-							<RefreshCwIcon data-icon="inline-start" />
-							New code
+						<Button
+							variant="ghost"
+							size="icon-sm"
+							aria-label="New code"
+							onclick={showCode}
+							disabled={makingCode}
+						>
+							<RefreshCwIcon />
 						</Button>
 					</div>
 				{:else}
@@ -241,26 +253,15 @@
 				<!-- Or go the other way: type the code the other device is showing. -->
 				<div class="flex w-full flex-col gap-2 pt-2">
 					<Field.Field>
-						<Field.FieldLabel for="pair-code">Have a code? Enter it</Field.FieldLabel>
+						<Field.FieldLabel for="pair-code">Enter a code</Field.FieldLabel>
 						<div class="flex items-center gap-2">
-							<Input
-								id="pair-code"
-								bind:value={typed}
-								placeholder="1234-word-word-word"
-								class="font-mono"
-								autocomplete="off"
-								autocapitalize="none"
-								spellcheck="false"
-								disabled={connecting}
-								onkeydown={(e: KeyboardEvent) => e.key === 'Enter' && connect()}
-							/>
-							<Button disabled={!typed.trim() || connecting} onclick={connect}>
+							<div class="flex-1">
+								<CodeInput id="pair-code" bind:value={typed} disabled={connecting} onsubmit={connect} />
+							</div>
+							<Button disabled={!isCompleteCode(typed) || connecting} onclick={connect}>
 								{connecting ? 'Linking…' : 'Connect'}
 							</Button>
 						</div>
-						<Field.FieldDescription>
-							Type the code your other device is showing, then connect.
-						</Field.FieldDescription>
 					</Field.Field>
 				</div>
 			</section>
