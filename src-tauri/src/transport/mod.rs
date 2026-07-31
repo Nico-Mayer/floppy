@@ -7,6 +7,7 @@
 // primitives; the `Manager` (node lifecycle, send/receive, cancel, concurrency)
 // is added on top.
 
+pub mod dest;
 pub mod error;
 pub mod event;
 pub mod manager;
