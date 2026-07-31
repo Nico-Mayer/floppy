@@ -71,3 +71,8 @@ behaviour specified here.
 - **THEN** content is inset clear of the status bar, notch, and gesture areas
 - **AND** desktop-only window controls are not shown
 - **AND** the hardware back button navigates within the app instead of closing it
+
+#### Scenario: Select a file on mobile
+
+- **WHEN** the user picks a file on iOS or Android
+- **THEN** `tauri-plugin-dialog` returns a readable path (or sandbox copy) the core can transfer and preview

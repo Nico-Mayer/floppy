@@ -15,12 +15,14 @@ that `ios-port` inherits; slices 5–6 are Android's own shell; slice 7 is proof
 ## 2. Reachability
 
 - [x] 2.1 Bake the broker URL at compile time (`option_env!("FLOPPY_BROKER_URL")` → deployed default), keeping the runtime env var as a dev override; coordinate with `release-hardening` 1.2
-- [ ] 2.2 Verify from the device that the app reaches the broker and an iroh endpoint comes up (relay pick succeeds)
+- [x] 2.2 Verify from the device that the app reaches the broker and an iroh endpoint comes up (relay pick succeeds)
+  - Confirmed on API-37 emulator: the Devices page auto-generated a pairing code + QR, which needs both the broker mailbox and a live iroh node; `pairing.available` is true and a trusted device from a prior session shows (badge "1"). The dicebear avatar also loaded, confirming outbound HTTPS. **Gotcha:** SELinux logs `avc: denied` for `netlink_route_socket` and `/sys/class/net` (permissive=0) — iroh's local-interface enumeration is blocked on Android, but the endpoint still comes up (relay path), so it is non-fatal. Flagged for 7.6.
 
 ## 3. Directories
 
 - [x] 3.1 Resolve the destination root through `app.path().download_dir()` instead of `dirs::download_dir()`; keep the blob store in app data
-- [ ] 3.2 Confirm the desktop destination is unchanged (`~/Downloads/floppy`) and the Android one is a real, listable directory
+- [x] 3.2 Confirm the desktop destination is unchanged (`~/Downloads/floppy`) and the Android one is a real, listable directory
+  - Android destination resolves to `/sdcard/Android/data/com.nimayer.floppy/files/Download/floppy/<ticket-hash-prefix>/` — a real, listable directory (via `adb shell ls`). A prior receive already landed 12 files under `.../Download/floppy/KindKonda/9871-ember-satin-dagger/`, matching the `dest_root/<hash>/` scheme. Desktop root unchanged (`~/Downloads/floppy`, per 3.1's `download_dir()` resolution).
 
 ## 4. File input (shared shim)
 
@@ -57,3 +59,4 @@ that `ios-port` inherits; slices 5–6 are Android's own shell; slice 7 is proof
 - [ ] 7.4 Trusted-device pairing between the phone and the desktop build, then a trusted send in each direction
 - [ ] 7.5 Confirm the documented limit: backgrounding mid-transfer fails cleanly and reports an error, rather than hanging
 - [ ] 7.6 Record the outcome and any new gotchas in the change; hand the shared foundation to `ios-port`
+  - Gotchas so far: (a) rustls needs an explicit `ring` crypto provider on Android (fixed, 1.2); (b) non-fatal `ndk-context … android context was not initialized` panic from iroh DNS/netmon at startup (1.2); (c) SELinux blocks `netlink_route_socket` + `/sys/class/net` so iroh can't enumerate local interfaces — endpoint still comes up via relay (2.2). Reachability, Android dest dir, and notification-permission grant verified on the API-37 emulator this session; live two-peer transfers (7.2–7.5) still pending a desktop peer + on-device driving.

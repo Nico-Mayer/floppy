@@ -1,65 +1,70 @@
 [package]
 name = "floppy"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
 edition = "2021"
+description = "A Tauri App"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
+crate-type = ["cdylib", "rlib", "staticlib"]
 # The `_lib` suffix may seem redundant but it is necessary
 # to make the lib name unique and wouldn't conflict with the bin name.
 # This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
 name = "floppy_lib"
-crate-type = ["staticlib", "cdylib", "rlib"]
-
-[build-dependencies]
-tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
-tauri-plugin-opener = "2"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-specta = "2.0.0-rc"
-specta-typescript = "0.0"
-tauri-specta = { version = "2.0.0-rc", features = ["derive", "typescript"] }
+anyhow = "1.0.104"
+base64 = "0.23.0"
+chacha20poly1305 = { version = "0.11.0", features = ["getrandom", "rand_core"] }
+ed25519-dalek = "3.0.0"
+futures-util = "0.3.33"
+getrandom = "0.4.3"
+hex = "0.4.3"
+hkdf = "0.13.0"
+image = {
+  version = "0.25.10",
+  default-features = false,
+  features = ["gif", "jpeg", "png"]
+}
 iroh = "1.0.3"
 iroh-blobs = "0.103.0"
 n0-future = "0.3.2"
-anyhow = "1.0.104"
-tokio = { version = "1.53.1", features = ["full"] }
-tokio-util = "0.7.19"
-tracing = "0.1.44"
-tauri-plugin-dialog = "2.7.2"
-spake2 = "0.4.0"
-chacha20poly1305 = { version = "0.11.0", features = ["getrandom", "rand_core"] }
-hkdf = "0.13.0"
-sha2 = "0.11.0"
-base64 = "0.23.0"
-tokio-tungstenite = { version = "0.30.0", features = ["rustls-tls-webpki-roots"] }
-getrandom = "0.4.3"
-futures-util = "0.3.33"
-ed25519-dalek = "3.0.0"
-x25519-dalek = { version = "3.0.0", features = ["static_secrets"] }
-hex = "0.4.3"
-tauri-plugin-notification = "2.3.3"
-tauri-plugin-deep-link = "2.4.9"
-image = { version = "0.25.10", default-features = false, features = ["png", "jpeg", "gif"] }
 percent-encoding = "2.3.2"
-tauri-plugin-clipboard-manager = "2"
-tauri-plugin-fs = "2.5.1"
 # rustls needs a process-wide default crypto provider before the first TLS
 # client is built (broker WS, iroh relay). Desktop had one installed
 # transitively; a mobile build does not, so `run()` installs ring explicitly.
 rustls = { version = "0.23", default-features = false, features = ["ring"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.11.0"
+spake2 = "0.4.0"
+specta = "2.0.0-rc"
+specta-typescript = "0.0"
+tauri = { version = "2", features = [] }
+tauri-plugin-clipboard-manager = "2"
+tauri-plugin-deep-link = "2.4.9"
+tauri-plugin-dialog = "2.7.2"
+tauri-plugin-fs = "2.5.1"
+tauri-plugin-notification = "2.3.3"
+tauri-plugin-opener = "2"
+tauri-specta = { version = "2.0.0-rc", features = ["derive", "typescript"] }
+tokio = { version = "1.53.1", features = ["full"] }
+tokio-tungstenite = {
+  version = "0.30.0",
+  features = ["rustls-tls-webpki-roots"]
+}
+tokio-util = "0.7.19"
+tracing = "0.1.44"
+x25519-dalek = { version = "3.0.0", features = ["static_secrets"] }
+
+[dev-dependencies]
+tempfile = "3.27.0"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
 
 # iOS only, but the crate is a no-op elsewhere on mobile, so one target gate
 # covers both phones and keeps it out of every desktop build. See `run()`.
 [target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
 tauri-plugin-ios-webview-insets = "0.1"
-
-[dev-dependencies]
-tempfile = "3.27.0"
-

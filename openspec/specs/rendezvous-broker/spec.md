@@ -3,9 +3,7 @@
 ## Purpose
 
 Provide an accountless, stateless signalling broker that lets paired devices find each other and exchange signed control messages (offers, responses, ready, unreachable) over WebSocket, routing purely by device fingerprint. The broker never sees file contents — those move end-to-end over croc between the devices — and it authenticates connections solely by device-key signatures.
-
 ## Requirements
-
 ### Requirement: Device registration with proof of ownership
 
 The broker SHALL accept a WebSocket connection whose first message registers a public identity together with a signature proving ownership of that identity. The broker SHALL verify the signature against the registered public key before accepting the registration, and SHALL reject (close) a connection whose first message is not a valid registration.
@@ -88,3 +86,23 @@ Both broker channels (the `/ws` code mailbox and the `/fp` fingerprint routing) 
 
 - **WHEN** a device whose stale connection was evicted reconnects and re-registers under the same fingerprint
 - **THEN** registration succeeds without waiting out the old connection
+
+### Requirement: Code-mailbox rendezvous mode
+
+The broker SHALL support a code-mailbox rendezvous mode alongside its existing fingerprint-routing mode. Two parties that join the same mailbox room (identified by a code-derived room id) SHALL have their handshake messages relayed to each other. The broker SHALL forward these messages as opaque blobs and SHALL NOT inspect, decrypt, or persist them.
+
+#### Scenario: Mailbox pairs two waiting parties
+
+- **WHEN** a sender and a receiver connect to the same mailbox room
+- **THEN** the broker relays each party's handshake messages to the other as opaque blobs
+
+#### Scenario: Blobs are not inspected
+
+- **WHEN** the broker forwards a mailbox handshake message
+- **THEN** it does so without parsing the contents, learning the PAKE key, or storing the message
+
+#### Scenario: Mode isolation
+
+- **WHEN** the broker serves the code-mailbox mode
+- **THEN** the existing fingerprint-routing mode and its clients are unaffected
+

@@ -3,9 +3,7 @@
 ## Purpose
 
 Give each install a long-lived cryptographic identity and a local trust store of paired devices, so trusted peers can transfer files with no human-entered code: transfer codes and a short authentication string are derived deterministically from an ECDH shared secret, and offers/responses exchanged between devices are signed and verified against the trust store.
-
 ## Requirements
-
 ### Requirement: Per-device identity keypair
 
 Each install SHALL own a long-lived cryptographic identity consisting of an Ed25519 signing keypair (identity + signatures) and an X25519 keypair (ECDH). The identity SHALL be generated on first run and persisted so it is stable across restarts. The private material SHALL be stored with owner-only file permissions. The storage directory SHALL be injectable so multiple instances can run side by side with distinct identities.
@@ -104,20 +102,6 @@ Two paired devices SHALL be able to derive an identical shared secret from one d
 - **WHEN** device A computes the shared secret with B's public key and B computes it with A's public key
 - **THEN** the two secrets are equal and non-empty
 
-### Requirement: Deterministic transfer code derivation
-
-The system SHALL derive a croc-compatible code phrase from a shared secret and a per-transfer identifier using an HKDF, such that both paired devices compute the identical code and no human ever enters it. The code SHALL be at least croc's minimum length. Because croc derives the relay room from the code's first four characters, derived codes for distinct transfer identifiers SHALL spread across relay rooms rather than collide.
-
-#### Scenario: Both sides derive the same code
-
-- **WHEN** A and B derive a code from their shared secret and the same transfer id
-- **THEN** the two codes are identical
-
-#### Scenario: Relay rooms are spread
-
-- **WHEN** codes are derived for many distinct transfer ids from one secret
-- **THEN** the four-character relay-room prefixes are well distributed rather than repeated
-
 ### Requirement: Short authentication string (SAS)
 
 The system SHALL derive a short numeric authentication string from the shared secret, identical on both devices, for the user to compare during pairing (man-in-the-middle protection). The SAS SHALL be the same on both sides.
@@ -129,19 +113,12 @@ The system SHALL derive a short numeric authentication string from the shared se
 
 ### Requirement: Signed transfer offers
 
-A send offer SHALL be signed by the sender's identity and carry the sender's public
-identity, the sender's current self-name, a transfer id, a timestamp, and
-file-count/byte-count metadata. Verification SHALL reject an offer whose sender is
-not in the trust store, and SHALL reject an offer whose signature does not verify
-(including any tampered field). The caller SHALL be able to distinguish "sender not
-trusted" from "bad signature". On successful verification of a trusted sender, the
-stored peer's advertised self-name SHALL be refreshed from the offer, unless a
-local override is set for that device.
+A send offer SHALL be signed by the sender's identity and carry the sender's public identity, the sender's current self-name, a transfer id, a timestamp, file-count/byte-count metadata, and the sender's **iroh NodeId** (and/or an iroh ticket) for the transfer. Verification SHALL reject an offer whose sender is not in the trust store, and SHALL reject an offer whose signature does not verify (including any tampered field, the NodeId included). The caller SHALL be able to distinguish "sender not trusted" from "bad signature". On successful verification of a trusted sender, the stored peer's advertised self-name SHALL be refreshed from the offer, unless a local override is set for that device. A receiver SHALL dial only the NodeId carried in a verified offer, so the rendezvous cannot substitute a different node.
 
 #### Scenario: Trusted, intact offer verifies
 
 - **WHEN** an offer from a trusted device with a valid signature is verified
-- **THEN** verification succeeds
+- **THEN** verification succeeds and the carried NodeId is used to dial the sender
 
 #### Scenario: Untrusted sender rejected
 
@@ -150,8 +127,13 @@ local override is set for that device.
 
 #### Scenario: Tampered offer rejected
 
-- **WHEN** any field of a signed offer is altered after signing and the offer is verified against a trusting store
+- **WHEN** any field of a signed offer is altered after signing (including the NodeId) and the offer is verified against a trusting store
 - **THEN** verification fails with a "bad signature" result
+
+#### Scenario: Substituted node rejected
+
+- **WHEN** the rendezvous delivers an offer whose NodeId was swapped without a valid signature
+- **THEN** verification fails and the receiver does not dial the substituted node
 
 #### Scenario: Advertised name refreshes on next transfer
 
@@ -320,3 +302,4 @@ When two devices offer to each other at the same time — each receives an offer
 
 - **WHEN** the device is offering to one peer and receives an offer from a different peer
 - **THEN** that offer is busy-declined normally, without applying the glare tiebreaker
+
