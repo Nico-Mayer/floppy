@@ -11,7 +11,7 @@ mod preview;
 mod rendezvous;
 mod transport;
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
@@ -336,6 +336,10 @@ async fn clear_input_cache(app: AppHandle) -> Result<(), String> {
     fileinput::reap(&app).map_err(|e| e.to_string())
 }
 
+/// Reveal a received folder in the file manager (desktop). Not offered on mobile:
+/// received files land in the system-visible location (Android public Downloads,
+/// iOS Files → On My iPhone → Floppy), reachable from the OS file apps, and there
+/// is no reliable in-app intent to jump straight there.
 #[tauri::command]
 #[specta::specta]
 async fn open_path(app: AppHandle, path: String) -> Result<(), String> {
@@ -489,6 +493,97 @@ fn specta_builder() -> Builder<tauri::Wry> {
         ])
 }
 
+/// The one place the user-visible download root is resolved, per platform. The
+/// per-transfer datetime layout (see the transport's `receive_dest`) sits
+/// identically on top of whatever this returns.
+///
+/// - Desktop: the OS Downloads dir — a real path iroh writes to directly.
+/// - iOS: the app **Documents** dir, surfaced in the Files app via `Info.plist`
+///   (`UIFileSharingEnabled` + `LSSupportsOpeningDocumentsInPlace`).
+/// - Android: the Downloads dir stands in as the *logical* root; the actual
+///   bytes are routed to the **public** Downloads collection through
+///   `tauri-plugin-android-fs` (scoped storage exposes no plain writable path).
+///
+/// `fallback` is used only if the platform resolver has no answer (returns the
+/// app data dir), so a receive still lands somewhere rather than failing.
+fn resolve_dest_root(app: &AppHandle, fallback: &Path) -> PathBuf {
+    #[cfg(target_os = "ios")]
+    let base = app.path().document_dir();
+    #[cfg(not(target_os = "ios"))]
+    let base = app.path().download_dir();
+    base.unwrap_or_else(|_| fallback.to_path_buf()).join("floppy")
+}
+
+/// No publish hook off Android: desktop and iOS export straight to their final,
+/// user-visible path, so the transport reports the export path as-is.
+#[cfg(not(target_os = "android"))]
+fn android_publish(_app: &AppHandle) -> Option<transport::Publish> {
+    None
+}
+
+/// Android publish hook: a finished transfer is exported to an app-private
+/// `dest` folder (the only thing iroh can write to), then copied file-by-file
+/// into the **public** Downloads collection under `floppy/<folder>/…` via
+/// `tauri-plugin-android-fs`, and the private copy is reaped. Mirrors the
+/// input-URI shim in `fileinput` in reverse (cache → public instead of
+/// content-URI → cache). Returns a `Download/floppy/<folder>` display path for
+/// the Done event.
+///
+/// MediaStore is per-entry, so files are created one at a time with the nested
+/// `relative_path` carrying the folder; `create_new_file_with_pending` hides
+/// each entry until its bytes are in, and `set_pending(false)` + `scan` reveal
+/// and index it. No storage permission is needed on API 29+.
+#[cfg(target_os = "android")]
+fn android_publish(app: &AppHandle) -> Option<transport::Publish> {
+    use std::io::{self, Write as _};
+    use tauri_plugin_android_fs::{AndroidFsExt as _, PublicGeneralPurposeDir};
+
+    let app = app.clone();
+    Some(Arc::new(move |dest: &Path| -> io::Result<PathBuf> {
+        let to_io = |ctx: String| move |e| io::Error::new(io::ErrorKind::Other, format!("{ctx}: {e}"));
+
+        let folder = dest
+            .file_name()
+            .and_then(|s| s.to_str())
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "receive folder has no name"))?;
+
+        let afs = app.android_fs();
+        let store = afs.public_storage();
+
+        // Our transfers are flat: one folder of files, names already sanitized to
+        // bare basenames by the export step, so a single read_dir covers them.
+        for entry in std::fs::read_dir(dest)? {
+            let entry = entry?;
+            if !entry.file_type()?.is_file() {
+                continue;
+            }
+            let name = entry.file_name();
+            let rel = Path::new("floppy").join(folder).join(&name);
+
+            let uri = store
+                .create_new_file_with_pending(None, PublicGeneralPurposeDir::Download, &rel, None)
+                .map_err(to_io(format!("create {}", rel.display())))?;
+            let mut out = afs
+                .open_file_writable(&uri)
+                .map_err(to_io(format!("open {}", rel.display())))?;
+            let mut src = std::fs::File::open(entry.path())?;
+            io::copy(&mut src, &mut out)?;
+            out.flush()?;
+            drop(out);
+            store
+                .set_pending(&uri, false)
+                .map_err(to_io(format!("finalize {}", rel.display())))?;
+            // Best-effort media-store index; a failure here only delays the file
+            // showing up in the gallery/Downloads app, it is already written.
+            let _ = store.scan(&uri);
+        }
+
+        // The public copy is the user's now; drop the app-private staging folder.
+        let _ = std::fs::remove_dir_all(dest);
+        Ok(Path::new("Download").join("floppy").join(folder))
+    }))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Install the process-wide rustls crypto provider before anything builds a
@@ -520,6 +615,12 @@ pub fn run() {
     // off, the CSS in layout.css owns the safe areas on both phones.
     #[cfg(target_os = "ios")]
     let tauri_builder = tauri_builder.plugin(tauri_plugin_ios_webview_insets::init());
+
+    // Android: the file-system plugin that lets a receive write into the public
+    // Downloads collection (scoped storage exposes no plain path). Used by the
+    // `android_publish` hook wired into the transport below.
+    #[cfg(target_os = "android")]
+    let tauri_builder = tauri_builder.plugin(tauri_plugin_android_fs::init());
 
     tauri_builder
         .plugin(tauri_plugin_opener::init())
@@ -577,14 +678,10 @@ pub fn run() {
                 .path()
                 .app_data_dir()
                 .unwrap_or_else(|_| std::env::temp_dir());
-            // Tauri's resolver maps to the platform download directory on every
-            // OS (Android included), where `dirs::download_dir()` returns None
-            // off-desktop.
-            let dest_root = app
-                .path()
-                .download_dir()
-                .unwrap_or_else(|_| data_dir.clone())
-                .join("floppy");
+            // One resolver picks the user-visible root per platform (desktop
+            // Downloads, iOS Documents, Android public Downloads); the datetime
+            // layout is identical on top of it.
+            let dest_root = resolve_dest_root(app.handle(), &data_dir);
             let config = Config {
                 store_path: Some(data_dir.join("blobs")),
                 dest_root,
@@ -626,7 +723,14 @@ pub fn run() {
                 last: std::sync::Mutex::new(LastProgress::default()),
                 foreground: foreground.clone(),
             });
-            let manager = tauri::async_runtime::block_on(Manager::new(config, emitter))?;
+            // On Android, received files must land in the public Downloads
+            // collection, reachable only through the media store — not the
+            // app-private path iroh exports to. `android_publish` copies each
+            // finished transfer folder there; every other platform exports in
+            // place (`None`).
+            let publish = android_publish(app.handle());
+            let manager =
+                tauri::async_runtime::block_on(Manager::new_with_publish(config, emitter, publish))?;
 
             // Trusted-device pairing: identity + trust store under app data, and
             // the fingerprint-routing broker (the mailbox URL's `/ws` → `/fp`).

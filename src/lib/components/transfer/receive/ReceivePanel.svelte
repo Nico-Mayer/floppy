@@ -53,9 +53,12 @@
 	     already on its way to idle. -->
 	{#snippet actions()}
 		{#if receive.status === 'done'}
-			<!-- Desktop reveals the destination in a file manager. Android has no
-			     reliable intent to open an app-private download directory, so the
-			     button is hidden there and "Get more files" carries the flow. -->
+			<!-- Desktop reveals the destination in a file manager. On mobile the
+			     files land in the system-visible location (Android public Downloads,
+			     iOS Files → On My iPhone → Floppy), reachable from the OS file apps;
+			     there is no reliable in-app intent to jump there, so the button is
+			     hidden and "Get more files" carries the flow. The path is still
+			     shown by ReceiveComplete. -->
 			{#if !isMobile}
 				<Button class="@max-md:min-h-11" onclick={() => OpenPath(receive.savedTo)}>
 					<FolderOpenIcon />

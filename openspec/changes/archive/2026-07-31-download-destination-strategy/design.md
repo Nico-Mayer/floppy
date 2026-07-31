@@ -62,15 +62,20 @@ Resolve the root in one place; the layout above is identical on top of it.
 
 ### Decision 3 — Android via `tauri-plugin-android-fs`, not hand-rolled MediaStore
 
-The plugin (v8.1.0, community, active) exposes exactly what we need:
-`PublicStorage::create_file(dir = PublicDir::Download, relative_path =
-"floppy/<datetime>[ from <device>]/<filename>", mime)` → `FileUri`, then
-`open_file(uri, Write)` → a **real `std::fs::File`**. No storage permission on API
-29+. iroh export writes into that `File` directly; if the export API insists on
-creating the file itself at a path, we export to the app cache and `io::copy` into
-the plugin `File` (symmetric to the existing input-URI → cache shim). MediaStore is
-per-entry, so files are created one at a time with `relative_path` carrying the
-nested folder — structure is preserved.
+The plugin (community, active) exposes exactly what we need. **API note:** this was
+planned against v8.1.0 but implemented against the current **v29.0.0**, whose API
+differs — the calls below are the v29 ones:
+`android_fs().public_storage().create_new_file_with_pending(None,
+PublicGeneralPurposeDir::Download, "floppy/<datetime>[ from <device>]/<filename>",
+mime)` → `FsUri`, then `android_fs().open_file_writable(&uri)` → a **real
+`std::fs::File`**, then `set_pending(&uri, false)` + `scan(&uri)` to reveal and
+index the entry. No storage permission on API 29+. iroh-blobs export only writes to
+a path it opens itself, so we export to the app-private `dest` first and `io::copy`
+each file into the plugin `File` (symmetric to the existing input-URI → cache shim),
+reaping the app-private copy after. MediaStore is per-entry, so files are created
+one at a time with `relative_path` carrying the nested folder — structure is
+preserved. All Android glue lives in `android_publish` in `lib.rs`, injected into
+the transport as a `publish` hook so the core stays platform-agnostic.
 
 - *Chosen over hand-rolled MediaStore JNI:* far less code and maintenance for the
   same result. Cost: a community dependency — pin the version.
@@ -110,11 +115,13 @@ destination-service root abstraction; (3) Android `tauri-plugin-android-fs`
 integration; (4) iOS Documents + Info.plist; (5) per-platform "open received
 folder" affordance. Roll back per-slice via git.
 
-## Open Questions
+## Resolved Questions
 
-- Does iroh-blobs' export accept writing into a provided `File`/writer, or only a
-  path it opens itself? Determines whether Android needs the export→copy hop
-  (Decision 3 risk).
-- On Android, is one MediaStore entry per file acceptable UX, or do we want a
-  single zip/folder entry for multi-file transfers? (Leaning per-file, matching
-  desktop/iOS.)
+- **Does iroh-blobs' export accept a provided `File`/writer, or only a path?**
+  Resolved: only a path it opens itself (`blobs().export(hash, path)`). So Android
+  takes the export→copy hop — the export loop writes the app-private `dest`, then
+  the `publish` hook `io::copy`s each file into the plugin `File`. Same as the
+  input-URI shim in reverse.
+- **One MediaStore entry per file, or a single entry per transfer?** Per-file,
+  matching desktop/iOS, with the nested `relative_path` preserving the per-transfer
+  folder. MediaStore is per-entry anyway.

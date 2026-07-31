@@ -17,6 +17,9 @@ name = "floppy_lib"
 anyhow = "1.0.104"
 base64 = "0.23.0"
 chacha20poly1305 = { version = "0.11.0", features = ["getrandom", "rand_core"] }
+# Local wall-clock for the datetime-stamped receive folder. `clock` pulls in
+# `Local::now`; no default `oldtime`/serde weight.
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
 ed25519-dalek = "3.0.0"
 futures-util = "0.3.33"
 getrandom = "0.4.3"
@@ -68,3 +71,10 @@ tauri-build = { version = "2", features = [] }
 # covers both phones and keeps it out of every desktop build. See `run()`.
 [target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
 tauri-plugin-ios-webview-insets = "0.1"
+
+# Android only: write received files into the public Downloads collection
+# (scoped storage has no plain path). Pinned — the API used (`public_storage`,
+# `create_new_file_with_pending`, `open_file_writable`) is small but the crate
+# moves fast. See `android_publish` in `lib.rs`.
+[target.'cfg(target_os = "android")'.dependencies]
+tauri-plugin-android-fs = "=29.0.0"

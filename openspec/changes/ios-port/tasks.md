@@ -14,6 +14,7 @@ untouched; the rest is Apple's paperwork and proof on real hardware.
 - [ ] 2.1 `NSLocalNetworkUsageDescription` in `Info.plist`; verify the prompt appears and that a direct LAN path is used afterwards
 - [ ] 2.2 `NSPhotoLibraryUsageDescription` for the photo picker
 - [ ] 2.3 `CFBundleURLTypes` for `floppy://` plus the iOS deep-link config; confirm a link prefills the code without auto-starting
+- [ ] 2.4 `UIFileSharingEnabled` + `LSSupportsOpeningDocumentsInPlace` (set in `src-tauri/Info.ios.plist` by `download-destination-strategy`); confirm both merge into the generated `Info.plist`
 
 ## 3. File input
 
@@ -29,3 +30,4 @@ untouched; the rest is Apple's paperwork and proof on real hardware.
 - [ ] 4.4 Phone to phone: a transfer with the Android build, each direction
 - [ ] 4.5 Confirm the documented limit: backgrounding mid-transfer fails cleanly rather than hanging
 - [ ] 4.6 If any iOS fix landed outside the shared shims, note why the seam was wrong and whether it should move back into the shared layer
+- [ ] 4.7 Download destination (from `download-destination-strategy` §6.3): receive via code and via a trusted device; confirm files land under the app Documents dir as `floppy/<datetime>[ from <device>]/`, and appear in Files → On My iPhone → Floppy (survive relaunch)

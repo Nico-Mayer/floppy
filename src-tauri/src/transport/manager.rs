@@ -72,7 +72,8 @@ pub struct Config {
     /// On-disk blob store dir. `None` uses an in-memory store (tests; no resume
     /// across process restarts).
     pub store_path: Option<PathBuf>,
-    /// Where received files are written: `dest_root/<ticket-hash-prefix>/`.
+    /// The user-visible root received files are written under, one
+    /// datetime-stamped folder per transfer: `dest_root/<datetime>[ from <device>]/`.
     pub dest_root: PathBuf,
     pub relay: RelayConfig,
     /// Rendezvous broker mailbox URL (`ws://…/ws` or `wss://…/ws`) for quick
@@ -89,6 +90,18 @@ pub struct Config {
     /// never cut off. Expiry emits no `Done` (nothing was delivered).
     pub send_ttl: Duration,
 }
+
+/// Platform hook that "publishes" a freshly-exported transfer folder to its
+/// final, user-visible home, returning the path to report to the UI.
+///
+/// Desktop/iOS don't set one — the export path *is* the final path. Android
+/// does: iroh can only export to an app-private path, but the user-visible
+/// destination is the public Downloads collection, reachable only through the
+/// media store. The hook copies the app-private folder into public Downloads via
+/// `tauri-plugin-android-fs`, reaps the private copy, and returns a display path.
+/// Wired in `lib.rs`, where the `AppHandle` (and thus the plugin) is in scope, so
+/// the transport core stays platform-agnostic and unit-testable.
+pub type Publish = Arc<dyn Fn(&Path) -> std::io::Result<PathBuf> + Send + Sync>;
 
 /// A blob store that is either in-memory or on-disk; both deref to `Store`.
 enum Blobs {
@@ -144,6 +157,9 @@ struct Inner {
     dest_root: PathBuf,
     broker_url: String,
     send_ttl: Duration,
+    /// Optional per-platform "publish exported folder → user-visible home" hook
+    /// (Android public Downloads). `None` on desktop/iOS: the export path is final.
+    publish: Option<Publish>,
     // Kept alive for the process; dropping it stops serving.
     _router: Router,
     slots: Mutex<Slots>,
@@ -178,7 +194,22 @@ pub struct Manager {
 impl Manager {
     /// Build the endpoint, store, and blobs router, and start the provider
     /// event pump that turns serve-side events into send progress/done.
+    /// Construct with no receive-destination publish hook — the export path is
+    /// the final path (desktop/iOS, and every test). The app uses
+    /// `new_with_publish` to route Android receives to public Downloads.
+    #[allow(dead_code)] // used by tests and the pairing service's test harness
     pub async fn new(config: Config, emit: Arc<dyn Emitter>) -> anyhow::Result<Self> {
+        Self::new_with_publish(config, emit, None).await
+    }
+
+    /// Like `new`, but with a per-platform `publish` hook for the receive
+    /// destination (see [`Publish`]). The app wires this on Android; every other
+    /// caller (and every test) uses `new`, which passes `None`.
+    pub async fn new_with_publish(
+        config: Config,
+        emit: Arc<dyn Emitter>,
+        publish: Option<Publish>,
+    ) -> anyhow::Result<Self> {
         std::fs::create_dir_all(&config.dest_root)?;
 
         let endpoint = build_endpoint(&config.relay, config.bind_addr.as_deref()).await?;
@@ -216,6 +247,7 @@ impl Manager {
             dest_root: config.dest_root,
             broker_url: config.broker_url,
             send_ttl: config.send_ttl,
+            publish,
             _router: router,
             slots: Mutex::new(Slots::default()),
             seq: AtomicU64::new(0),
@@ -292,19 +324,19 @@ impl Manager {
         Ok(id)
     }
 
-    /// Fetch the content named by `ticket` and export it under the dest root.
-    /// The folder is named after a fresh code phrase — a pasted ticket carries
-    /// nothing a person would recognise.
+    /// Fetch the content named by `ticket` and export it under the dest root,
+    /// in a datetime-stamped folder. A pasted ticket carries no trusted identity,
+    /// so the folder has no ` from <device>` segment.
     pub async fn receive(&self, ticket: String) -> Result<String, StartError> {
-        self.receive_labelled(ticket, None, &codegen::generate(), None).await
+        self.receive_labelled(ticket, None, None).await
     }
 
-    /// Receive from a named peer: the files land under `<dest>/<peer>/<tag>`.
-    /// The trusted path uses `receive_from_notify` (it also signals completion);
-    /// this plain variant is kept for a named receive that needs no ack.
+    /// Receive from a named peer: the files land under `<dest>/<datetime> from
+    /// <peer>`. The trusted path uses `receive_from_notify` (it also signals
+    /// completion); this plain variant is kept for a named receive that needs no ack.
     #[allow(dead_code)]
     pub async fn receive_from(&self, ticket: String, peer: &str) -> Result<String, StartError> {
-        self.receive_labelled(ticket, Some(peer), &codegen::generate(), None).await
+        self.receive_labelled(ticket, Some(peer), None).await
     }
 
     /// Like `receive_from`, but runs `on_complete` once the content is fully
@@ -316,21 +348,19 @@ impl Manager {
         peer: &str,
         on_complete: impl FnOnce() + Send + 'static,
     ) -> Result<String, StartError> {
-        self.receive_labelled(ticket, Some(peer), &codegen::generate(), Some(Box::new(on_complete)))
-            .await
+        self.receive_labelled(ticket, Some(peer), Some(Box::new(on_complete))).await
     }
 
     async fn receive_labelled(
         &self,
         ticket: String,
         peer: Option<&str>,
-        tag: &str,
         on_complete: Option<CompleteCb>,
     ) -> Result<String, StartError> {
         let ticket: BlobTicket = ticket.trim().parse().map_err(|_| StartError::BadCode)?;
         self.await_free_slot().await?;
         let (id, cancel, done) = self.claim_receive()?;
-        let dest = receive_dest(&self.inner.dest_root, peer, tag);
+        let dest = receive_dest(&self.inner.dest_root, peer, &now_stamp());
         self.spawn_receive(ticket, dest, id.clone(), cancel, done, on_complete);
         Ok(id)
     }
@@ -442,9 +472,10 @@ impl Manager {
                     done.cancel();
                 }
                 Some(Ok((ticket, mailbox, key))) => {
-                    // The code phrase is this transfer's name: single-use, and
-                    // the one thing both sides recognise.
-                    let dest = receive_dest(&inner.dest_root, None, &normalized);
+                    // A code receive carries no trusted identity, so the folder
+                    // is datetime-only — the code phrase (a SPAKE2 password) is
+                    // never written to disk.
+                    let dest = receive_dest(&inner.dest_root, None, &now_stamp());
                     // On full receipt, seal a "done" back over the same mailbox
                     // so the sender finishes even if this fetch moved few or no
                     // bytes (dedup/resume). If sealing fails the mailbox just
@@ -647,9 +678,9 @@ async fn run_receive(
 
     match result {
         None => {} // cancelled: emit nothing, leave partial data for resume
-        Some(Ok(())) => {
+        Some(Ok(reported)) => {
             tracing::info!(id = %id, "receive: complete");
-            inner.emit(Event::Done { id: id.clone(), kind: Kind::Receive, dest: dest.to_string_lossy().into_owned() });
+            inner.emit(Event::Done { id: id.clone(), kind: Kind::Receive, dest: reported.to_string_lossy().into_owned() });
             // Tell the sender we have it all — its passive send may not otherwise
             // know (a deduped/resumed receive moves fewer bytes than it holds).
             if let Some(cb) = on_complete {
@@ -675,7 +706,7 @@ async fn do_receive(
     ticket: &BlobTicket,
     dest: &Path,
     id: &str,
-) -> Result<(), TransferError> {
+) -> Result<PathBuf, TransferError> {
     let store = inner.store.store();
     let root = ticket.hash();
 
@@ -746,7 +777,10 @@ async fn do_receive(
         }
     }
 
-    // Export each file to the destination folder under its name.
+    // Export each file to the destination folder under its name. iroh-blobs only
+    // exports to a path it opens itself, so on every platform this writes to a
+    // real (on Android, app-private) path first; the `publish` hook then moves
+    // the folder to its user-visible home.
     std::fs::create_dir_all(dest)
         .map_err(|e| TransferError::new(TransferErrorCode::Storage, e.to_string()))?;
     for (name, hash) in collection.iter() {
@@ -758,10 +792,19 @@ async fn do_receive(
             .map_err(|e| TransferError::new(TransferErrorCode::Storage, e.to_string()))?;
     }
 
+    // Move the exported folder to its final, user-visible home if the platform
+    // needs it (Android → public Downloads). Desktop/iOS export in place, so the
+    // reported destination is `dest` itself.
+    let reported = match &inner.publish {
+        Some(publish) => publish(dest)
+            .map_err(|e| TransferError::new(TransferErrorCode::Storage, e.to_string()))?,
+        None => dest.to_path_buf(),
+    };
+
     // Guarantee a final 100% before the Done event (emitted by the caller).
     let final_stats = progress::completed(total, file_count);
     inner.emit(Event::Progress { id: id.to_string(), kind: Kind::Receive, stats: final_stats });
-    Ok(())
+    Ok(reported)
 }
 
 /// Fetch one blob into the store by hash. Used for the two tiny structural
@@ -970,26 +1013,33 @@ fn finish_send(inner: &Inner, id: &str, total: u64, file_count: u64) {
     done.cancel();
 }
 
-/// The folder one receive exports into: `<root>/<peer>/<tag>`, or `<root>/<tag>`
-/// when the sender has no name here. Every transfer gets its own folder, so two
-/// receives never mix their files, and `tag` is a code phrase rather than a
-/// hash so the folder is something a person can read.
-fn receive_dest(root: &Path, peer: Option<&str>, tag: &str) -> PathBuf {
-    let base = match peer.map(path_component).filter(|p| !p.is_empty()) {
-        Some(peer) => root.join(peer),
-        None => root.to_path_buf(),
-    };
-    let name = path_component(tag);
-    let name = if name.is_empty() { "transfer".to_string() } else { name };
+/// The flat, time-sorted stamp for one transfer's folder: local wall-clock as
+/// `YYYY-MM-DD HH-MM-SS`. Filename-safe (no `:`, illegal on Windows), seconds
+/// included so same-minute receives don't collide, and it sorts chronologically
+/// by plain name order.
+fn now_stamp() -> String {
+    chrono::Local::now().format("%Y-%m-%d %H-%M-%S").to_string()
+}
 
-    // The same code can be received twice (a resumed or repeated share); the
-    // second copy gets its own folder instead of landing on the first.
-    let first = base.join(&name);
+/// The folder one receive exports into: `<root>/<datetime>`, with ` from
+/// <device>` appended only when the sender is a trusted, named device. Every
+/// transfer gets its own folder (single file included), so two receives never
+/// mix their files. The code phrase is never used — it is the transfer's SPAKE2
+/// password — and the datetime is more findable later anyway.
+fn receive_dest(root: &Path, peer: Option<&str>, now: &str) -> PathBuf {
+    let name = match peer.map(path_component).filter(|p| !p.is_empty()) {
+        Some(device) => format!("{now} from {device}"),
+        None => now.to_string(),
+    };
+
+    // Two transfers can resolve to the same second (or a resumed/repeated
+    // share); the later one gets its own folder instead of landing on the first.
+    let first = root.join(&name);
     if !first.exists() {
         return first;
     }
     (2..1000)
-        .map(|n| base.join(format!("{name}-{n}")))
+        .map(|n| root.join(format!("{name}-{n}")))
         .find(|p| !p.exists())
         .unwrap_or(first)
 }
@@ -1365,33 +1415,56 @@ mod tests {
     }
 
     #[test]
-    fn receive_dest_is_one_readable_folder_per_transfer() {
+    fn receive_dest_is_one_datetime_folder_per_transfer() {
         let tmp = tempfile::tempdir().unwrap();
         let root = tmp.path();
+        let now = "2026-07-31 14-05-09";
 
-        // No known sender: straight under the root, named by the code phrase.
-        assert_eq!(receive_dest(root, None, "4821-crayon-mimic-otter"), root.join("4821-crayon-mimic-otter"));
-        // A named device gets its own shelf.
+        // A code receive carries no trusted identity: datetime-only folder, no
+        // ` from <device>` segment.
+        assert_eq!(receive_dest(root, None, now), root.join(now));
+        // A trusted, named device appends ` from <device>`.
         assert_eq!(
-            receive_dest(root, Some("Nico's MacBook"), "7421-velvet-otter-reef"),
-            root.join("Nico's MacBook").join("7421-velvet-otter-reef")
+            receive_dest(root, Some("Nico's MacBook"), now),
+            root.join("2026-07-31 14-05-09 from Nico's MacBook")
         );
-        // A peer name is never allowed to escape the root or break the path;
-        // separators are flattened rather than dropped, so the name still reads
-        // like what the device is called.
-        assert_eq!(receive_dest(root, Some("../../etc"), "tag"), root.join("..-..-etc").join("tag"));
-        assert_eq!(receive_dest(root, Some("a/b:c"), "tag"), root.join("a-b-c").join("tag"));
-        assert_eq!(receive_dest(root, Some("   "), "tag"), root.join("tag"));
-        assert_eq!(receive_dest(root, None, "../evil"), root.join("..-evil"));
-        assert_eq!(receive_dest(root, None, ""), root.join("transfer"));
+        // A device name is never allowed to escape the root or break the path;
+        // separators are flattened rather than dropped, so it still reads like
+        // what the device is called.
+        assert_eq!(
+            receive_dest(root, Some("../../etc"), now),
+            root.join("2026-07-31 14-05-09 from ..-..-etc")
+        );
+        assert_eq!(
+            receive_dest(root, Some("a/b:c"), now),
+            root.join("2026-07-31 14-05-09 from a-b-c")
+        );
+        // A blank/whitespace device drops the segment: datetime-only.
+        assert_eq!(receive_dest(root, Some("   "), now), root.join(now));
 
-        // The same code twice must not land on top of the first copy.
-        let first = receive_dest(root, None, "9930-amber-finch-loop");
+        // The code phrase never reaches the path — `receive_dest` has no code
+        // parameter at all, so the folder name is exactly the datetime (+device).
+        let dest = receive_dest(root, None, now);
+        assert_eq!(dest.file_name().unwrap(), now);
+
+        // Two transfers that resolve to the same second must not land on top of
+        // each other; the later one gets a numeric suffix.
+        let first = receive_dest(root, None, now);
         std::fs::create_dir_all(&first).unwrap();
-        let second = receive_dest(root, None, "9930-amber-finch-loop");
-        assert_eq!(second, root.join("9930-amber-finch-loop-2"));
+        let second = receive_dest(root, None, now);
+        assert_eq!(second, root.join(format!("{now}-2")));
         std::fs::create_dir_all(&second).unwrap();
-        assert_eq!(receive_dest(root, None, "9930-amber-finch-loop"), root.join("9930-amber-finch-loop-3"));
+        assert_eq!(receive_dest(root, None, now), root.join(format!("{now}-3")));
+    }
+
+    #[test]
+    fn now_stamp_is_filename_safe_and_sortable() {
+        let s = now_stamp();
+        // `YYYY-MM-DD HH-MM-SS`: 19 chars, no `:` (illegal on Windows), and the
+        // only separators are `-`, ` `, so a plain name sort is chronological.
+        assert_eq!(s.len(), 19, "unexpected stamp: {s}");
+        assert!(!s.contains(':'), "stamp must not contain ':': {s}");
+        assert!(s.chars().all(|c| c.is_ascii_digit() || c == '-' || c == ' '), "stamp: {s}");
     }
 
     /// A pasted ticket has no code phrase, so the folder is a generated one —
@@ -1432,8 +1505,13 @@ mod tests {
         for copy in &copies {
             let folder = copy.parent().unwrap();
             assert_eq!(folder.parent().unwrap(), root);
+            // Datetime-stamped (`YYYY-MM-DD HH-MM-SS`), not a code phrase: 4-digit
+            // year, `-` and ` ` separators in the fixed positions.
             let name = folder.file_name().unwrap().to_string_lossy().into_owned();
-            assert!(codegen::looks_like_code(&name), "folder {name} is not a code phrase");
+            assert!(
+                name.len() >= 19 && name.as_bytes()[4] == b'-' && name.as_bytes()[10] == b' ',
+                "folder {name} is not a datetime stamp"
+            );
         }
         assert_ne!(copies[0].parent(), copies[1].parent());
     }
@@ -1457,8 +1535,12 @@ mod tests {
             .into_iter()
             .find(|p| p.file_name().unwrap() == "from-peer.bin")
             .expect("nothing exported");
+        // Flat under the root, in a `<datetime> from <device>` folder — the
+        // trusted sender's name is the trailing segment, not a parent shelf.
         let folder = file.parent().unwrap();
-        assert_eq!(folder.parent().unwrap(), tmp.path().join("r-dl").join("Workshop PC"));
+        assert_eq!(folder.parent().unwrap(), tmp.path().join("r-dl"));
+        let name = folder.file_name().unwrap().to_string_lossy().into_owned();
+        assert!(name.ends_with(" from Workshop PC"), "folder {name} missing sender segment");
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -1869,13 +1951,22 @@ mod tests {
         receiver.quick_receive(&phrase).await.unwrap();
         wait_for(&re, |e| e.iter().any(|x| matches!(x, Event::Done { .. }))).await;
 
-        // The code phrase names the folder: `<dest root>/<phrase>/quick.bin`.
-        let file = walk(&tmp.path().join("r-dl"))
+        // A code receive lands in a datetime folder directly under the root; the
+        // code phrase (a SPAKE2 password) never appears in the path.
+        let root = tmp.path().join("r-dl");
+        let file = walk(&root)
             .into_iter()
             .find(|p| p.file_name().unwrap() == "quick.bin")
             .expect("quick.bin was not exported");
         assert_eq!(std::fs::read(&file).unwrap(), payload);
-        assert_eq!(file.parent().unwrap(), tmp.path().join("r-dl").join(&phrase));
+        let folder = file.parent().unwrap();
+        assert_eq!(folder.parent().unwrap(), root);
+        let name = folder.file_name().unwrap().to_string_lossy().into_owned();
+        assert!(!name.contains(phrase.as_str()), "code phrase {phrase} leaked into path {name}");
+        assert!(
+            name.len() == 19 && name.as_bytes()[4] == b'-' && name.as_bytes()[10] == b' ',
+            "folder {name} is not a datetime stamp"
+        );
     }
 
     /// The code-share twin of the trusted dedup regression: the second time the

@@ -16,8 +16,8 @@ export const isWindows = /win/i.test(platform)
 
 // Mobile (Android/iOS): drives the mobile chrome — no desktop window controls,
 // safe-area insets, and hiding actions the platform can't honour (e.g. opening
-// an app-private download directory in a file manager). Keyed off the user
-// agent, since `userAgentData.platform` reports the OS, not the form factor.
+// a received-files folder in a file manager). Keyed off the user agent, since
+// `userAgentData.platform` reports the OS, not the form factor.
 const userAgent = typeof navigator === 'undefined' ? '' : navigator.userAgent
 export const isMobile = /android|iphone|ipad|ipod/i.test(userAgent)
 

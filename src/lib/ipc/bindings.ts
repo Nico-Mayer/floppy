@@ -17,6 +17,12 @@ export const commands = {
 	 *  nothing is copied). The frontend calls this when the queue is cleared.
 	 */
 	clearInputCache: () => typedError<null, string>(__TAURI_INVOKE("clear_input_cache")),
+	/**
+	 *  Reveal a received folder in the file manager (desktop). Not offered on mobile:
+	 *  received files land in the system-visible location (Android public Downloads,
+	 *  iOS Files → On My iPhone → Floppy), reachable from the OS file apps, and there
+	 *  is no reliable in-app intent to jump straight there.
+	 */
 	openPath: (path: string) => typedError<null, string>(__TAURI_INVOKE("open_path", { path })),
 	identity: () => typedError<string, string>(__TAURI_INVOKE("identity")),
 	/**  This device's own name, shown to peers during pairing and on transfers. */

@@ -13,4 +13,4 @@ pub mod manager;
 pub mod progress;
 
 pub use event::{Emitter, Event, Kind};
-pub use manager::{Config, Manager, RelayConfig};
+pub use manager::{Config, Manager, Publish, RelayConfig};

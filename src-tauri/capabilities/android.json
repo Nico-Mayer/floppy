@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/android-schema.json",
+  "identifier": "android-fs",
+  "description": "Let a received transfer be written into the public Downloads collection on Android (tauri-plugin-android-fs). Android-only; no storage permission on API 29+.",
+  "platforms": ["android"],
+  "windows": ["main"],
+  "permissions": ["android-fs:default"]
+}
