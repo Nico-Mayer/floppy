@@ -11,11 +11,11 @@ intentional and one-handed, while keeping desktop unchanged or better.
 ## What Changes
 
 - **One shell, no platform fork for structure.** Collapse the two branches of
-  `+layout.svelte` into a single `Sidebar.Provider`. Platform only decides *header
-  slots* (macOS traffic-light spacer + drag region, Windows min/max/close, mobile
-  status-bar padding); width decides *navigation presentation*.
+  `+layout.svelte` into a single `Sidebar.Provider`. Platform only decides _header
+  slots_ (macOS traffic-light spacer + drag region, Windows min/max/close, mobile
+  status-bar padding); width decides _navigation presentation_.
 - **Single navigation model.** Desktop keeps a fixed sidebar, now **collapsible to an
-  icon rail**. Touch/narrow gets the *same* sidebar as a left **drawer** (the stock
+  icon rail**. Touch/narrow gets the _same_ sidebar as a left **drawer** (the stock
   shadcn Sheet), opened by a hamburger or an **edge-swipe** gesture.
 - **BREAKING (internal): remove the mobile bottom tab bar.** Delete `BottomNav.svelte`
   and the `--bottom-nav-height` / `[data-tabbar-clearance]` machinery that only existed
@@ -41,6 +41,7 @@ intentional and one-handed, while keeping desktop unchanged or better.
 ## Capabilities
 
 ### New Capabilities
+
 - `app-shell`: the single responsive application shell — one `Sidebar.Provider`, the
   unified `AppHeader` with per-platform chrome slots, desktop collapsible icon rail,
   touch/narrow drawer, safe-area handling, and the removal of the bottom tab bar and
@@ -50,6 +51,7 @@ intentional and one-handed, while keeping desktop unchanged or better.
   and Android hardware-back reduced to overlay-dismiss-else-close.
 
 ### Modified Capabilities
+
 - `transfer-panel-layout`: add the mobile chrome-dissolve requirement — full-bleed card,
   flush segmented switcher, slimmed header row below `sm` — while preserving the existing
   container-query, touch-target, mascot, and two-zone requirements.

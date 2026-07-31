@@ -6,7 +6,7 @@ The transfer event bus has three delivery gaps that show up as stuck or slow tra
 
 - Send completion no longer relies solely on byte-counting. The receiver sends an explicit, authenticated completion signal after it finishes exporting; the sender finishes its passive send and emits `Done` on that signal. Byte-count completion stays as a fast path.
 - Trusted-device offers surface promptly: offer emission is decoupled from the sender's endpoint warm-up (`wait_for_addr`), so the receiver is notified without waiting on the sender's iroh address being ticket-ready.
-- A backgrounded receiver gets an OS notification for an incoming offer (today only transfer *completion* notifies).
+- A backgrounded receiver gets an OS notification for an incoming offer (today only transfer _completion_ notifies).
 - Both broker WebSocket channels (`/ws` mailbox and `/fp` fingerprint routing) gain an application-level ping/pong heartbeat and dead-connection eviction, so idle connections stay live and dead ones are dropped fast.
 - The send slot expires on a TTL: a never-accepted or stuck passive send stops serving and frees its pins/slot instead of holding them until manual cancel.
 - **BREAKING** (internal invariant): the device runs at most one transfer at a time across both directions — send XOR receive — instead of allowing one send and one receive concurrently. A single atomic transfer session is reserved from the moment a transfer is offered/accepted through its terminal event and unwind.
@@ -16,9 +16,11 @@ The transfer event bus has three delivery gaps that show up as stuck or slow tra
 ## Capabilities
 
 ### New Capabilities
+
 - `transfer-delivery`: reliable terminal signalling and a single-transfer session model for the transfer core — an explicit receiver→sender completion acknowledgement so deduped/resumed sends still complete and emit `Done`; a single active transfer session (send XOR receive) with atomic reservation and the stable "transfer already running" busy error; and a send-slot time-to-live that expires stuck or never-accepted passive sends.
 
 ### Modified Capabilities
+
 - `rendezvous-broker`: add a WebSocket keepalive/heartbeat and dead-connection eviction on both the mailbox (`/ws`) and fingerprint (`/fp`) channels.
 - `device-pairing`: an incoming offer is emitted promptly (independent of the sender's endpoint warm-up) and raises an OS notification when unfocused; a busy device auto-declines incoming offers with a distinct busy reason and shows no prompt; simultaneous mutual offers resolve by a fingerprint tiebreaker; the signed response carries a decline reason so a busy auto-decline is distinguishable from a user decline.
 

@@ -102,12 +102,12 @@ missing thumbnail, and the gate already falls through to streaming the original.
 
 ## Risks
 
-| Risk | Handling |
-|---|---|
-| iroh's UDP/QUIC path behaves differently under emulator NAT | Verify on a real device, not just the emulator; relay path is the fallback |
-| A transfer dies when the user backgrounds the app | Out of scope by decision; documented as a known limit and verified as a clean failure, not a hang |
-| 2× storage for a large Android send | Cache reaping + `TryReference`; surfaced in the proposal |
-| `gen/android` is partly generated and partly tracked | Only hand-edit files git already tracks; regenerate the rest |
+| Risk                                                        | Handling                                                                                          |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| iroh's UDP/QUIC path behaves differently under emulator NAT | Verify on a real device, not just the emulator; relay path is the fallback                        |
+| A transfer dies when the user backgrounds the app           | Out of scope by decision; documented as a known limit and verified as a clean failure, not a hang |
+| 2× storage for a large Android send                         | Cache reaping + `TryReference`; surfaced in the proposal                                          |
+| `gen/android` is partly generated and partly tracked        | Only hand-edit files git already tracks; regenerate the rest                                      |
 
 ## Open questions
 

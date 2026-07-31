@@ -13,7 +13,7 @@ redesign:
    phone end up with different navigation models.
 2. The shadcn `Sidebar` is already drawer-capable on mobile (`collapsible="offcanvas"`,
    `sidebar.isMobile → Sheet.Root`, `setOpenMobile`), so "reuse the sidebar as a mobile
-   drawer" is mostly *deleting the fork*, not building a new component.
+   drawer" is mostly _deleting the fork_, not building a new component.
 
 The app has no deep navigation — four top-level destinations, each self-contained. That
 makes in-app history-back dead weight and, critically, frees the left screen edge (no
@@ -23,6 +23,7 @@ identically on iOS and Android.
 ## Goals / Non-Goals
 
 **Goals:**
+
 - One shell; platform decides only header chrome, width decides only nav presentation.
 - One navigation model across every size: fixed/rail sidebar when wide, the same sidebar
   as a left drawer when touch/narrow, opened by hamburger or edge-swipe.
@@ -32,8 +33,9 @@ identically on iOS and Android.
   single ~20-line gesture action.
 
 **Non-Goals:**
+
 - No Rust/IPC/broker/transport changes — pure frontend.
-- No change to the send/receive *flow*, states, or copy.
+- No change to the send/receive _flow_, states, or copy.
 - No new runtime dependency (vaul-svelte is already installed).
 - Not building a true 1:1-from-first-pixel drag-open (see Decision 3).
 
@@ -48,7 +50,7 @@ status-bar padding via `--safe-top`) plus a hamburger shown whenever the sidebar
 collapsible. Navigation presentation is chosen by the sidebar's own width breakpoint, not
 by `isMobile`.
 
-- *Alternative — keep two shells but share a `NavMenu` content component:* more legible
+- _Alternative — keep two shells but share a `NavMenu` content component:_ more legible
   but keeps the platform branch in `+layout` we are trying to delete. Rejected.
 
 ### Decision 2 — Keep the stock shadcn `Sheet` as the mobile renderer (vaul reverted)
@@ -66,15 +68,15 @@ bar. Geometry-based `onInteractOutside` guards were brittle. The stock Sheet, ma
 full-height (Decision 3), covers the menu button while open, so the flip-flop can't occur
 at all — a structural fix instead of an event-handling patch.
 
-- *Alternative — vaul with an `onInteractOutside` geometry guard:* worked only when the
-  drawer actually covered the trigger; the real bug was the drawer sitting *below* the
+- _Alternative — vaul with an `onInteractOutside` geometry guard:_ worked only when the
+  drawer actually covered the trigger; the real bug was the drawer sitting _below_ the
   header (Decision 3). Not worth vaul's extra edge cases. Rejected.
 
 ### Decision 3 — Full-height mobile sheet; the header-offset is desktop-only
 
 The desktop sidebar sits below the header via `top-(--header-height)! h-[…]!` on
 `Sidebar.Root`. That class is `!important`, so it also won the mobile Sheet and pushed it
-*below* the header — leaving the hamburger exposed, which is what let a tap close (outside)
+_below_ the header — leaving the hamburger exposed, which is what let a tap close (outside)
 then reopen (click). Gate the offset to `md:` so it applies only to the desktop branch;
 below `md` the Sheet keeps its default full-height geometry and covers the whole screen,
 including the menu button. Closing on mobile is by the scrim, a nav choice, or the back
@@ -109,8 +111,9 @@ lock.
 ### Decision 7 — Mobile Transfer screen dissolves card chrome (responsive, not forked)
 
 All via responsive utilities on existing components:
+
 - `TransferCard`: `max-sm:rounded-none max-sm:border-0 max-sm:shadow-none
-  max-sm:bg-transparent` → the card becomes the page below `sm`; desktop untouched.
+max-sm:bg-transparent` → the card becomes the page below `sm`; desktop untouched.
 - `+page.svelte`: drop `p-4`/`max-w-2xl` at mobile (`sm:` prefixes) → full-bleed width.
 - `Card.Header`: slim on mobile — drop the mono headline row and shadow; keep the badge
   only where it carries live state.
@@ -120,7 +123,7 @@ All via responsive utilities on existing components:
 
 Because `TransferCard` content is already `@container` and `SendQueue`/`ReceiveIdle`
 already ship roomy `@md` variants, full-bleed width triggers those spacious layouts for
-free. The redesign is mostly *removing constraints*.
+free. The redesign is mostly _removing constraints_.
 
 ## Risks / Trade-offs
 
@@ -142,6 +145,7 @@ free. The redesign is mostly *removing constraints*.
 ## Migration Plan
 
 Frontend-only, no data or API migration. Land in reviewable slices:
+
 1. `AppHeader` merge + single `Sidebar.Provider` in `+layout` (still Sheet on mobile).
 2. Delete `BottomNav`, `nav.svelte.ts`, back buttons, tabbar-clearance CSS; simplify
    Android back.

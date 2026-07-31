@@ -4,13 +4,14 @@ The transport core is a single `Manager` per app: at most one live send and one 
 
 iroh-blobs is content-addressed (BLAKE3) and resumes by hash from the on-disk `FsStore`. A receiver only requests the byte ranges it lacks. So when the receiver already holds the content (same file sent before, or a resumed partial), the bulk fetch moves fewer bytes than `total` — sometimes zero — and `content` never reaches `total`. The receiver's stream still ends and it emits `Done`, but the sender's byte counter never trips `finish_send`: the send slot lives forever with no terminal event. That is the "sender never catches done" report.
 
-Two adjacent latency problems ride along. Trusted-device offers go out only after `send_to` → `start_send` → `wait_for_addr` (up to ~5s warming the endpoint to a ticket-ready address), even though the receiver does not dial until it accepts. And a backgrounded receiver gets no OS notification for an offer (only transfer *completion* notifies), so the prompt is effectively invisible until focus. Underneath both, neither broker WebSocket channel has a heartbeat, so idle sockets die silently behind NAT/proxy and offers land late or as false "device offline".
+Two adjacent latency problems ride along. Trusted-device offers go out only after `send_to` → `start_send` → `wait_for_addr` (up to ~5s warming the endpoint to a ticket-ready address), even though the receiver does not dial until it accepts. And a backgrounded receiver gets no OS notification for an offer (only transfer _completion_ notifies), so the prompt is effectively invisible until focus. Underneath both, neither broker WebSocket channel has a heartbeat, so idle sockets die silently behind NAT/proxy and offers land late or as false "device offline".
 
 Signalling already exists for trusted devices: the `Signal` enum (`Offer`, `Response`) rides the `/fp` fingerprint channel, verified against the trust store. Quick-share/code transfers have no persistent back-channel — the `/ws` mailbox is closed right after the sealed-ticket handoff.
 
 ## Goals / Non-Goals
 
 **Goals:**
+
 - A passive send reaches `Done` whenever the receiver actually got the content, regardless of how many bytes crossed the wire (dedup/resume included).
 - Exactly one terminal event per send; no double `Done`, no false `Done` from a forged completion.
 - Offers surface to the receiver promptly and reach a backgrounded user via an OS notification.
@@ -18,6 +19,7 @@ Signalling already exists for trusted devices: the `Signal` enum (`Offer`, `Resp
 - A stuck or never-accepted send frees its slot and pins on a TTL.
 
 **Non-Goals:**
+
 - Changing the transfer wire protocol or iroh-blobs itself.
 - Persisting transfer history (separate concern).
 - Adding delivery receipts to the UI beyond the existing done state.
@@ -32,9 +34,9 @@ The receiver is the only party that knows it has the full content. After `do_rec
 - **Trusted devices**: add `Signal::Completed(Response)` (or a dedicated `Completion` struct) carrying the receiver's public identity + transfer id, signed and verified against the trust store exactly like accept/decline. The sender's `incoming_loop` (`service.rs`) maps a verified completion for a pending send to `manager` finishing that send and emitting `Done`. Reuses the whole `/fp` path — no new transport.
 - **Quick-share / code**: keep the `/ws` mailbox open one extra frame after the sealed-ticket handoff. The receiver, after export, sends one sealed "done" frame under the PAKE-derived key; the sender `recv()`s it (bounded by a timeout) and finishes. The broker relays it opaquely — no broker change for this half. Binding it under the AEAD key is the authentication.
 
-Alternative considered — *complete on the download request finishing (zero-byte requests included) from the provider stream*: rejected as the sole mechanism because full dedup can send **no** GET request at all, so the provider sees nothing. Kept only as the existing fast path for the fresh-transfer case.
+Alternative considered — _complete on the download request finishing (zero-byte requests included) from the provider stream_: rejected as the sole mechanism because full dedup can send **no** GET request at all, so the provider sees nothing. Kept only as the existing fast path for the fresh-transfer case.
 
-Alternative considered — *sender polls the receiver / keeps a QUIC stream open for an ack*: rejected; the broker back-channel already exists and avoids holding a second connection open on the passive side.
+Alternative considered — _sender polls the receiver / keeps a QUIC stream open for an ack_: rejected; the broker back-channel already exists and avoids holding a second connection open on the passive side.
 
 ### Offer emission decoupled from endpoint warm-up
 
