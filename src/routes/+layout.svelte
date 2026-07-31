@@ -4,6 +4,7 @@
 	import IncomingPairDialog from '$lib/components/prompts/IncomingPairDialog.svelte'
 	import AppHeader from '$lib/components/shell/AppHeader.svelte'
 	import AppSidebar from '$lib/components/shell/AppSidebar.svelte'
+	import NavEdgeSwipe from '$lib/components/shell/NavEdgeSwipe.svelte'
 	import * as Sidebar from '$lib/components/ui/sidebar'
 	import { Toaster } from '$lib/components/ui/sonner'
 	import { pairing } from '$lib/pairing-app.svelte'
@@ -128,10 +129,12 @@
 <!-- One shell for every platform and width. The header adapts its chrome to the
      platform (macOS traffic-light spacer, Windows controls, or a phone's
      status-bar-safe app bar); the sidebar adapts to the width (a fixed icon rail
-     on desktop, a Sheet drawer on a phone). Safe-area insets on the content clear
-     the notch, gesture rails and home indicator; they resolve to 0 on desktop. -->
+     on desktop, a Sheet drawer on a phone, opened by the menu button or a
+     left-edge swipe via NavEdgeSwipe). Safe-area insets on the content clear the
+     notch, gesture rails and home indicator; they resolve to 0 on desktop. -->
 <Sidebar.Provider bind:open={sidebarOpen} class="h-svh min-h-0! flex-col">
 	<AppHeader />
+	<NavEdgeSwipe />
 	<div class="flex min-h-0 w-full flex-1">
 		<AppSidebar />
 		<Sidebar.Inset class="min-h-0 bg-background pr-(--safe-right) pb-(--safe-bottom) pl-(--safe-left)">

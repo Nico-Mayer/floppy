@@ -21,7 +21,14 @@
 </script>
 
 {#snippet menuToggle()}
-	<Button variant="ghost" size="icon" class="size-8" aria-label="Menu" onclick={() => sidebar.toggle()}>
+	<Button
+		variant="ghost"
+		size="icon"
+		class="size-8"
+		aria-label="Menu"
+		onclick={() => sidebar.toggle()}
+		hidden={sidebar.openMobile}
+	>
 		<MenuIcon />
 	</Button>
 {/snippet}
@@ -34,7 +41,7 @@
 	     the menu button) while open — closing is by the scrim, a nav choice, or
 	     the back gesture. -->
 	<header
-		class="sticky top-0 z-50 flex h-(--header-height) shrink-0 items-center gap-1 border-b bg-background pt-(--safe-top) pr-[calc(var(--safe-right)+--spacing(2))] pl-[calc(var(--safe-left)+--spacing(2))]"
+		class="sticky top-0 z-60 flex h-(--header-height) shrink-0 items-center gap-1 border-b bg-background pt-(--safe-top) pr-[calc(var(--safe-right)+--spacing(2))] pl-[calc(var(--safe-left)+--spacing(2))]"
 	>
 		{@render menuToggle()}
 		<h1 class="truncate px-1 font-heading text-lg font-bold tracking-tight">{title}</h1>

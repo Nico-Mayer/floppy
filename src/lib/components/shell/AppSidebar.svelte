@@ -28,14 +28,16 @@
 	const sidebar = useSidebar()
 
 	// On mobile the sidebar is a drawer; collapse it once a destination is chosen
-	// so navigation is one tap, not two.
+	// so navigation is one tap, not two. Unconditional: openMobile only drives the
+	// mobile Sheet, so closing it is a no-op on desktop (the rail stays put).
 	function afterNavigate() {
-		if (sidebar.isMobile) sidebar.setOpenMobile(false)
+		sidebar.setOpenMobile(false)
 	}
 </script>
 
 <!-- Fixed below the app header on desktop (collapsible to an icon rail); a Sheet
-     drawer on mobile. -->
+     drawer on mobile. The offset keeps the drawer below the header on every size,
+     so the app bar stays visible above it instead of being covered. -->
 <Sidebar.Root collapsible="icon" class="top-(--header-height)! h-[calc(100svh-var(--header-height))]!">
 	<Sidebar.Header>
 		<Sidebar.Menu>
@@ -57,7 +59,9 @@
 							     rail overrides both to a square size-8 (base variant). -->
 							<Sidebar.MenuButton isActive={active} tooltipContent={item.label} class="h-11 md:h-9">
 								{#snippet child({ props })}
-									<a href={resolve(item.href)} onclick={afterNavigate} {...props}>
+									<!-- onclick after the spread so it wins over any handler the menu
+									     button / tooltip trigger passes in, and always runs. -->
+									<a href={resolve(item.href)} {...props} onclick={afterNavigate}>
 										<item.icon />
 										<span>{item.label}</span>
 									</a>
@@ -73,7 +77,10 @@
 		</Sidebar.Group>
 	</Sidebar.Content>
 
-	<Sidebar.Footer>
+	<!-- Clear the home indicator / gesture bar on mobile (0 on desktop). The
+	     drawer sheet uses data-slot="sidebar", so the generic sheet safe-area rule
+	     in layout.css doesn't reach it. -->
+	<Sidebar.Footer class="pb-(--safe-bottom)">
 		<Sidebar.Menu>
 			<Sidebar.MenuItem>
 				<!-- Placeholder sign-in: real auth isn't wired yet, so this opens the
