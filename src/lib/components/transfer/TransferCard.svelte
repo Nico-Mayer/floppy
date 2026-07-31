@@ -44,13 +44,17 @@
      accent prop itself. Deliberately not named --accent: that is a shadcn
      semantic token, and shadowing it would repaint any stock component that
      uses bg-accent. -->
+<!-- On a phone the card dissolves into the page: no ring, shadow, radius,
+     background, or horizontal padding, so the transfer surface is the screen
+     rather than a floating box (the page supplies the one gutter). Desktop keeps
+     the full card. -->
 <Card.Root
-	class="h-full transition-colors duration-200 [&.file-drop-target-active]:bg-(--tint)/5 [&.file-drop-target-active]:ring-2 [&.file-drop-target-active]:ring-(--tint)"
+	class="h-full transition-colors duration-200 max-sm:rounded-none max-sm:bg-transparent max-sm:py-2 max-sm:shadow-none max-sm:ring-0 [&.file-drop-target-active]:bg-(--tint)/5 [&.file-drop-target-active]:ring-2 [&.file-drop-target-active]:ring-(--tint)"
 	size="sm"
 	style="--tint: var(--{accent}); --tint-fg: var(--{accent}-foreground)"
 	data-file-drop-target={dropTarget ? '' : undefined}
 >
-	<Card.Header>
+	<Card.Header class="max-sm:px-0">
 		<Card.Title class="flex items-center gap-2">
 			<div class="relative flex">
 				<span class="absolute size-3 animate-ping rounded-full bg-(--tint) animation-duration-[2s]"></span>
@@ -58,7 +62,9 @@
 			</div>
 			{title}
 		</Card.Title>
-		<Card.Description class="font-mono text-[10px] tracking-widest uppercase">
+		<!-- The mono status line is desktop density; on a phone the mode switcher
+		     above and the badge already say where you are, so it is hidden. -->
+		<Card.Description class="font-mono text-[10px] tracking-widest uppercase max-sm:hidden">
 			{headline}
 		</Card.Description>
 		<Card.Action class="flex items-center gap-1.5">
@@ -71,7 +77,7 @@
 	<!-- @container makes the card content the layout unit: panels switch
 	     compact/regular on the card's own width (@sm:/@md: variants), so they
 	     stay correct however the window — or a future shell — composes them. -->
-	<Card.Content class="@container flex min-h-0 flex-1 flex-col gap-3">
+	<Card.Content class="@container flex min-h-0 flex-1 flex-col gap-3 max-sm:px-0">
 		<!-- No overflow on the zone itself: overflow-y-auto would force
 		     overflow-x to auto (CSS pairs the axes) and paint a dead
 		     horizontal scrollbar. Content that can grow (the send file

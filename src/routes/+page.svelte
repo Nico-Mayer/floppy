@@ -12,13 +12,14 @@
 	import { fly } from 'svelte/transition'
 </script>
 
-<!-- data-tabbar-clearance: on mobile this pads out from under the tab bar and
-     the gesture bar below it (layout.css). It sits on <main> rather than inside
-     it because this page does not scroll — the send/receive switch is pinned to
-     the bottom of the column and has to stay above the bar, not slide under. -->
-<main class="flex min-h-0 flex-1 flex-col gap-3 p-4 sm:p-6" data-tabbar-clearance>
+<!-- Full-bleed on a phone: the page owns the one gutter (px-4) and the card
+     dissolves its own chrome and padding into it (see TransferCard), so content
+     spans the width instead of sitting in a floating box. The shell's
+     --safe-bottom inset clears the gesture bar. Desktop keeps the centered,
+     padded card. -->
+<main class="flex min-h-0 flex-1 flex-col gap-2 px-4 pt-2 pb-2 sm:gap-3 sm:p-6">
 	<div
-		class="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-3 sm:max-w-3xl md:max-w-4xl lg:max-w-5xl"
+		class="mx-auto flex min-h-0 w-full max-w-none flex-1 flex-col gap-2 sm:max-w-3xl sm:gap-3 md:max-w-4xl lg:max-w-5xl"
 	>
 		<Tabs.Root
 			value={app.mode}

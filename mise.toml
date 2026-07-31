@@ -1,20 +1,8 @@
 [shell_alias]
 mr = "mise run"
 
+# https://v2.tauri.app/de/start/prerequisites/
 [env]
-# macOS mobile toolchain (Android Studio's JDK + Android SDK/NDK). Windows builds
-# the desktop target only and never reads these.
-JAVA_HOME = "/Applications/Android Studio.app/Contents/jbr/Contents/Home"
-ANDROID_HOME = "{{env.HOME}}/Library/Android/sdk"
-NDK_HOME = "{{env.HOME}}/Library/Android/sdk/ndk/30.0.15729638"
-# Pin the AVD home so the SDK CLI and Android Studio share one AVD set (else the
-# CLI uses $XDG_CONFIG_HOME/.android and they diverge).
-ANDROID_USER_HOME = "{{env.HOME}}/.android"
-_.path = [
-  "{{env.ANDROID_HOME}}/platform-tools",
-  "{{env.ANDROID_HOME}}/emulator",
-  "{{env.ANDROID_HOME}}/cmdline-tools/latest/bin",
-]
 # FLOPPY_BROKER=local points quick share at `mise run broker`.
 FLOPPY_BROKER_URL = "{% if env.FLOPPY_BROKER | default(value='remote') == 'local' %}ws://127.0.0.1:8787/ws{% else %}wss://floppy-broker.up.railway.app/ws{% endif %}"
 FLOPPY_BROKER_ADDR = ":8787"
@@ -22,10 +10,9 @@ FLOPPY_TEST_BROKER = "{{ env.FLOPPY_BROKER_URL }}"
 
 [tools]
 node = "26.5.0"
+java = { version = "temurin-21", os = ["macos", "linux"] }
 ruby = { version = "4.0.6", os = ["macos"] }
 cocoapods = { version = "latest", os = ["macos"] }
-# Pin the mise toolchain as the rustup default so a bare `rustc` (what Gradle and
-# Xcode see outside mise) keeps working. Mobile Rust targets are added by doctor.
 rust = { version = "latest", profile = "default", postinstall = 'rustup default "$RUSTUP_TOOLCHAIN"' }
 "npm:@fission-ai/openspec" = "1.6.0"
 go = "latest"

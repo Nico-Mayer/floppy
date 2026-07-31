@@ -8,12 +8,17 @@
 	import { useSidebar } from '$lib/components/ui/sidebar'
 	import { navItems as items } from '$lib/nav-items'
 	import { pairing } from '$lib/pairing-app.svelte'
-	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right'
-	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check'
 	import UserIcon from '@lucide/svelte/icons/user'
 
-	// Desktop navigation. On mobile the layout renders BottomNav instead, so the
-	// destinations live in nav-items.ts and both read from there.
+	// The app's one navigation surface: a fixed sidebar on desktop (collapsible to
+	// an icon rail) and the same thing as a left drawer on a phone. Destinations
+	// live in nav-items.ts so there is a single source of truth.
+	//
+	// Structure follows the shadcn-svelte sidebar contract so the icon rail renders
+	// correctly: brand and account rows are `size="lg"` menu buttons (they collapse
+	// to a centered size-8 tile), and each nav row is `<a><icon/><span>label</span></a>`
+	// — one span, so the component's own `group-data-[collapsible=icon]` rules hide
+	// the label and centre the icon. No custom heights fight that.
 
 	// Exact match — every route is a leaf, so no prefix ambiguity to resolve.
 	const pathname = $derived(page.url.pathname)
@@ -22,61 +27,39 @@
 
 	const sidebar = useSidebar()
 
-	// On mobile the sidebar is a full-screen drawer; collapse it once a
-	// destination is chosen so navigation is one tap, not two.
+	// On mobile the sidebar is a drawer; collapse it once a destination is chosen
+	// so navigation is one tap, not two.
 	function afterNavigate() {
 		if (sidebar.isMobile) sidebar.setOpenMobile(false)
 	}
-
-	// Taller, roomier rows on touch (44px min target); back to compact on desktop.
-	const rowClass = 'h-12 gap-3 rounded-lg text-[15px] md:h-9 md:text-sm'
 </script>
 
-<!-- Below the titlebar on desktop; a full-screen drawer on mobile (like the old
-     account sheet). -->
-<Sidebar.Root
-	collapsible="offcanvas"
-	class="top-(--header-height)! h-[calc(100svh-var(--header-height))]! max-sm:w-full!"
->
-	<Sidebar.Header class="gap-0 p-3">
-		<div class="flex items-center gap-2.5">
-			<div
-				class="flex size-9 shrink-0 items-center justify-center rounded-xl font-heading text-lg font-black text-primary-foreground shadow-sm select-none"
-			>
-				<img src="maybe-logo.png" alt="" />
-			</div>
-			<div class="flex min-w-0 flex-col leading-tight">
-				<span class="font-heading text-sm font-black tracking-tight uppercase">Floppy</span>
-				<span class="truncate text-[11px] text-muted-foreground">no cloud · peer to peer</span>
-			</div>
-		</div>
+<!-- Fixed below the app header on desktop (collapsible to an icon rail); a Sheet
+     drawer on mobile. -->
+<Sidebar.Root collapsible="icon" class="top-(--header-height)! h-[calc(100svh-var(--header-height))]!">
+	<Sidebar.Header>
+		<Sidebar.Menu>
+			<Sidebar.MenuItem>
+				<Sidebar.MenuButton>Floppy</Sidebar.MenuButton>
+			</Sidebar.MenuItem>
+		</Sidebar.Menu>
 	</Sidebar.Header>
 
-	<Sidebar.Content class="px-2">
+	<Sidebar.Content>
 		<Sidebar.Group>
 			<Sidebar.GroupLabel>Menu</Sidebar.GroupLabel>
 			<Sidebar.GroupContent>
-				<Sidebar.Menu class="gap-1">
+				<Sidebar.Menu>
 					{#each items as item (item.href)}
 						{@const active = pathname === item.href}
 						<Sidebar.MenuItem>
-							<Sidebar.MenuButton isActive={active} tooltipContent={item.label} class={rowClass}>
+							<!-- 44px touch target on the mobile drawer, compact on desktop; the
+							     rail overrides both to a square size-8 (base variant). -->
+							<Sidebar.MenuButton isActive={active} tooltipContent={item.label} class="h-11 md:h-9">
 								{#snippet child({ props })}
-									<a href={resolve(item.href)} {...props} onclick={afterNavigate}>
+									<a href={resolve(item.href)} onclick={afterNavigate} {...props}>
 										<item.icon />
-										<span class="flex min-w-0 flex-col leading-tight">
-											<span class="truncate">{item.label}</span>
-											<span
-												class="truncate text-xs font-normal text-muted-foreground group-data-[collapsible=icon]:hidden md:hidden"
-											>
-												{item.hint}
-											</span>
-										</span>
-										<ChevronRightIcon
-											class="ml-auto size-4 text-muted-foreground opacity-0 transition-opacity md:hidden {active
-												? 'opacity-60'
-												: ''}"
-										/>
+										<span>{item.label}</span>
 									</a>
 								{/snippet}
 							</Sidebar.MenuButton>
@@ -90,18 +73,12 @@
 		</Sidebar.Group>
 	</Sidebar.Content>
 
-	<Sidebar.Footer class="gap-2 p-2">
-		<div
-			class="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground group-data-[collapsible=icon]:hidden"
-		>
-			<ShieldCheckIcon class="size-3.5 shrink-0" />
-			<span>Encrypted, straight to their device.</span>
-		</div>
+	<Sidebar.Footer>
 		<Sidebar.Menu>
 			<Sidebar.MenuItem>
 				<!-- Placeholder sign-in: real auth isn't wired yet, so this opens the
 				     preview form. Lives in the footer so it's out of the main nav. -->
-				<Sidebar.MenuButton size="lg" class="h-12 gap-3" onclick={() => (signInOpen = true)}>
+				<Sidebar.MenuButton size="lg" tooltipContent="Sign in" onclick={() => (signInOpen = true)}>
 					<!-- No avatar image while signed out: a face would misrepresent the
 					     empty account, and fetching one from the cloud is at odds with the
 					     app's peer-to-peer, no-cloud promise. The icon fallback stands in. -->
@@ -109,7 +86,7 @@
 						<Avatar.Image src="https://api.dicebear.com/10.x/initial-face/svg?seed=Nico" alt="" />
 						<Avatar.Fallback class="rounded-lg"><UserIcon class="size-4" /></Avatar.Fallback>
 					</Avatar.Root>
-					<div class="flex min-w-0 flex-col text-left leading-tight">
+					<div class="flex flex-col leading-tight">
 						<span class="truncate font-medium">Not signed in</span>
 						<span class="truncate text-xs text-muted-foreground">Sign in to sync devices</span>
 					</div>

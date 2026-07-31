@@ -38,7 +38,10 @@
 	</Tabs.Trigger>
 {/snippet}
 
-<Tabs.List class="h-12! w-full shadow max-sm:order-last">
+<!-- On a phone this drops to the bottom of the column (order-last) so it sits in
+     thumb reach, and loses its shadow so it reads as part of the page rather than
+     a second floating card. Desktop keeps it on top with the raised look. -->
+<Tabs.List class="h-12! w-full shadow max-sm:order-last max-sm:shadow-none">
 	{@render trigger('send', 'Send', SendIcon, `${modKey}1`)}
 	{@render trigger('receive', 'Receive', DownloadIcon, `${modKey}2`)}
 </Tabs.List>
