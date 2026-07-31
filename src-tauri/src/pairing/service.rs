@@ -565,8 +565,10 @@ fn now_unix() -> i64 {
 mod tests {
     use super::*;
     use crate::pairing::identity::PublicKey;
-    use crate::transport::{Config, Emitter as TEmitter, Event as TEvent, RelayConfig};
-    use std::io::Write;
+    use crate::testsupport::{
+        mock_fp_broker, mock_mailbox_broker, test_manager, walk, write_file, DUMMY_BROKER,
+    };
+    use crate::transport::{Emitter as TEmitter, Event as TEvent};
     use std::time::Duration;
 
     #[derive(Clone, Default)]
@@ -618,221 +620,17 @@ mod tests {
         }
     }
 
+    /// A hermetic `Manager` with no live broker — pairing rendezvous rides the
+    /// `/fp` and `/ws` mock brokers passed to `PairingService::new`, not this.
     async fn manager(dir: &Path, name: &str, emit: Arc<dyn TEmitter>) -> Manager {
-        Manager::new(
-            Config {
-                store_path: Some(dir.join(name)),
-                dest_root: dir.join(format!("{name}-dl")),
-                relay: RelayConfig::DisableRelay,
-                bind_addr: Some("127.0.0.1:0".into()),
-                broker_url: "ws://127.0.0.1:1/ws".into(), // unused by pairing
-                send_ttl: Duration::from_secs(300),
-            },
-            emit,
-        )
-        .await
-        .unwrap()
+        test_manager(dir, name, DUMMY_BROKER, emit).await
     }
 
-    /// In-process stand-in for the Go broker's fingerprint mode: register by the
-    /// fingerprint derived from the encoded key, then relay signal blobs to the
-    /// target fingerprint (mirrors broker/fproute.go; the Go side has its own
-    /// tests, this exercises the Rust client + service + transport together).
-    async fn spawn_mock_fp_broker() -> String {
-        use futures_util::{SinkExt, StreamExt as _};
-        use std::collections::HashMap;
-        use tokio::sync::mpsc;
-        use tokio::sync::Mutex as AsyncMutex;
-        use tokio_tungstenite::tungstenite::Message;
-
-        #[derive(serde::Deserialize)]
-        struct In {
-            #[serde(rename = "type")]
-            typ: String,
-            key: Option<String>,
-            to: Option<String>,
-            blob: Option<String>,
-        }
-
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let addr = listener.local_addr().unwrap();
-        let peers: Arc<AsyncMutex<HashMap<String, mpsc::UnboundedSender<Message>>>> =
-            Arc::new(AsyncMutex::new(HashMap::new()));
-
-        tokio::spawn(async move {
-            while let Ok((stream, _)) = listener.accept().await {
-                let peers = peers.clone();
-                tokio::spawn(async move {
-                    let ws = match tokio_tungstenite::accept_async(stream).await {
-                        Ok(ws) => ws,
-                        Err(_) => return,
-                    };
-                    let (mut write, mut read) = ws.split();
-                    let (tx, mut rx) = mpsc::unbounded_channel::<Message>();
-                    tokio::spawn(async move {
-                        while let Some(m) = rx.recv().await {
-                            if write.send(m).await.is_err() {
-                                break;
-                            }
-                        }
-                    });
-
-                    // Register.
-                    let fp = match futures_util::StreamExt::next(&mut read).await {
-                        Some(Ok(Message::Text(t))) => {
-                            let m: In = serde_json::from_str(&t).unwrap();
-                            let key = m.key.unwrap_or_default();
-                            PublicKey::decode(&key).unwrap().fingerprint()
-                        }
-                        _ => return,
-                    };
-                    peers.lock().await.insert(fp.clone(), tx.clone());
-                    let _ = tx.send(Message::text(r#"{"type":"ok"}"#.to_string()));
-
-                    // Relay signals by target fingerprint.
-                    while let Some(Ok(Message::Text(t))) =
-                        futures_util::StreamExt::next(&mut read).await
-                    {
-                        let m: In = serde_json::from_str(&t).unwrap_or(In {
-                            typ: String::new(),
-                            key: None,
-                            to: None,
-                            blob: None,
-                        });
-                        if m.typ != "signal" {
-                            continue;
-                        }
-                        let to = m.to.unwrap_or_default();
-                        let blob = m.blob.unwrap_or_default();
-                        let peers = peers.lock().await;
-                        if let Some(peer) = peers.get(&to) {
-                            let out = serde_json::json!({"type":"signal","blob":blob}).to_string();
-                            let _ = peer.send(Message::text(out));
-                        }
-                    }
-                    peers.lock().await.remove(&fp);
-                });
-            }
-        });
-        format!("ws://{addr}/fp")
-    }
-
-    /// In-process stand-in for the Go broker's code-mailbox mode: join a room,
-    /// pair up to two clients in it, and relay `msg` blobs between them (mirrors
-    /// broker/mailbox.go). Enough to exercise the code-pairing exchange without
-    /// the Go broker.
-    async fn spawn_mock_mailbox_broker() -> String {
-        use futures_util::{SinkExt, StreamExt as _};
-        use std::collections::HashMap;
-        use tokio::sync::mpsc;
-        use tokio::sync::Mutex as AsyncMutex;
-        use tokio_tungstenite::tungstenite::Message;
-
-        #[derive(serde::Deserialize)]
-        struct In {
-            #[serde(rename = "type")]
-            typ: String,
-            room: Option<String>,
-            data: Option<String>,
-        }
-
-        // Like broker/mailbox.go: buffer blobs sent before the second party
-        // arrives so SPAKE2's first message is not lost to a connect race.
-        #[derive(Default)]
-        struct RoomState {
-            peers: Vec<mpsc::UnboundedSender<Message>>,
-            buffered: Vec<String>,
-        }
-
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let addr = listener.local_addr().unwrap();
-        let rooms: Arc<AsyncMutex<HashMap<String, RoomState>>> =
-            Arc::new(AsyncMutex::new(HashMap::new()));
-
-        fn relay_frame(data: &str) -> Message {
-            Message::text(serde_json::json!({ "type": "msg", "data": data }).to_string())
-        }
-
-        tokio::spawn(async move {
-            while let Ok((stream, _)) = listener.accept().await {
-                let rooms = rooms.clone();
-                tokio::spawn(async move {
-                    let ws = match tokio_tungstenite::accept_async(stream).await {
-                        Ok(ws) => ws,
-                        Err(_) => return,
-                    };
-                    let (mut write, mut read) = ws.split();
-                    let (tx, mut rx) = mpsc::unbounded_channel::<Message>();
-                    tokio::spawn(async move {
-                        while let Some(m) = rx.recv().await {
-                            if write.send(m).await.is_err() {
-                                break;
-                            }
-                        }
-                    });
-
-                    // First frame joins a room; the newcomer drains any backlog.
-                    let room = match futures_util::StreamExt::next(&mut read).await {
-                        Some(Ok(Message::Text(t))) => {
-                            let m: In = serde_json::from_str(&t).unwrap();
-                            m.room.unwrap_or_default()
-                        }
-                        _ => return,
-                    };
-                    let backlog = {
-                        let mut g = rooms.lock().await;
-                        let rm = g.entry(room.clone()).or_default();
-                        if rm.peers.len() >= 2 {
-                            let _ = tx.send(Message::text(r#"{"type":"full"}"#.to_string()));
-                            return;
-                        }
-                        rm.peers.push(tx.clone());
-                        std::mem::take(&mut rm.buffered)
-                    };
-                    for d in backlog {
-                        let _ = tx.send(relay_frame(&d));
-                    }
-
-                    // Relay each message to the other party, or buffer it if the
-                    // peer has not joined yet.
-                    while let Some(Ok(Message::Text(t))) =
-                        futures_util::StreamExt::next(&mut read).await
-                    {
-                        let m: In = serde_json::from_str(&t)
-                            .unwrap_or(In { typ: String::new(), room: None, data: None });
-                        if m.typ != "msg" {
-                            continue;
-                        }
-                        let data = m.data.unwrap_or_default();
-                        let mut g = rooms.lock().await;
-                        if let Some(rm) = g.get_mut(&room) {
-                            let others: Vec<_> =
-                                rm.peers.iter().filter(|p| !p.same_channel(&tx)).cloned().collect();
-                            if others.is_empty() {
-                                rm.buffered.push(data);
-                            } else {
-                                for p in others {
-                                    let _ = p.send(relay_frame(&data));
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-        });
-        format!("ws://{addr}/ws")
-    }
-
-    fn write_file(dir: &Path, name: &str, bytes: &[u8]) -> PathBuf {
-        let p = dir.join(name);
-        std::fs::File::create(&p).unwrap().write_all(bytes).unwrap();
-        p
-    }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn trusted_send_receive_end_to_end() {
         let tmp = tempfile::tempdir().unwrap();
-        let broker = spawn_mock_fp_broker().await;
+        let broker = mock_fp_broker().await;
         let payload = vec![6u8; 200_000];
         let src = write_file(tmp.path(), "trusted.bin", &payload);
 
@@ -926,7 +724,7 @@ mod tests {
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn deduped_trusted_send_still_completes() {
         let tmp = tempfile::tempdir().unwrap();
-        let broker = spawn_mock_fp_broker().await;
+        let broker = mock_fp_broker().await;
         let src = write_file(tmp.path(), "dup.bin", &vec![8u8; 200_000]);
 
         let a_send_done = SendDone::default();
@@ -987,7 +785,7 @@ mod tests {
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn busy_device_auto_declines_a_non_target_offer() {
         let tmp = tempfile::tempdir().unwrap();
-        let broker = spawn_mock_fp_broker().await;
+        let broker = mock_fp_broker().await;
         let dummy = "ws://127.0.0.1:1/ws".to_string();
         let a_ev = PairCollector::default();
         let b_ev = PairCollector::default();
@@ -1015,7 +813,7 @@ mod tests {
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn second_offer_while_a_prompt_is_pending_is_declined() {
         let tmp = tempfile::tempdir().unwrap();
-        let broker = spawn_mock_fp_broker().await;
+        let broker = mock_fp_broker().await;
         let dummy = "ws://127.0.0.1:1/ws".to_string();
         let a_ev = PairCollector::default();
         let c_ev = PairCollector::default();
@@ -1046,7 +844,7 @@ mod tests {
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn glare_resolves_to_exactly_one_transfer() {
         let tmp = tempfile::tempdir().unwrap();
-        let broker = spawn_mock_fp_broker().await;
+        let broker = mock_fp_broker().await;
         let dummy = "ws://127.0.0.1:1/ws".to_string();
         let a_ev = PairCollector::default();
         let b_ev = PairCollector::default();
@@ -1090,8 +888,8 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         // Construction registers on the fp broker; the pairing itself rides the
         // code mailbox.
-        let fp = spawn_mock_fp_broker().await;
-        let mailbox = spawn_mock_mailbox_broker().await;
+        let fp = mock_fp_broker().await;
+        let mailbox = mock_mailbox_broker().await;
 
         let a_mgr = manager(tmp.path(), "pa", Arc::new(DoneFlag::default())).await;
         let b_mgr = manager(tmp.path(), "pb", Arc::new(DoneFlag::default())).await;
@@ -1146,18 +944,4 @@ mod tests {
         panic!("condition not met within {timeout:?}");
     }
 
-    fn walk(dir: &Path) -> Vec<PathBuf> {
-        let mut out = Vec::new();
-        if let Ok(rd) = std::fs::read_dir(dir) {
-            for e in rd.flatten() {
-                let p = e.path();
-                if p.is_dir() {
-                    out.extend(walk(&p));
-                } else {
-                    out.push(p);
-                }
-            }
-        }
-        out
-    }
 }

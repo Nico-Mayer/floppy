@@ -1122,8 +1122,11 @@ fn classify_get_err(err: iroh_blobs::get::GetError) -> TransferError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::testsupport::{
+        mock_mailbox_broker, test_manager, test_manager as quick_manager, walk, write_file,
+        DUMMY_BROKER,
+    };
     use crate::transport::event::Stats;
-    use std::io::Write;
 
     /// Collects emitted events for assertions.
     #[derive(Clone, Default)]
@@ -1139,27 +1142,11 @@ mod tests {
         }
     }
 
+    /// A hermetic `Manager` with no live broker (these tests key off events, not
+    /// quick share). Quick-share tests use `quick_manager` (aliased to
+    /// `test_manager`) with a real mock broker URL.
     async fn manager(dir: &Path, name: &str, emit: Arc<dyn Emitter>) -> Manager {
-        Manager::new(
-            Config {
-                store_path: Some(dir.join(name)),
-                dest_root: dir.join(format!("{name}-dl")),
-                relay: RelayConfig::DisableRelay,
-                bind_addr: Some("127.0.0.1:0".into()),
-                broker_url: "ws://127.0.0.1:1/ws".into(), // unused by these tests
-                send_ttl: Duration::from_secs(300), // long: these tests don't exercise expiry
-            },
-            emit,
-        )
-        .await
-        .unwrap()
-    }
-
-    fn write_file(dir: &Path, name: &str, bytes: &[u8]) -> PathBuf {
-        let p = dir.join(name);
-        let mut f = std::fs::File::create(&p).unwrap();
-        f.write_all(bytes).unwrap();
-        p
+        test_manager(dir, name, DUMMY_BROKER, emit).await
     }
 
     fn ticket_of(events: &[Event]) -> String {
@@ -1582,21 +1569,6 @@ mod tests {
         panic!("receive did not finish");
     }
 
-    fn walk(dir: &Path) -> Vec<PathBuf> {
-        let mut out = Vec::new();
-        if let Ok(rd) = std::fs::read_dir(dir) {
-            for e in rd.flatten() {
-                let p = e.path();
-                if p.is_dir() {
-                    out.extend(walk(&p));
-                } else {
-                    out.push(p);
-                }
-            }
-        }
-        out
-    }
-
     /// Single active session: a live send blocks a new receive on the same
     /// device. A trusted offer waiting for accept is exactly this — a held send.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -1620,7 +1592,7 @@ mod tests {
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn a_live_receive_blocks_a_new_send() {
         let tmp = tempfile::tempdir().unwrap();
-        let broker = spawn_mock_broker().await;
+        let broker = mock_mailbox_broker().await;
         let m = quick_manager(tmp.path(), "m", &broker, Arc::new(Collector::default())).await;
 
         // Claims the session, then blocks awaiting a peer that never comes.
@@ -1710,123 +1682,10 @@ mod tests {
 
     // ---- quick share (code phrase over a mock broker + real iroh) ----
 
-    async fn quick_manager(dir: &Path, name: &str, broker: &str, emit: Arc<dyn Emitter>) -> Manager {
-        Manager::new(
-            Config {
-                store_path: Some(dir.join(name)),
-                dest_root: dir.join(format!("{name}-dl")),
-                relay: RelayConfig::DisableRelay,
-                bind_addr: Some("127.0.0.1:0".into()),
-                broker_url: broker.to_string(),
-                send_ttl: Duration::from_secs(300),
-            },
-            emit,
-        )
-        .await
-        .unwrap()
-    }
-
-    /// A minimal in-process stand-in for the Go broker's mailbox mode: pairs two
-    /// parties by room and relays their opaque frames, buffering the first
-    /// party's frames until the second joins. Mirrors broker/mailbox.go so the
-    /// Rust client + PAKE + orchestration can be exercised without the Go binary
-    /// (the broker has its own Go tests).
-    async fn spawn_mock_broker() -> String {
-        use futures_util::SinkExt;
-        use futures_util::StreamExt as _; // Sink::send; next() qualified below (n0_future also in scope)
-        use std::collections::HashMap;
-        use std::sync::atomic::{AtomicU64, Ordering};
-        use tokio::sync::mpsc;
-        use tokio::sync::Mutex as AsyncMutex;
-        use tokio_tungstenite::tungstenite::Message;
-
-        #[derive(serde::Deserialize)]
-        struct Wire {
-            #[serde(rename = "type")]
-            typ: String,
-            room: Option<String>,
-        }
-        #[derive(Default)]
-        struct Room {
-            parties: Vec<(u64, mpsc::UnboundedSender<Message>)>,
-            buffered: Vec<Message>,
-        }
-        type Rooms = Arc<AsyncMutex<HashMap<String, Room>>>;
-
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let addr = listener.local_addr().unwrap();
-        let rooms: Rooms = Arc::new(AsyncMutex::new(HashMap::new()));
-        static IDS: AtomicU64 = AtomicU64::new(0);
-
-        tokio::spawn(async move {
-            while let Ok((stream, _)) = listener.accept().await {
-                let rooms = rooms.clone();
-                tokio::spawn(async move {
-                    let ws = match tokio_tungstenite::accept_async(stream).await {
-                        Ok(ws) => ws,
-                        Err(_) => return,
-                    };
-                    let (mut write, mut read) = ws.split();
-                    let (tx, mut rx) = mpsc::unbounded_channel::<Message>();
-                    tokio::spawn(async move {
-                        while let Some(m) = rx.recv().await {
-                            if write.send(m).await.is_err() {
-                                break;
-                            }
-                        }
-                    });
-
-                    // First frame is the join.
-                    let room_id = match futures_util::StreamExt::next(&mut read).await {
-                        Some(Ok(Message::Text(t))) => {
-                            match serde_json::from_str::<Wire>(&t) {
-                                Ok(w) if w.typ == "join" => w.room.unwrap_or_default(),
-                                _ => return,
-                            }
-                        }
-                        _ => return,
-                    };
-                    let my_id = IDS.fetch_add(1, Ordering::Relaxed);
-
-                    let backlog = {
-                        let mut g = rooms.lock().await;
-                        let rm = g.entry(room_id.clone()).or_default();
-                        let backlog = std::mem::take(&mut rm.buffered);
-                        rm.parties.push((my_id, tx.clone()));
-                        backlog
-                    };
-                    for m in backlog {
-                        let _ = tx.send(m);
-                    }
-
-                    // Relay loop: forward each frame to the peer, or buffer it.
-                    while let Some(Ok(msg)) = futures_util::StreamExt::next(&mut read).await {
-                        if !matches!(msg, Message::Text(_)) {
-                            continue;
-                        }
-                        let mut g = rooms.lock().await;
-                        let rm = g.entry(room_id.clone()).or_default();
-                        if let Some((_, peer)) = rm.parties.iter().find(|(id, _)| *id != my_id) {
-                            let _ = peer.send(msg);
-                        } else {
-                            rm.buffered.push(msg);
-                        }
-                    }
-
-                    let mut g = rooms.lock().await;
-                    if let Some(rm) = g.get_mut(&room_id) {
-                        rm.parties.retain(|(id, _)| *id != my_id);
-                    }
-                });
-            }
-        });
-        format!("ws://{addr}/ws")
-    }
-
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn quick_share_roundtrip() {
         let tmp = tempfile::tempdir().unwrap();
-        let broker = spawn_mock_broker().await;
+        let broker = mock_mailbox_broker().await;
         let payload = vec![2u8; 250_000];
         let src = write_file(tmp.path(), "quick.bin", &payload);
 
@@ -1867,7 +1726,7 @@ mod tests {
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn deduped_quick_share_still_completes() {
         let tmp = tempfile::tempdir().unwrap();
-        let broker = spawn_mock_broker().await;
+        let broker = mock_mailbox_broker().await;
         let src = write_file(tmp.path(), "dup.bin", &vec![9u8; 250_000]);
 
         let se = Collector::default();
@@ -1935,7 +1794,7 @@ mod tests {
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn quick_share_wrong_code_fails_without_leaking() {
         let tmp = tempfile::tempdir().unwrap();
-        let broker = spawn_mock_broker().await;
+        let broker = mock_mailbox_broker().await;
         let src = write_file(tmp.path(), "secret.bin", &vec![3u8; 100_000]);
 
         let se = Collector::default();

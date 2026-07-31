@@ -9,6 +9,8 @@ mod fileinput;
 mod pairing;
 mod preview;
 mod rendezvous;
+#[cfg(test)]
+mod testsupport;
 mod transport;
 
 use std::path::{Path, PathBuf};
