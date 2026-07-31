@@ -13,33 +13,58 @@
 		2B5B9AA82C389FADD5004B07 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 63C0E2113532D93CB43320D8 /* Metal.framework */; };
 		43776194B5528F969732734B /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1BCB3E1934844B98B5E89EB9 /* Security.framework */; };
 		5B0F84270FD9A196D51C5D65 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 225C3F8F8E74F6941119455F /* LaunchScreen.storyboard */; };
+		8188690292B2358BB8A893EB /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A5C9F872F32A320ED10C69B0 /* SystemConfiguration.framework */; };
 		845A53108C640938B7A4554C /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D772630F2277BAA3839ED2FF /* WebKit.framework */; };
 		874221EE4F8609D296A97772 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B7D76A87B9FDD49C84195B01 /* Assets.xcassets */; };
 		CA6F38ABD46E2D81E76AE0AD /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DC0AB56C82BD7C87CBAD7E8E /* CoreGraphics.framework */; };
 		E9309E607DAE970C3411844F /* libapp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 94BDAC1D71348F743E3B67C3 /* libapp.a */; };
+		E9A6E09E0B4C94AF86B9E1FC /* libapp.a in Resources */ = {isa = PBXBuildFile; fileRef = 93BEDB420FEECF0E56D1A0A2 /* libapp.a */; };
 		F53A5460A53512A7751961F3 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 11A797C87C1AFE9F245B0805 /* QuartzCore.framework */; };
 		FA6713E3949446E885804A33 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4704B3C6039209A5B06E04A8 /* MetalKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0029C6926FEAF80A3F78B86F /* trust.rs */ = {isa = PBXFileReference; path = trust.rs; sourceTree = "<group>"; };
 		01F6304130F445CD9A16B5EF /* main.rs */ = {isa = PBXFileReference; path = main.rs; sourceTree = "<group>"; };
 		0A7E5B69AEC09E7AE0AB18BB /* floppy_iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = floppy_iOS.entitlements; sourceTree = "<group>"; };
 		114F148B723785CF1C3A5319 /* lib.rs */ = {isa = PBXFileReference; path = lib.rs; sourceTree = "<group>"; };
 		11A797C87C1AFE9F245B0805 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		1BCB3E1934844B98B5E89EB9 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		1C3DA2DE3AF26B853A853276 /* pake.rs */ = {isa = PBXFileReference; path = pake.rs; sourceTree = "<group>"; };
+		1DC997901EDE7964D6C1F858 /* signal.rs */ = {isa = PBXFileReference; path = signal.rs; sourceTree = "<group>"; };
 		225C3F8F8E74F6941119455F /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		27FB86E1F8D310E7A607E40D /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
+		2BBC60EE75E7D1CDFC3BAAED /* broker.rs */ = {isa = PBXFileReference; path = broker.rs; sourceTree = "<group>"; };
+		2DC85C4098E6BF4439359B30 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
 		2F30CC37727CADFEAB84CFAA /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
+		33C13654DA23D230AB483F0A /* events.rs */ = {isa = PBXFileReference; path = events.rs; sourceTree = "<group>"; };
 		4704B3C6039209A5B06E04A8 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
+		474AE58B431ACB22CA63052D /* code.rs */ = {isa = PBXFileReference; path = code.rs; sourceTree = "<group>"; };
 		63C0E2113532D93CB43320D8 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		67FC5F3D991A2F2749A6AE90 /* fileinput.rs */ = {isa = PBXFileReference; path = fileinput.rs; sourceTree = "<group>"; };
+		69634432A858FE0C11DCAEC7 /* error.rs */ = {isa = PBXFileReference; path = error.rs; sourceTree = "<group>"; };
+		7AE33AF535F995B2A7E45EEA /* self_name.rs */ = {isa = PBXFileReference; path = self_name.rs; sourceTree = "<group>"; };
 		88293DB270EFE092575EC3FA /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = assets; sourceTree = SOURCE_ROOT; };
+		90054E71FB7725AD7FC85406 /* service.rs */ = {isa = PBXFileReference; path = service.rs; sourceTree = "<group>"; };
+		93BEDB420FEECF0E56D1A0A2 /* libapp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libapp.a; sourceTree = "<group>"; };
 		94BDAC1D71348F743E3B67C3 /* libapp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libapp.a; sourceTree = "<group>"; };
+		9DC7314E4B6E2EF3C8714AC3 /* progress.rs */ = {isa = PBXFileReference; path = progress.rs; sourceTree = "<group>"; };
 		9EF1211EA24A1CBF42B57AA7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		A5C9F872F32A320ED10C69B0 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
+		A9DAA29B23541A8981DA2FAD /* identity.rs */ = {isa = PBXFileReference; path = identity.rs; sourceTree = "<group>"; };
+		AF79EBDEF2CAB12106349E86 /* preview.rs */ = {isa = PBXFileReference; path = preview.rs; sourceTree = "<group>"; };
 		B353BF29DA92B325ADDC3827 /* floppy_iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = floppy_iOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B7D76A87B9FDD49C84195B01 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		BEBE2E3A3C88C143A44E8409 /* sas.rs */ = {isa = PBXFileReference; path = sas.rs; sourceTree = "<group>"; };
+		C5A6E2F9F17DBCF0DC173E6F /* offer.rs */ = {isa = PBXFileReference; path = offer.rs; sourceTree = "<group>"; };
+		C75312A2ACA8251C41D15311 /* manager.rs */ = {isa = PBXFileReference; path = manager.rs; sourceTree = "<group>"; };
 		C8431C761D04EE415714115A /* bindings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bindings.h; sourceTree = "<group>"; };
 		D74B02AEDF68D670A4476E2D /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		D772630F2277BAA3839ED2FF /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
 		DC0AB56C82BD7C87CBAD7E8E /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+		DEA8BB31C78116EC1E1E6D8C /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
+		E94FB02B4E7F0A45DD1C5012 /* client.rs */ = {isa = PBXFileReference; path = client.rs; sourceTree = "<group>"; };
+		EEC2E3CFE32544A97B3E51D8 /* event.rs */ = {isa = PBXFileReference; path = event.rs; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -53,6 +78,7 @@
 				FA6713E3949446E885804A33 /* MetalKit.framework in Frameworks */,
 				F53A5460A53512A7751961F3 /* QuartzCore.framework in Frameworks */,
 				43776194B5528F969732734B /* Security.framework in Frameworks */,
+				8188690292B2358BB8A893EB /* SystemConfiguration.framework in Frameworks */,
 				0CEFC07426D97FAD296BFA3A /* UIKit.framework in Frameworks */,
 				845A53108C640938B7A4554C /* WebKit.framework in Frameworks */,
 			);
@@ -61,6 +87,34 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1F0FAA1634234A438C9DB0D4 /* transport */ = {
+			isa = PBXGroup;
+			children = (
+				69634432A858FE0C11DCAEC7 /* error.rs */,
+				EEC2E3CFE32544A97B3E51D8 /* event.rs */,
+				C75312A2ACA8251C41D15311 /* manager.rs */,
+				27FB86E1F8D310E7A607E40D /* mod.rs */,
+				9DC7314E4B6E2EF3C8714AC3 /* progress.rs */,
+			);
+			path = transport;
+			sourceTree = "<group>";
+		};
+		2E3E4A8700897BAC414EC1F5 /* pairing */ = {
+			isa = PBXGroup;
+			children = (
+				2BBC60EE75E7D1CDFC3BAAED /* broker.rs */,
+				A9DAA29B23541A8981DA2FAD /* identity.rs */,
+				DEA8BB31C78116EC1E1E6D8C /* mod.rs */,
+				C5A6E2F9F17DBCF0DC173E6F /* offer.rs */,
+				BEBE2E3A3C88C143A44E8409 /* sas.rs */,
+				7AE33AF535F995B2A7E45EEA /* self_name.rs */,
+				90054E71FB7725AD7FC85406 /* service.rs */,
+				1DC997901EDE7964D6C1F858 /* signal.rs */,
+				0029C6926FEAF80A3F78B86F /* trust.rs */,
+			);
+			path = pairing;
+			sourceTree = "<group>";
+		};
 		304C129843FCB561CE65F0BF = {
 			isa = PBXGroup;
 			children = (
@@ -79,8 +133,14 @@
 		350EC020F1096E63A1FD520C /* src */ = {
 			isa = PBXGroup;
 			children = (
+				33C13654DA23D230AB483F0A /* events.rs */,
+				67FC5F3D991A2F2749A6AE90 /* fileinput.rs */,
 				114F148B723785CF1C3A5319 /* lib.rs */,
 				01F6304130F445CD9A16B5EF /* main.rs */,
+				AF79EBDEF2CAB12106349E86 /* preview.rs */,
+				2E3E4A8700897BAC414EC1F5 /* pairing */,
+				F8C60C3BF029BE5CE6B118FB /* rendezvous */,
+				1F0FAA1634234A438C9DB0D4 /* transport */,
 			);
 			name = src;
 			path = ../../src;
@@ -111,6 +171,14 @@
 			path = floppy;
 			sourceTree = "<group>";
 		};
+		ABC69F6E8ECE94C5A7FBF53A /* debug */ = {
+			isa = PBXGroup;
+			children = (
+				93BEDB420FEECF0E56D1A0A2 /* libapp.a */,
+			);
+			path = debug;
+			sourceTree = "<group>";
+		};
 		E01691219F186A7310667CD2 /* floppy_iOS */ = {
 			isa = PBXGroup;
 			children = (
@@ -123,6 +191,7 @@
 		E5DFADBAC8FAD20CAC4A45B1 /* Externals */ = {
 			isa = PBXGroup;
 			children = (
+				F4E9B44065C95EE1E3855E1E /* arm64 */,
 			);
 			path = Externals;
 			sourceTree = "<group>";
@@ -136,10 +205,19 @@
 				4704B3C6039209A5B06E04A8 /* MetalKit.framework */,
 				11A797C87C1AFE9F245B0805 /* QuartzCore.framework */,
 				1BCB3E1934844B98B5E89EB9 /* Security.framework */,
+				A5C9F872F32A320ED10C69B0 /* SystemConfiguration.framework */,
 				D74B02AEDF68D670A4476E2D /* UIKit.framework */,
 				D772630F2277BAA3839ED2FF /* WebKit.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		F4E9B44065C95EE1E3855E1E /* arm64 */ = {
+			isa = PBXGroup;
+			children = (
+				ABC69F6E8ECE94C5A7FBF53A /* debug */,
+			);
+			path = arm64;
 			sourceTree = "<group>";
 		};
 		F8AE29A628CEE20F6D17FF31 /* bindings */ = {
@@ -148,6 +226,24 @@
 				C8431C761D04EE415714115A /* bindings.h */,
 			);
 			path = bindings;
+			sourceTree = "<group>";
+		};
+		F8C60C3BF029BE5CE6B118FB /* rendezvous */ = {
+			isa = PBXGroup;
+			children = (
+				E94FB02B4E7F0A45DD1C5012 /* client.rs */,
+				474AE58B431ACB22CA63052D /* code.rs */,
+				2DC85C4098E6BF4439359B30 /* mod.rs */,
+				1C3DA2DE3AF26B853A853276 /* pake.rs */,
+			);
+			path = rendezvous;
+			sourceTree = "<group>";
+		};
+		"TEMP_753DE959-E59D-4AC1-9947-441FDE727CC0" /* x86_64 */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = x86_64;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -211,6 +307,7 @@
 				874221EE4F8609D296A97772 /* Assets.xcassets in Resources */,
 				5B0F84270FD9A196D51C5D65 /* LaunchScreen.storyboard in Resources */,
 				023D5CDCE3AB09ADC2AA0A6F /* assets in Resources */,
+				E9A6E09E0B4C94AF86B9E1FC /* libapp.a in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

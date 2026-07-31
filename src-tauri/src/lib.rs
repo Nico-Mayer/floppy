@@ -507,11 +507,23 @@ fn specta_builder() -> Builder<tauri::Wry> {
 /// `fallback` is used only if the platform resolver has no answer (returns the
 /// app data dir), so a receive still lands somewhere rather than failing.
 fn resolve_dest_root(app: &AppHandle, fallback: &Path) -> PathBuf {
+    // iOS: the Files app surfaces the app's Documents dir *as* "Floppy" (the app
+    // name), so receives go straight in — joining "floppy" would nest them under
+    // Floppy/floppy/. Desktop/Android write into a "floppy" subfolder of the
+    // Downloads dir, which has no such container.
     #[cfg(target_os = "ios")]
-    let base = app.path().document_dir();
+    {
+        app.path()
+            .document_dir()
+            .unwrap_or_else(|_| fallback.to_path_buf())
+    }
     #[cfg(not(target_os = "ios"))]
-    let base = app.path().download_dir();
-    base.unwrap_or_else(|_| fallback.to_path_buf()).join("floppy")
+    {
+        app.path()
+            .download_dir()
+            .unwrap_or_else(|_| fallback.to_path_buf())
+            .join("floppy")
+    }
 }
 
 /// No publish hook off Android: desktop and iOS export straight to their final,

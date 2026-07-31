@@ -53,6 +53,11 @@ targets:
           - UIInterfaceOrientationLandscapeRight
         CFBundleShortVersionString: 0.1.0
         CFBundleVersion: "0.1.0"
+        # Registers the floppy:// custom scheme for deep links. Lives here so an
+        # `xcodegen generate` regenerates it into Info.plist instead of dropping it.
+        CFBundleURLTypes:
+          - CFBundleURLName: floppy
+            CFBundleURLSchemes: [floppy]
     entitlements:
       path: floppy_iOS/floppy_iOS.entitlements
     scheme:
@@ -77,6 +82,10 @@ targets:
       - sdk: MetalKit.framework
       - sdk: QuartzCore.framework
       - sdk: Security.framework
+      # iroh pulls in `system_configuration` + `netdev`, whose iOS code paths
+      # reference SystemConfiguration symbols but don't emit the framework link
+      # directive; the app target has to link it or the debug dylib fails to link.
+      - sdk: SystemConfiguration.framework
       - sdk: UIKit.framework
       - sdk: WebKit.framework
     preBuildScripts:
