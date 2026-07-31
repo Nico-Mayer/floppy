@@ -5,13 +5,23 @@
 	// hardware back. `shadcn-svelte update sidebar` will overwrite this file; the
 	// recovery checklist is design decision D5 in the frontend-mobile-polish change.
 	//
-	// Four things here are load-bearing and easy to lose in a re-apply:
+	// Five things here are load-bearing and easy to lose in a re-apply:
 	//   - data-slot="sidebar" AND data-mobile="true": the Android back handler in
 	//     +layout.svelte matches on both to decide the drawer owns the back press.
 	//   - shouldScaleBackground={false}: scaling the whole app behind a nav drawer
 	//     is the wrong effect (it is meant for bottom sheets).
 	//   - an sr-only Drawer.Title: vaul warns without one.
 	//   - the caller's class, which offsets the drawer below the app bar.
+	//   - before:hidden, which kills the inset floating card drawer-content.svelte
+	//     paints. That card is right for a bottom sheet and wrong for a full-height
+	//     nav drawer, and neither override below removes it: tailwind-merge has no
+	//     conflict group for `before:*`, so `p-4`->`p-0` and `bg-transparent`->
+	//     `bg-sidebar` pass it straight through. Nor does its own `-z-10` hide it —
+	//     the content element is `fixed z-50` and so opens a stacking context, and
+	//     inside one the element's background paints first and negative-z children
+	//     paint on top of it. Suppressed here rather than in drawer-content.svelte
+	//     on purpose: that file is unpatched today, and responsive-dialog (the only
+	//     other consumer, a bottom sheet) wants the card.
 	// Safe-area padding for this drawer lives in layout.css, keyed on
 	// [data-vaul-drawer-direction='left'].
 	//
@@ -65,7 +75,7 @@
 			data-slot="sidebar"
 			data-mobile="true"
 			class={cn(
-				"w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground",
+				"w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground before:hidden",
 				className
 			)}
 			style="--sidebar-width: {SIDEBAR_WIDTH_MOBILE};"

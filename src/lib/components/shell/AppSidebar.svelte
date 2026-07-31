@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { resolve } from '$app/paths'
+	import { asset, resolve } from '$app/paths'
 	import { page } from '$app/state'
 	import LoginView from '$lib/components/auth/LoginView.svelte'
 	import StubMark from '$lib/components/shell/StubMark.svelte'
@@ -20,6 +20,14 @@
 	// to a centered size-8 tile), and each nav row is `<a><icon/><span>label</span></a>`
 	// — one span, so the component's own `group-data-[collapsible=icon]` rules hide
 	// the label and centre the icon. No custom heights fight that.
+	//
+	// `size="lg"` on those two rows is load-bearing, not a look. In the rail every
+	// menu button is forced to `group-data-[collapsible=icon]:size-8!`; the base
+	// variant also forces `p-2!`, leaving a 16px content box, while `lg` overrides
+	// it to `p-0!` and leaves the full 32px. A nav row survives `default` only
+	// because the base carries `[&_svg]:size-4`, which shrinks its Lucide icon to
+	// fit — that selector does not match an `<img>` or an Avatar, so demoting the
+	// brand or account row to `default` would silently clip the mark.
 
 	// Exact match — every route is a leaf, so no prefix ambiguity to resolve.
 	const pathname = $derived(page.url.pathname)
@@ -51,7 +59,28 @@
 	<Sidebar.Header>
 		<Sidebar.Menu>
 			<Sidebar.MenuItem>
-				<Sidebar.MenuButton>Floppy</Sidebar.MenuButton>
+				<!-- The brand carries no destination and performs no action, so it is not a
+				     control: the `child` snippet renders a plain div, which keeps the rail
+				     geometry coming from the component instead of being re-derived here,
+				     and leaves the row out of the tab order. The hover and active fills are
+				     cancelled rather than left to imply it is pressable — not with
+				     `pointer-events-none`, which would also kill text selection. No
+				     tooltipContent either: a rail tooltip explaining a logo is noise.
+				     alt="" because the adjacent span already says the name. -->
+				<Sidebar.MenuButton
+					size="lg"
+					class="cursor-default hover:bg-transparent hover:text-sidebar-foreground active:bg-transparent active:text-sidebar-foreground"
+				>
+					{#snippet child({ props })}
+						<div {...props}>
+							<img src={asset('/logo.png')} alt="" class="size-8 shrink-0 rounded-lg" />
+							<div class="flex min-w-0 flex-col leading-tight">
+								<span class="truncate font-medium">Floppy</span>
+								<span class="truncate text-xs text-muted-foreground">Peer-to-peer transfer</span>
+							</div>
+						</div>
+					{/snippet}
+				</Sidebar.MenuButton>
 			</Sidebar.MenuItem>
 		</Sidebar.Menu>
 	</Sidebar.Header>
@@ -108,10 +137,30 @@
 		</Sidebar.Group>
 	</Sidebar.Content>
 
+	<!-- Marks the account row as its own region rather than one more destination
+	     that happens to sit last. `mx-2` comes from the component; the rail is
+	     narrower, so the margin narrows with it or the rule is a stub.
+	     The width override is the load-bearing part. sidebar-separator.svelte
+	     already asks for `w-auto`, but it never lands: separator.svelte sets
+	     `data-[orientation=horizontal]:w-full`, and tailwind-merge treats a
+	     different variant prefix as a different scope, so the bare `w-auto` does
+	     not replace it (and loses on specificity anyway). The rule was therefore
+	     100% of the sidebar *plus* its margins — inset on the left, hanging past
+	     the edge on the right. Repeating the prefix makes the merge collapse them,
+	     and `w-auto` in this flex column then stretches to the width minus the
+	     margins. Fixed here rather than in the vendored component: this is its
+	     only consumer, and sidebar.svelte is already patch site enough. -->
+	<Sidebar.Separator class="group-data-[collapsible=icon]:mx-1 data-[orientation=horizontal]:w-auto" />
+
 	<!-- Clear the home indicator / gesture bar on mobile (0 on desktop). The
 	     drawer sheet uses data-slot="sidebar", so the generic sheet safe-area rule
-	     in layout.css doesn't reach it. -->
-	<Sidebar.Footer class="pb-(--safe-bottom)">
+	     in layout.css doesn't reach it.
+	     Additive, and it has to be: a bare `pb-(--safe-bottom)` outranks the
+	     component's own `p-2` for the bottom side (tailwind-merge treats the
+	     caller's `pb-*` as the more specific of the two), so on desktop, where the
+	     inset resolves to 0px, it deleted the 8px instead of adding nothing — and
+	     the rail's avatar tile sat flush against the window edge. -->
+	<Sidebar.Footer class="pb-[calc(--spacing(2)+var(--safe-bottom))]">
 		<Sidebar.Menu>
 			<Sidebar.MenuItem>
 				<!-- Signing in is a planned feature, not dead scaffolding, so the entry
