@@ -50,7 +50,7 @@
 ## 6. Transfer screen chrome-dissolve
 
 - [x] 6.1 `TransferCard`: add `max-sm:rounded-none max-sm:border-0 max-sm:shadow-none
-    max-sm:bg-transparent`; slim the header on mobile (drop the mono headline row).
+  max-sm:bg-transparent`; slim the header on mobile (drop the mono headline row).
 - [x] 6.2 `+page.svelte`: move `p-4`/`max-w-2xl` behind `sm:` so mobile is full-bleed.
 - [x] 6.3 `ModeSwitcher`: drop the `Tabs.List` shadow on mobile so it reads as a flush
       segmented control under the header.

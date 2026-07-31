@@ -3,7 +3,9 @@
 ## Purpose
 
 Define the responsive layout contract for the Send and Receive transfer panels: container-width-driven compact/regular layouts, touch-target minimums on coarse-pointer devices, mascot retention, and a stable two-zone (status/action) structure across all panel states.
+
 ## Requirements
+
 ### Requirement: Panels adapt to their container width
 
 The Send and Receive panels SHALL switch between a compact and a regular layout based on the width of their containing card (CSS container queries), not the viewport. The compact layout SHALL be fully usable — no clipped content, no horizontal scrolling — at the minimum window width of 500px.
@@ -131,4 +133,3 @@ the top with its current styling.
 
 - **WHEN** the Transfer screen renders on desktop
 - **THEN** the switcher stays at the top with its current styling
-

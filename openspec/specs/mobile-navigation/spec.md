@@ -1,8 +1,11 @@
 # mobile-navigation Specification
 
 ## Purpose
+
 TBD - created by archiving change unify-responsive-shell. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Mobile navigation is the sidebar as a left drawer
 
 On touch or narrow-width devices the navigation SHALL be the same sidebar rendered as a
@@ -42,4 +45,3 @@ is open it MAY cover the menu control; closing does not depend on it.
 
 - **WHEN** the drawer is open on Android and the hardware back button is pressed
 - **THEN** the drawer closes instead of the app closing or navigation changing
-

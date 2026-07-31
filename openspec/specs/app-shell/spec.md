@@ -1,8 +1,11 @@
 # app-shell Specification
 
 ## Purpose
+
 TBD - created by archiving change unify-responsive-shell. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: A single shell serves every platform and width
 
 The application SHALL render one shell built on a single `Sidebar.Provider`. The layout
@@ -99,4 +102,3 @@ drawers, dialogs) clear of those areas.
 - **WHEN** the app runs on a device with a notch and a home indicator
 - **THEN** the header clears the top inset and the drawer and bottom-anchored actions
   clear the bottom inset, with no content under the system bars
-
