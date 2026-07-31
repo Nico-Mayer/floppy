@@ -1,0 +1,53 @@
+{
+  "nodes": [
+    {
+      "id": "service:broker/Dockerfile",
+      "type": "service",
+      "name": "Dockerfile",
+      "filePath": "broker/Dockerfile",
+      "summary": "Multi-stage Docker build for the Go rendezvous broker, compiling a static CGO-free binary and packaging it into a distroless nonroot image exposing port 8080. Built from the repo root and deployed on Railway.",
+      "tags": ["containerization", "infrastructure", "deployment", "ci-cd", "go"],
+      "complexity": "simple",
+      "languageNotes": "Multi-stage build: a golang:1.26 builder stage produces a trimmed static binary that is copied into a distroless/static-debian12:nonroot runtime for a minimal, non-root attack surface."
+    },
+    {
+      "id": "service:broker/Dockerfile:build",
+      "type": "service",
+      "name": "build",
+      "summary": "Builder stage on golang:1.26 that downloads modules and compiles the broker into a static, stripped binary at /broker.",
+      "tags": ["build-system", "go", "containerization", "infrastructure"],
+      "complexity": "simple"
+    },
+    {
+      "id": "service:broker/Dockerfile:static-debian12",
+      "type": "service",
+      "name": "static-debian12",
+      "summary": "Runtime stage on distroless/static-debian12:nonroot that copies the compiled broker binary, exposes port 8080, and runs it as the entrypoint.",
+      "tags": ["deployment", "security", "containerization", "infrastructure"],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "service:broker/Dockerfile",
+      "target": "service:broker/Dockerfile:build",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "service:broker/Dockerfile",
+      "target": "service:broker/Dockerfile:static-debian12",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "service:broker/Dockerfile",
+      "target": "file:broker/main.go",
+      "type": "deploys",
+      "direction": "forward",
+      "weight": 0.7
+    }
+  ]
+}

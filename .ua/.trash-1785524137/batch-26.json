@@ -1,0 +1,70 @@
+{
+  "nodes": [
+    {
+      "id": "config:openspec/changes/archive/2026-07-30-harden-transfer-delivery/.openspec.yaml",
+      "type": "config",
+      "name": ".openspec.yaml",
+      "filePath": "openspec/changes/archive/2026-07-30-harden-transfer-delivery/.openspec.yaml",
+      "summary": "OpenSpec metadata for the archived harden-transfer-delivery change, recording its schema version and creation date.",
+      "tags": ["configuration", "openspec", "metadata", "documentation"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-30-harden-transfer-delivery/proposal.md",
+      "type": "document",
+      "name": "proposal.md",
+      "filePath": "openspec/changes/archive/2026-07-30-harden-transfer-delivery/proposal.md",
+      "summary": "Proposal for the harden-transfer-delivery change, motivating and describing fixes for three transfer delivery gaps: byte-count-independent completion signalling, prompt offer surfacing with OS notifications, broker WebSocket heartbeats, send-slot TTL, and a single-transfer (send XOR receive) session model with glare tiebreaking.",
+      "tags": ["documentation", "openspec", "proposal", "transfer-delivery", "specification"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-30-harden-transfer-delivery/design.md",
+      "type": "document",
+      "name": "design.md",
+      "filePath": "openspec/changes/archive/2026-07-30-harden-transfer-delivery/design.md",
+      "summary": "Design document for the harden-transfer-delivery change, recording key decisions such as receiver-authoritative completion, offer emission decoupled from endpoint warm-up, incoming-offer OS notifications, broker heartbeats, and send-slot TTL, along with risks, migration plan, and open questions.",
+      "tags": ["documentation", "openspec", "design", "architecture", "transfer-delivery"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-30-harden-transfer-delivery/tasks.md",
+      "type": "document",
+      "name": "tasks.md",
+      "filePath": "openspec/changes/archive/2026-07-30-harden-transfer-delivery/tasks.md",
+      "summary": "Implementation task checklist for the harden-transfer-delivery change, broken into eight work streams covering completion signalling, send-slot TTL, offer surfacing, broker heartbeat, single-session enforcement, busy/glare handling, and wiring/generation gates.",
+      "tags": ["documentation", "openspec", "tasks", "checklist", "transfer-delivery"],
+      "complexity": "moderate"
+    }
+  ],
+  "edges": [
+    {
+      "source": "document:openspec/changes/archive/2026-07-30-harden-transfer-delivery/design.md",
+      "target": "document:openspec/changes/archive/2026-07-30-harden-transfer-delivery/proposal.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-30-harden-transfer-delivery/tasks.md",
+      "target": "document:openspec/changes/archive/2026-07-30-harden-transfer-delivery/proposal.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-30-harden-transfer-delivery/tasks.md",
+      "target": "document:openspec/changes/archive/2026-07-30-harden-transfer-delivery/design.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:openspec/changes/archive/2026-07-30-harden-transfer-delivery/.openspec.yaml",
+      "target": "document:openspec/changes/archive/2026-07-30-harden-transfer-delivery/proposal.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

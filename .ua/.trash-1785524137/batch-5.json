@@ -1,0 +1,118 @@
+{
+  "nodes": [
+    {
+      "id": "file:src/lib/components/ui/dialog/dialog-close.svelte",
+      "type": "file",
+      "name": "dialog-close.svelte",
+      "filePath": "src/lib/components/ui/dialog/dialog-close.svelte",
+      "summary": "shadcn-svelte dialog close primitive that forwards props to the bits-ui Dialog.Close element with a bindable ref.",
+      "tags": ["component", "ui", "dialog", "shadcn-svelte"],
+      "complexity": "simple",
+      "languageNotes": "Thin wrapper over bits-ui using Svelte 5 $props()/$bindable() runes."
+    },
+    {
+      "id": "file:src/lib/components/ui/dialog/dialog-content.svelte",
+      "type": "file",
+      "name": "dialog-content.svelte",
+      "filePath": "src/lib/components/ui/dialog/dialog-content.svelte",
+      "summary": "Dialog content container that renders the bits-ui content inside a portal with an overlay, centered styling, and an optional ghost close button.",
+      "tags": ["component", "ui", "dialog", "shadcn-svelte", "layout"],
+      "complexity": "simple",
+      "languageNotes": "Composes Overlay, Portal, and a Button snippet; uses cn() and WithoutChildrenOrChild helper types."
+    },
+    {
+      "id": "file:src/lib/components/ui/dialog/dialog-description.svelte",
+      "type": "file",
+      "name": "dialog-description.svelte",
+      "filePath": "src/lib/components/ui/dialog/dialog-description.svelte",
+      "summary": "Dialog description primitive wrapping the bits-ui Dialog.Description with muted text styling.",
+      "tags": ["component", "ui", "dialog", "shadcn-svelte"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/dialog/dialog-footer.svelte",
+      "type": "file",
+      "name": "dialog-footer.svelte",
+      "filePath": "src/lib/components/ui/dialog/dialog-footer.svelte",
+      "summary": "Layout helper that arranges dialog action buttons in a responsive footer row.",
+      "tags": ["component", "ui", "dialog", "shadcn-svelte", "layout"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/dialog/dialog-header.svelte",
+      "type": "file",
+      "name": "dialog-header.svelte",
+      "filePath": "src/lib/components/ui/dialog/dialog-header.svelte",
+      "summary": "Layout helper that stacks the dialog title and description in a header section.",
+      "tags": ["component", "ui", "dialog", "shadcn-svelte", "layout"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/dialog/dialog-overlay.svelte",
+      "type": "file",
+      "name": "dialog-overlay.svelte",
+      "filePath": "src/lib/components/ui/dialog/dialog-overlay.svelte",
+      "summary": "Backdrop overlay primitive wrapping the bits-ui Dialog.Overlay with fade transitions and a dimmed background.",
+      "tags": ["component", "ui", "dialog", "shadcn-svelte"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/dialog/dialog-portal.svelte",
+      "type": "file",
+      "name": "dialog-portal.svelte",
+      "filePath": "src/lib/components/ui/dialog/dialog-portal.svelte",
+      "summary": "Portal primitive that forwards props to the bits-ui Dialog.Portal so dialog content renders outside the DOM hierarchy.",
+      "tags": ["component", "ui", "dialog", "shadcn-svelte"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/dialog/dialog-title.svelte",
+      "type": "file",
+      "name": "dialog-title.svelte",
+      "filePath": "src/lib/components/ui/dialog/dialog-title.svelte",
+      "summary": "Dialog title primitive wrapping the bits-ui Dialog.Title with heading styling.",
+      "tags": ["component", "ui", "dialog", "shadcn-svelte"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/dialog/dialog-trigger.svelte",
+      "type": "file",
+      "name": "dialog-trigger.svelte",
+      "filePath": "src/lib/components/ui/dialog/dialog-trigger.svelte",
+      "summary": "Trigger primitive that forwards props to the bits-ui Dialog.Trigger element with a bindable ref to open the dialog.",
+      "tags": ["component", "ui", "dialog", "shadcn-svelte"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/dialog/dialog.svelte",
+      "type": "file",
+      "name": "dialog.svelte",
+      "filePath": "src/lib/components/ui/dialog/dialog.svelte",
+      "summary": "Root dialog primitive wrapping bits-ui Dialog.Root with a bindable open state that controls visibility.",
+      "tags": ["component", "ui", "dialog", "shadcn-svelte"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/dialog/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "filePath": "src/lib/components/ui/dialog/index.ts",
+      "summary": "Barrel module that re-exports all dialog primitives under both short (Root, Content) and prefixed (Dialog, DialogContent) aliases for ergonomic imports.",
+      "tags": ["barrel", "entry-point", "ui", "dialog", "shadcn-svelte"],
+      "complexity": "simple",
+      "languageNotes": "shadcn-svelte convention: exports each part twice with a namespaced alias so consumers can use either the dot or prefix style."
+    }
+  ],
+  "edges": [
+    {"source": "file:src/lib/components/ui/dialog/index.ts", "target": "file:src/lib/components/ui/dialog/dialog.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/dialog/index.ts", "target": "file:src/lib/components/ui/dialog/dialog-portal.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/dialog/index.ts", "target": "file:src/lib/components/ui/dialog/dialog-title.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/dialog/index.ts", "target": "file:src/lib/components/ui/dialog/dialog-footer.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/dialog/index.ts", "target": "file:src/lib/components/ui/dialog/dialog-header.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/dialog/index.ts", "target": "file:src/lib/components/ui/dialog/dialog-overlay.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/dialog/index.ts", "target": "file:src/lib/components/ui/dialog/dialog-content.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/dialog/index.ts", "target": "file:src/lib/components/ui/dialog/dialog-description.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/dialog/index.ts", "target": "file:src/lib/components/ui/dialog/dialog-trigger.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/dialog/index.ts", "target": "file:src/lib/components/ui/dialog/dialog-close.svelte", "type": "imports", "direction": "forward", "weight": 0.7}
+  ]
+}

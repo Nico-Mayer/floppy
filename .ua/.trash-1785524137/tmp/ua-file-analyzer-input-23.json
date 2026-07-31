@@ -1,0 +1,15 @@
+{
+  "projectRoot": "/Users/nimayer/projects/personal/floppy",
+  "batchFiles": [
+    {"path": "openspec/changes/archive/2026-07-27-receive-clipboard-detect/.openspec.yaml", "language": "yaml", "sizeLines": 2, "fileCategory": "config"},
+    {"path": "openspec/changes/archive/2026-07-27-receive-clipboard-detect/design.md", "language": "markdown", "sizeLines": 67, "fileCategory": "docs"},
+    {"path": "openspec/changes/archive/2026-07-27-receive-clipboard-detect/proposal.md", "language": "markdown", "sizeLines": 31, "fileCategory": "docs"},
+    {"path": "openspec/changes/archive/2026-07-27-receive-clipboard-detect/tasks.md", "language": "markdown", "sizeLines": 21, "fileCategory": "docs"}
+  ],
+  "batchImportData": {
+    "openspec/changes/archive/2026-07-27-receive-clipboard-detect/.openspec.yaml": [],
+    "openspec/changes/archive/2026-07-27-receive-clipboard-detect/design.md": [],
+    "openspec/changes/archive/2026-07-27-receive-clipboard-detect/proposal.md": [],
+    "openspec/changes/archive/2026-07-27-receive-clipboard-detect/tasks.md": []
+  }
+}

@@ -1,0 +1,212 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 4,
+  "filesSkipped": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 4,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 0,
+      "failed": 0,
+      "skipped": 4
+    }
+  },
+  "results": [
+    {
+      "path": "openspec/changes/archive/2026-07-31-download-destination-strategy/.openspec.yaml",
+      "language": "yaml",
+      "fileCategory": "config",
+      "totalLines": 2,
+      "nonEmptyLines": 2,
+      "sections": [
+        {
+          "heading": "schema",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "created",
+          "level": 1,
+          "line": 2
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 2
+      }
+    },
+    {
+      "path": "openspec/changes/archive/2026-07-31-download-destination-strategy/design.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 127,
+      "nonEmptyLines": 102,
+      "sections": [
+        {
+          "heading": "Context",
+          "level": 2,
+          "line": 1
+        },
+        {
+          "heading": "Goals / Non-Goals",
+          "level": 2,
+          "line": 20
+        },
+        {
+          "heading": "Decisions",
+          "level": 2,
+          "line": 33
+        },
+        {
+          "heading": "Decision 1 — Layout: flat-chronological `floppy/<datetime>[ from <device>]/`",
+          "level": 3,
+          "line": 35
+        },
+        {
+          "heading": "Decision 2 — Per-platform root behind one destination service",
+          "level": 3,
+          "line": 53
+        },
+        {
+          "heading": "Decision 3 — Android via `tauri-plugin-android-fs`, not hand-rolled MediaStore",
+          "level": 3,
+          "line": 63
+        },
+        {
+          "heading": "Decision 4 — iOS: app Documents + Files exposure, no plugin",
+          "level": 3,
+          "line": 83
+        },
+        {
+          "heading": "Decision 5 — Custom folder is a future opt-in, not the default",
+          "level": 3,
+          "line": 90
+        },
+        {
+          "heading": "Risks / Trade-offs",
+          "level": 2,
+          "line": 97
+        },
+        {
+          "heading": "Migration Plan",
+          "level": 2,
+          "line": 110
+        },
+        {
+          "heading": "Resolved Questions",
+          "level": 2,
+          "line": 118
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 11
+      }
+    },
+    {
+      "path": "openspec/changes/archive/2026-07-31-download-destination-strategy/proposal.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 64,
+      "nonEmptyLines": 56,
+      "sections": [
+        {
+          "heading": "Why",
+          "level": 2,
+          "line": 1
+        },
+        {
+          "heading": "What Changes",
+          "level": 2,
+          "line": 12
+        },
+        {
+          "heading": "Capabilities",
+          "level": 2,
+          "line": 41
+        },
+        {
+          "heading": "New Capabilities",
+          "level": 3,
+          "line": 43
+        },
+        {
+          "heading": "Modified Capabilities",
+          "level": 3,
+          "line": 49
+        },
+        {
+          "heading": "Impact",
+          "level": 2,
+          "line": 52
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    },
+    {
+      "path": "openspec/changes/archive/2026-07-31-download-destination-strategy/tasks.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 93,
+      "nonEmptyLines": 81,
+      "sections": [
+        {
+          "heading": "Tasks",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "1. Layout: flat-chronological naming",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "2. Destination root service",
+          "level": 2,
+          "line": 13
+        },
+        {
+          "heading": "3. Android: public Downloads via tauri-plugin-android-fs",
+          "level": 2,
+          "line": 21
+        },
+        {
+          "heading": "4. iOS: Documents + Files exposure",
+          "level": 2,
+          "line": 53
+        },
+        {
+          "heading": "5. Open received folder",
+          "level": 2,
+          "line": 62
+        },
+        {
+          "heading": "6. Verify",
+          "level": 2,
+          "line": 74
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 7
+      }
+    }
+  ]
+}

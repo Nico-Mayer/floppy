@@ -1,0 +1,209 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 3,
+  "filesSkipped": [
+    "src/lib/components/shell/NavEdgeSwipe.svelte",
+    "src/lib/components/spell/qrcode/qrcode.svelte",
+    "src/lib/components/transfer/DeviceGlyph.svelte",
+    "src/lib/components/transfer/FileCard.svelte",
+    "src/lib/components/transfer/Mascot.svelte",
+    "src/lib/components/transfer/ModeSwitcher.svelte",
+    "src/lib/components/transfer/TransferCard.svelte",
+    "src/lib/components/transfer/TransferProgress.svelte",
+    "src/lib/components/transfer/WaitingHint.svelte",
+    "src/lib/components/transfer/receive/ReceiveCodeForm.svelte",
+    "src/lib/components/transfer/receive/ReceiveComplete.svelte",
+    "src/lib/components/transfer/receive/ReceiveDevice.svelte",
+    "src/lib/components/transfer/receive/ReceiveIdle.svelte",
+    "src/lib/components/transfer/receive/ReceivePanel.svelte",
+    "src/lib/components/transfer/receive/ReceiveSearching.svelte",
+    "src/lib/components/transfer/send/SendCode.svelte",
+    "src/lib/components/transfer/send/SendComplete.svelte",
+    "src/lib/components/transfer/send/SendDevice.svelte",
+    "src/lib/components/transfer/send/SendPanel.svelte",
+    "src/lib/components/transfer/send/SendQueue.svelte",
+    "src/lib/components/transfer/send/SendTargetPicker.svelte",
+    "src/lib/components/ui/badge/badge.svelte"
+  ],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 3,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 3,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "results": [
+    {
+      "path": "src/lib/components/spell/qrcode/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 2,
+      "nonEmptyLines": 2,
+      "exports": [
+        {
+          "name": "QRCode",
+          "line": 2,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 1,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "src/lib/components/transfer/files.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 31,
+      "nonEmptyLines": 27,
+      "functions": [
+        {
+          "name": "ext",
+          "startLine": 2,
+          "endLine": 6,
+          "params": [
+            "path"
+          ]
+        },
+        {
+          "name": "isPreviewable",
+          "startLine": 14,
+          "endLine": 18,
+          "params": [
+            "path"
+          ]
+        },
+        {
+          "name": "previewURL",
+          "startLine": 29,
+          "endLine": 31,
+          "params": [
+            "path"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "ext",
+          "line": 2,
+          "isDefault": false
+        },
+        {
+          "name": "isPreviewable",
+          "line": 14,
+          "isDefault": false
+        },
+        {
+          "name": "previewURL",
+          "line": 29,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "ext",
+          "callee": "path.split(/[\\\\/]/).pop",
+          "lineNumber": 3
+        },
+        {
+          "caller": "ext",
+          "callee": "path.split",
+          "lineNumber": 3
+        },
+        {
+          "caller": "ext",
+          "callee": "name.lastIndexOf",
+          "lineNumber": 4
+        },
+        {
+          "caller": "ext",
+          "callee": "name.slice(dot + 1, dot + 5).toUpperCase",
+          "lineNumber": 5
+        },
+        {
+          "caller": "ext",
+          "callee": "name.slice",
+          "lineNumber": 5
+        },
+        {
+          "caller": "isPreviewable",
+          "callee": "path.split(/[\\\\/]/).pop",
+          "lineNumber": 15
+        },
+        {
+          "caller": "isPreviewable",
+          "callee": "path.split",
+          "lineNumber": 15
+        },
+        {
+          "caller": "isPreviewable",
+          "callee": "name.lastIndexOf",
+          "lineNumber": 16
+        },
+        {
+          "caller": "isPreviewable",
+          "callee": "PREVIEW_EXTS.has",
+          "lineNumber": 17
+        },
+        {
+          "caller": "isPreviewable",
+          "callee": "name.slice(dot + 1).toLowerCase",
+          "lineNumber": 17
+        },
+        {
+          "caller": "isPreviewable",
+          "callee": "name.slice",
+          "lineNumber": 17
+        },
+        {
+          "caller": "previewURL",
+          "callee": "convertFileSrc",
+          "lineNumber": 30
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 3,
+        "functionCount": 3,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "src/lib/components/ui/badge/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 2,
+      "nonEmptyLines": 2,
+      "exports": [
+        {
+          "name": "Badge",
+          "line": 1,
+          "isDefault": false
+        },
+        {
+          "name": "badgeVariants",
+          "line": 2,
+          "isDefault": false
+        },
+        {
+          "name": "BadgeVariant",
+          "line": 2,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 3,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    }
+  ]
+}

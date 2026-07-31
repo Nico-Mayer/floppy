@@ -1,0 +1,16 @@
+{
+  "projectRoot": "/Users/nimayer/projects/personal/floppy",
+  "batchFiles": [
+    {"path": "src/lib/components/ui/responsive-dialog/context.ts", "language": "typescript", "sizeLines": 11, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/responsive-dialog/index.ts", "language": "typescript", "sizeLines": 30, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/responsive-dialog/responsive-dialog-body.svelte", "language": "svelte", "sizeLines": 17, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/responsive-dialog/responsive-dialog-content.svelte", "language": "svelte", "sizeLines": 18, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/responsive-dialog/responsive-dialog-description.svelte", "language": "svelte", "sizeLines": 18, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/responsive-dialog/responsive-dialog-footer.svelte", "language": "svelte", "sizeLines": 18, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/responsive-dialog/responsive-dialog-header.svelte", "language": "svelte", "sizeLines": 18, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/responsive-dialog/responsive-dialog-title.svelte", "language": "svelte", "sizeLines": 18, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/responsive-dialog/responsive-dialog-trigger.svelte", "language": "svelte", "sizeLines": 14, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/responsive-dialog/responsive-dialog.svelte", "language": "svelte", "sizeLines": 26, "fileCategory": "code"}
+  ],
+  "batchImportData": {"src/lib/components/ui/responsive-dialog/context.ts":[],"src/lib/components/ui/responsive-dialog/index.ts":["src/lib/components/ui/responsive-dialog/context.ts","src/lib/components/ui/responsive-dialog/responsive-dialog-body.svelte","src/lib/components/ui/responsive-dialog/responsive-dialog-content.svelte","src/lib/components/ui/responsive-dialog/responsive-dialog-description.svelte","src/lib/components/ui/responsive-dialog/responsive-dialog-footer.svelte","src/lib/components/ui/responsive-dialog/responsive-dialog-header.svelte","src/lib/components/ui/responsive-dialog/responsive-dialog-title.svelte","src/lib/components/ui/responsive-dialog/responsive-dialog-trigger.svelte","src/lib/components/ui/responsive-dialog/responsive-dialog.svelte"],"src/lib/components/ui/responsive-dialog/responsive-dialog-body.svelte":[],"src/lib/components/ui/responsive-dialog/responsive-dialog-content.svelte":[],"src/lib/components/ui/responsive-dialog/responsive-dialog-description.svelte":[],"src/lib/components/ui/responsive-dialog/responsive-dialog-footer.svelte":[],"src/lib/components/ui/responsive-dialog/responsive-dialog-header.svelte":[],"src/lib/components/ui/responsive-dialog/responsive-dialog-title.svelte":[],"src/lib/components/ui/responsive-dialog/responsive-dialog-trigger.svelte":[],"src/lib/components/ui/responsive-dialog/responsive-dialog.svelte":[]}
+}

@@ -1,0 +1,83 @@
+{
+  "nodes": [
+    {
+      "id": "config:.dockerignore",
+      "type": "config",
+      "name": ".dockerignore",
+      "filePath": ".dockerignore",
+      "summary": "Restricts the Docker build context (repo root on Railway) to only the broker module, excluding the Tauri app, node_modules, and Rust target dirs to keep image uploads small.",
+      "tags": ["containerization", "infrastructure", "docker", "build-context"],
+      "complexity": "simple",
+      "languageNotes": "Uses an ignore-all-then-allowlist pattern (`*` followed by `!broker`) so only the broker directory reaches the Docker daemon."
+    },
+    {
+      "id": "config:components.json",
+      "type": "config",
+      "name": "components.json",
+      "filePath": "components.json",
+      "summary": "shadcn-svelte configuration defining Tailwind CSS entry, base color, style preset, icon library, and path aliases ($lib/components, $lib/utils, etc.) used when generating UI components.",
+      "tags": ["configuration", "shadcn-svelte", "tailwind", "ui", "design-system"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:mise.toml",
+      "type": "config",
+      "name": "mise.toml",
+      "filePath": "mise.toml",
+      "summary": "mise dev-toolchain and task-runner config pinning tool versions (node, java, rust, go, cocoapods) and defining the full dev/build/test workflow — Tauri desktop/Android/iOS dev, emulator control, the Go broker, linting, bindings generation, and the offline test gate.",
+      "tags": ["configuration", "build-system", "task-runner", "toolchain", "dev-tooling"],
+      "complexity": "moderate",
+      "languageNotes": "Uses Tera templating (`{% if %}`) in the env block to switch FLOPPY_BROKER_URL between the local and remote broker."
+    },
+    {
+      "id": "config:package.json",
+      "type": "config",
+      "name": "package.json",
+      "filePath": "package.json",
+      "summary": "npm manifest for the SvelteKit + TypeScript frontend, declaring Tauri API/plugin dependencies, the Svelte/Tailwind/shadcn dev toolchain, and scripts for Vite dev/build, svelte-check, Tauri, linting, and formatting.",
+      "tags": ["configuration", "build-system", "dependencies", "npm", "javascript"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:railway.json",
+      "type": "config",
+      "name": "railway.json",
+      "filePath": "railway.json",
+      "summary": "Railway deployment configuration that builds the service from broker/Dockerfile and applies an on-failure restart policy with up to 10 retries.",
+      "tags": ["configuration", "deployment", "infrastructure", "ci-cd", "railway"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:tsconfig.json",
+      "type": "config",
+      "name": "tsconfig.json",
+      "filePath": "tsconfig.json",
+      "summary": "TypeScript compiler configuration extending the generated SvelteKit tsconfig, enabling strict type-checking, JS checking, bundler module resolution, and source maps for the frontend.",
+      "tags": ["configuration", "typescript", "build-system", "type-checking"],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "config:.dockerignore",
+      "target": "service:broker/Dockerfile",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:railway.json",
+      "target": "service:broker/Dockerfile",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:mise.toml",
+      "target": "config:package.json",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    }
+  ]
+}

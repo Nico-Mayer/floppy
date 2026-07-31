@@ -1,0 +1,207 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 4,
+  "filesSkipped": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 4,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 0,
+      "failed": 0,
+      "skipped": 4
+    }
+  },
+  "results": [
+    {
+      "path": "openspec/changes/archive/2026-07-28-trusted-devices/.openspec.yaml",
+      "language": "yaml",
+      "fileCategory": "config",
+      "totalLines": 2,
+      "nonEmptyLines": 2,
+      "sections": [
+        {
+          "heading": "schema",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "created",
+          "level": 1,
+          "line": 2
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 2
+      }
+    },
+    {
+      "path": "openspec/changes/archive/2026-07-28-trusted-devices/design.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 176,
+      "nonEmptyLines": 144,
+      "sections": [
+        {
+          "heading": "Design notes — trusted devices",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "The two subproblems croc does not solve",
+          "level": 2,
+          "line": 12
+        },
+        {
+          "heading": "End-to-end flow (mobile-first, the real path)",
+          "level": 2,
+          "line": 28
+        },
+        {
+          "heading": "Pairing protocol (subproblem A)",
+          "level": 2,
+          "line": 55
+        },
+        {
+          "heading": "The broker (subproblem B)",
+          "level": 2,
+          "line": 88
+        },
+        {
+          "heading": "Residual risk stack (ranked, mobile-first)",
+          "level": 2,
+          "line": 105
+        },
+        {
+          "heading": "Suggested phasing",
+          "level": 2,
+          "line": 133
+        },
+        {
+          "heading": "Decisions taken during exploration",
+          "level": 2,
+          "line": 146
+        },
+        {
+          "heading": "Open questions",
+          "level": 2,
+          "line": 160
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 9
+      }
+    },
+    {
+      "path": "openspec/changes/archive/2026-07-28-trusted-devices/proposal.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 83,
+      "nonEmptyLines": 68,
+      "sections": [
+        {
+          "heading": "Trusted devices — codeless push-to-accept transfers",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Why",
+          "level": 2,
+          "line": 7
+        },
+        {
+          "heading": "What Changes",
+          "level": 2,
+          "line": 21
+        },
+        {
+          "heading": "Capabilities",
+          "level": 2,
+          "line": 43
+        },
+        {
+          "heading": "New Capabilities",
+          "level": 3,
+          "line": 45
+        },
+        {
+          "heading": "Modified Capabilities",
+          "level": 3,
+          "line": 51
+        },
+        {
+          "heading": "Impact",
+          "level": 2,
+          "line": 56
+        },
+        {
+          "heading": "Relationship to other changes",
+          "level": 2,
+          "line": 77
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 8
+      }
+    },
+    {
+      "path": "openspec/changes/archive/2026-07-28-trusted-devices/tasks.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 50,
+      "nonEmptyLines": 39,
+      "sections": [
+        {
+          "heading": "Tasks: trusted-devices",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "1. Pairing core — `internal/pairing/` (pure Go, no croc, no Wails, no network)",
+          "level": 2,
+          "line": 10
+        },
+        {
+          "heading": "2. Minimal broker — dumb WS relay (no push, no accounts, no DB)",
+          "level": 2,
+          "line": 19
+        },
+        {
+          "heading": "3. Client wiring — codeless send end-to-end (trust STUBBED)",
+          "level": 2,
+          "line": 26
+        },
+        {
+          "heading": "4. Real pairing UI (after the section 3 e2e test passes)",
+          "level": 2,
+          "line": 37
+        },
+        {
+          "heading": "5. Verification — first desktop end-to-end test",
+          "level": 2,
+          "line": 44
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    }
+  ]
+}

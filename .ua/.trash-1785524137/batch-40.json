@@ -1,0 +1,620 @@
+{
+  "nodes": [
+    {
+      "id": "file:.prettierignore",
+      "type": "file",
+      "name": ".prettierignore",
+      "filePath": ".prettierignore",
+      "summary": "Prettier ignore list excluding build output, generated bindings, and vendored assets from formatting.",
+      "tags": ["configuration", "formatting", "tooling", "prettier"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:.zed/settings.json",
+      "type": "config",
+      "name": "settings.json",
+      "filePath": ".zed/settings.json",
+      "summary": "Zed editor workspace settings, including file-scan exclusions to hide generated and vendored directories.",
+      "tags": ["configuration", "editor", "tooling", "zed"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:broker/fingerprint.go",
+      "type": "file",
+      "name": "fingerprint.go",
+      "filePath": "broker/fingerprint.go",
+      "summary": "Public-key fingerprinting and registration proof-of-ownership verification for the fingerprint-routing broker, using SHA-256 identity hashes and ed25519 signature checks.",
+      "tags": ["security", "cryptography", "validation", "broker"],
+      "complexity": "simple",
+      "languageNotes": "Combines ed25519 signing keys and X25519 kex keys into a single fingerprint hash."
+    },
+    {
+      "id": "file:broker/fproute.go",
+      "type": "file",
+      "name": "fproute.go",
+      "filePath": "broker/fproute.go",
+      "summary": "Fingerprint-routing rendezvous server that authenticates WebSocket clients by identity fingerprint and relays signed signals point-to-point to a target fingerprint.",
+      "tags": ["service", "websocket", "routing", "broker"],
+      "complexity": "moderate",
+      "languageNotes": "Uses a RWMutex-guarded map of one live connection per fingerprint, evicting stale connections on reconnect."
+    },
+    {
+      "id": "file:broker/fproute_test.go",
+      "type": "file",
+      "name": "fproute_test.go",
+      "filePath": "broker/fproute_test.go",
+      "summary": "Integration tests for the fingerprint-routing broker covering keepalive eviction, signal routing by fingerprint, offline-target handling, and bad-registration rejection.",
+      "tags": ["test", "integration-test", "websocket", "broker"],
+      "complexity": "complex"
+    },
+    {
+      "id": "config:broker/go.mod",
+      "type": "config",
+      "name": "go.mod",
+      "filePath": "broker/go.mod",
+      "summary": "Go module definition for the rendezvous/pairing broker, declaring the module path, Go version, and WebSocket dependency.",
+      "tags": ["configuration", "go-module", "dependencies", "broker"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:broker/heartbeat.go",
+      "type": "file",
+      "name": "heartbeat.go",
+      "filePath": "broker/heartbeat.go",
+      "summary": "Shared WebSocket keepalive loop that periodically pings a connection and cancels the session when a ping times out, evicting dead connections.",
+      "tags": ["utility", "websocket", "keepalive", "broker"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:broker/mailbox.go",
+      "type": "file",
+      "name": "mailbox.go",
+      "filePath": "broker/mailbox.go",
+      "summary": "Room-based mailbox relay server that pairs two WebSocket clients by room id, buffers early messages until a peer joins, and relays payloads between exactly two participants.",
+      "tags": ["service", "websocket", "relay", "broker"],
+      "complexity": "moderate",
+      "languageNotes": "Buffers messages per room and rejects a third joiner to keep rooms strictly two-party."
+    },
+    {
+      "id": "file:broker/mailbox_test.go",
+      "type": "file",
+      "name": "mailbox_test.go",
+      "filePath": "broker/mailbox_test.go",
+      "summary": "Integration tests for the mailbox relay covering keepalive eviction, bidirectional relay, buffering until a peer joins, room isolation, and third-party rejection.",
+      "tags": ["test", "integration-test", "websocket", "broker"],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:broker/main.go",
+      "type": "file",
+      "name": "main.go",
+      "filePath": "broker/main.go",
+      "summary": "Broker entry point that wires the mailbox relay and fingerprint-routing servers plus a health endpoint into an HTTP mux and listens on the configured port.",
+      "tags": ["entry-point", "service", "http-server", "broker"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:docs/tauri-parity.md",
+      "type": "document",
+      "name": "tauri-parity.md",
+      "filePath": "docs/tauri-parity.md",
+      "summary": "Desktop parity audit mapping the legacy Go/Wails commands, events, and transport behavior to the Tauri/iroh rewrite, noting additions and known minor differences.",
+      "tags": ["documentation", "parity-audit", "migration", "tauri"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:eslint.config.js",
+      "type": "file",
+      "name": "eslint.config.js",
+      "filePath": "eslint.config.js",
+      "summary": "Flat ESLint configuration for the SvelteKit + TypeScript frontend, composing JS, TypeScript, and Svelte rule sets and wiring the Svelte parser to the project's svelte.config.js.",
+      "tags": ["configuration", "linting", "build-system", "eslint"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-27-receive-clipboard-detect/specs/receive-clipboard-detect/spec.md",
+      "type": "document",
+      "name": "receive-clipboard-detect/spec.md",
+      "filePath": "openspec/changes/archive/2026-07-27-receive-clipboard-detect/specs/receive-clipboard-detect/spec.md",
+      "summary": "Archived OpenSpec capability defining clipboard-driven auto-fill of croc codes into the Receive tab, including focus triggers, provenance hints, and suppression rules.",
+      "tags": ["documentation", "openspec", "specification", "clipboard"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-27-transfer-panels-redesign/specs/receive-clipboard-detect/spec.md",
+      "type": "document",
+      "name": "receive-clipboard-detect/spec.md (delta)",
+      "filePath": "openspec/changes/archive/2026-07-27-transfer-panels-redesign/specs/receive-clipboard-detect/spec.md",
+      "summary": "Archived OpenSpec delta modifying clipboard auto-fill presentation for the transfer-panels redesign, adding animated fill and a content-following clear control.",
+      "tags": ["documentation", "openspec", "specification", "delta"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-27-transfer-panels-redesign/specs/transfer-panel-layout/spec.md",
+      "type": "document",
+      "name": "transfer-panel-layout/spec.md",
+      "filePath": "openspec/changes/archive/2026-07-27-transfer-panels-redesign/specs/transfer-panel-layout/spec.md",
+      "summary": "Archived OpenSpec capability specifying container-adaptive transfer panels, touch-target sizing, mascot retention, and a stable two-zone panel structure.",
+      "tags": ["documentation", "openspec", "specification", "ui-layout"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-28-trusted-devices/specs/device-pairing/spec.md",
+      "type": "document",
+      "name": "device-pairing/spec.md",
+      "filePath": "openspec/changes/archive/2026-07-28-trusted-devices/specs/device-pairing/spec.md",
+      "summary": "Archived OpenSpec capability defining per-device identity keypairs, fingerprints, trust store, ECDH shared secrets, SAS verification, and signed transfer offers for the trusted-devices feature.",
+      "tags": ["documentation", "openspec", "specification", "device-pairing", "security"],
+      "complexity": "complex"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-28-trusted-devices/specs/rendezvous-broker/spec.md",
+      "type": "document",
+      "name": "rendezvous-broker/spec.md",
+      "filePath": "openspec/changes/archive/2026-07-28-trusted-devices/specs/rendezvous-broker/spec.md",
+      "summary": "Archived OpenSpec capability defining the fingerprint rendezvous broker's proof-of-ownership registration, fingerprint-based signal routing, offline notices, and stateless single-connection semantics.",
+      "tags": ["documentation", "openspec", "specification", "broker"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-30-harden-transfer-delivery/specs/device-pairing/spec.md",
+      "type": "document",
+      "name": "device-pairing/spec.md (harden)",
+      "filePath": "openspec/changes/archive/2026-07-30-harden-transfer-delivery/specs/device-pairing/spec.md",
+      "summary": "Archived OpenSpec delta hardening transfer delivery with signed completion signals, prompt offer surfacing, busy auto-decline, and simultaneous-offer resolution by fingerprint.",
+      "tags": ["documentation", "openspec", "specification", "device-pairing"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-30-harden-transfer-delivery/specs/rendezvous-broker/spec.md",
+      "type": "document",
+      "name": "rendezvous-broker/spec.md (harden)",
+      "filePath": "openspec/changes/archive/2026-07-30-harden-transfer-delivery/specs/rendezvous-broker/spec.md",
+      "summary": "Archived OpenSpec delta adding WebSocket keepalive and dead-connection eviction to the rendezvous broker, keeping idle connections registered while freeing dead slots.",
+      "tags": ["documentation", "openspec", "specification", "broker", "keepalive"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-30-harden-transfer-delivery/specs/transfer-delivery/spec.md",
+      "type": "document",
+      "name": "transfer-delivery/spec.md",
+      "filePath": "openspec/changes/archive/2026-07-30-harden-transfer-delivery/specs/transfer-delivery/spec.md",
+      "summary": "Archived OpenSpec capability defining single-active-session semantics, passive send completion on receiver acknowledgement, and send-slot expiry for stuck or unaccepted transfers.",
+      "tags": ["documentation", "openspec", "specification", "transfer"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-30-nav-sidebar-and-pages/specs/app-navigation/spec.md",
+      "type": "document",
+      "name": "app-navigation/spec.md",
+      "filePath": "openspec/changes/archive/2026-07-30-nav-sidebar-and-pages/specs/app-navigation/spec.md",
+      "summary": "Archived OpenSpec capability defining a sidebar navigation shell with section routing, lifecycle survival across navigation, a mobile sidebar, and an account footer.",
+      "tags": ["documentation", "openspec", "specification", "navigation"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-30-nav-sidebar-and-pages/specs/device-pairing/spec.md",
+      "type": "document",
+      "name": "device-pairing/spec.md (nav)",
+      "filePath": "openspec/changes/archive/2026-07-30-nav-sidebar-and-pages/specs/device-pairing/spec.md",
+      "summary": "Archived OpenSpec delta consolidating pairing entry points into a single pairing home reachable from the send panel while keeping the confirm prompt visible.",
+      "tags": ["documentation", "openspec", "specification", "device-pairing", "delta"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-30-pairing-confirm-and-name/specs/device-pairing/spec.md",
+      "type": "document",
+      "name": "device-pairing/spec.md (confirm-name)",
+      "filePath": "openspec/changes/archive/2026-07-30-pairing-confirm-and-name/specs/device-pairing/spec.md",
+      "summary": "Archived OpenSpec delta revising one-sided pairing links so the initiator confirms before adding and can name or rename trusted devices.",
+      "tags": ["documentation", "openspec", "specification", "device-pairing", "delta"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-30-redesign-device-pairing/specs/device-management/spec.md",
+      "type": "document",
+      "name": "device-management/spec.md",
+      "filePath": "openspec/changes/archive/2026-07-30-redesign-device-pairing/specs/device-management/spec.md",
+      "summary": "Archived OpenSpec capability defining a dedicated Devices page, a symmetric add-a-device flow, one-tap confirmation, local renames, and removal of pasted pairing links.",
+      "tags": ["documentation", "openspec", "specification", "device-management"],
+      "complexity": "complex"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-30-redesign-device-pairing/specs/device-pairing/spec.md",
+      "type": "document",
+      "name": "device-pairing/spec.md (redesign)",
+      "filePath": "openspec/changes/archive/2026-07-30-redesign-device-pairing/specs/device-pairing/spec.md",
+      "summary": "Archived OpenSpec capability defining short-code pairing establishment with SAS words, self-name generation and persistence, local trust-store overrides, and signed transfer offers.",
+      "tags": ["documentation", "openspec", "specification", "device-pairing", "security"],
+      "complexity": "complex"
+    },
+
+    {
+      "id": "class:broker/fproute.go:FpMsg",
+      "type": "class",
+      "name": "FpMsg",
+      "filePath": "broker/fproute.go",
+      "lineRange": [30, 36],
+      "summary": "Wire message struct for the fingerprint-routing protocol carrying a type, identity key, signature, target fingerprint, and opaque payload blob.",
+      "tags": ["data-model", "serialization", "broker"],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:broker/fproute.go:FpServer",
+      "type": "class",
+      "name": "FpServer",
+      "filePath": "broker/fproute.go",
+      "lineRange": [51, 57],
+      "summary": "Fingerprint-routing server holding the mutex-guarded client map and keepalive intervals, exposing HTTP handling, routing, and connection add/remove.",
+      "tags": ["service", "websocket", "routing", "broker"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:broker/fproute.go:NewFpServer",
+      "type": "function",
+      "name": "NewFpServer",
+      "filePath": "broker/fproute.go",
+      "lineRange": [59, 65],
+      "summary": "Constructs an FpServer with an initialized client map and default ping interval and timeout.",
+      "tags": ["factory", "constructor", "broker"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:broker/fproute.go:Handler",
+      "type": "function",
+      "name": "Handler",
+      "filePath": "broker/fproute.go",
+      "lineRange": [67, 69],
+      "summary": "Returns the server's HTTP handler wrapping the WebSocket serve loop.",
+      "tags": ["api-handler", "http", "broker"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:broker/fproute.go:serve",
+      "type": "function",
+      "name": "serve",
+      "filePath": "broker/fproute.go",
+      "lineRange": [71, 112],
+      "summary": "Accepts a WebSocket connection, verifies the registration proof, registers the client by fingerprint under keepalive, and routes subsequent signals until disconnect.",
+      "tags": ["websocket", "event-handler", "validation", "broker"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:broker/fproute.go:route",
+      "type": "function",
+      "name": "route",
+      "filePath": "broker/fproute.go",
+      "lineRange": [116, 127],
+      "summary": "Forwards a signed signal to the connected target fingerprint or sends an unreachable notice back to the sender when the target is offline.",
+      "tags": ["routing", "broker", "message-handler"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:broker/fproute_test.go:newDevice",
+      "type": "function",
+      "name": "newDevice",
+      "filePath": "broker/fproute_test.go",
+      "lineRange": [24, 35],
+      "summary": "Test helper that generates an ed25519 signing keypair and random kex key to build a synthetic device identity.",
+      "tags": ["test", "fixture", "cryptography"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:broker/fproute_test.go:register",
+      "type": "function",
+      "name": "register",
+      "filePath": "broker/fproute_test.go",
+      "lineRange": [57, 73],
+      "summary": "Test helper that dials the fingerprint broker, sends a signed registration message, and asserts the connection is accepted.",
+      "tags": ["test", "fixture", "websocket"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:broker/fproute_test.go:readLoop",
+      "type": "function",
+      "name": "readLoop",
+      "filePath": "broker/fproute_test.go",
+      "lineRange": [90, 103],
+      "summary": "Test helper spawning a goroutine that reads messages from a connection into a channel until it closes.",
+      "tags": ["test", "fixture", "concurrency"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:broker/fproute_test.go:TestFpKeepaliveEvictsSilentConnection",
+      "type": "function",
+      "name": "TestFpKeepaliveEvictsSilentConnection",
+      "filePath": "broker/fproute_test.go",
+      "lineRange": [107, 127],
+      "summary": "Verifies a silent, unresponsive connection is evicted by keepalive and its fingerprint slot becomes reusable.",
+      "tags": ["test", "keepalive", "broker"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:broker/fproute_test.go:TestFpKeepaliveIdleResponsiveStaysRegistered",
+      "type": "function",
+      "name": "TestFpKeepaliveIdleResponsiveStaysRegistered",
+      "filePath": "broker/fproute_test.go",
+      "lineRange": [131, 157],
+      "summary": "Verifies an idle but ping-responsive connection stays registered and can still route signals after the keepalive window.",
+      "tags": ["test", "keepalive", "broker"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:broker/fproute_test.go:TestFpRoutesSignalByFingerprint",
+      "type": "function",
+      "name": "TestFpRoutesSignalByFingerprint",
+      "filePath": "broker/fproute_test.go",
+      "lineRange": [159, 181],
+      "summary": "Verifies a signal addressed to a target fingerprint is delivered verbatim to the corresponding connected client.",
+      "tags": ["test", "routing", "broker"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:broker/fproute_test.go:TestFpUnreachableWhenTargetOffline",
+      "type": "function",
+      "name": "TestFpUnreachableWhenTargetOffline",
+      "filePath": "broker/fproute_test.go",
+      "lineRange": [183, 198],
+      "summary": "Verifies the sender receives an unreachable notice when the target fingerprint is not connected.",
+      "tags": ["test", "routing", "broker"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:broker/fproute_test.go:TestFpRejectsBadRegistration",
+      "type": "function",
+      "name": "TestFpRejectsBadRegistration",
+      "filePath": "broker/fproute_test.go",
+      "lineRange": [200, 220],
+      "summary": "Verifies the broker rejects a registration whose signature does not match the claimed identity key.",
+      "tags": ["test", "security", "validation", "broker"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:broker/heartbeat.go:keepalive",
+      "type": "function",
+      "name": "keepalive",
+      "filePath": "broker/heartbeat.go",
+      "lineRange": [31, 49],
+      "summary": "Runs a ping ticker over a WebSocket connection, cancelling the session context and closing the connection when a ping times out.",
+      "tags": ["utility", "websocket", "keepalive", "concurrency"],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:broker/mailbox.go:Msg",
+      "type": "class",
+      "name": "Msg",
+      "filePath": "broker/mailbox.go",
+      "lineRange": [33, 37],
+      "summary": "Wire message struct for the mailbox relay carrying a message type, room id, and payload data.",
+      "tags": ["data-model", "serialization", "broker"],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:broker/mailbox.go:Server",
+      "type": "class",
+      "name": "Server",
+      "filePath": "broker/mailbox.go",
+      "lineRange": [62, 68],
+      "summary": "Mailbox relay server holding the mutex-guarded room map and keepalive intervals, exposing HTTP handling plus room join, relay, and leave.",
+      "tags": ["service", "websocket", "relay", "broker"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:broker/mailbox.go:New",
+      "type": "function",
+      "name": "New",
+      "filePath": "broker/mailbox.go",
+      "lineRange": [70, 76],
+      "summary": "Constructs a mailbox Server with an initialized room map and default ping interval and timeout.",
+      "tags": ["factory", "constructor", "broker"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:broker/mailbox.go:Handler",
+      "type": "function",
+      "name": "Handler",
+      "filePath": "broker/mailbox.go",
+      "lineRange": [78, 80],
+      "summary": "Returns the server's HTTP handler wrapping the WebSocket serve loop.",
+      "tags": ["api-handler", "http", "broker"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:broker/mailbox.go:serve",
+      "type": "function",
+      "name": "serve",
+      "filePath": "broker/mailbox.go",
+      "lineRange": [82, 129],
+      "summary": "Accepts a WebSocket connection, joins the requested room under keepalive, and relays messages between the two room participants until disconnect.",
+      "tags": ["websocket", "event-handler", "relay", "broker"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:broker/mailbox.go:join",
+      "type": "function",
+      "name": "join",
+      "filePath": "broker/mailbox.go",
+      "lineRange": [134, 150],
+      "summary": "Adds a client to a room, rejecting a third joiner and returning any buffered messages awaiting a peer.",
+      "tags": ["broker", "room-management", "buffering"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:broker/mailbox.go:relay",
+      "type": "function",
+      "name": "relay",
+      "filePath": "broker/mailbox.go",
+      "lineRange": [154, 175],
+      "summary": "Relays a payload to the other participant in a room, buffering it when no peer has joined yet.",
+      "tags": ["broker", "relay", "buffering"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:broker/mailbox.go:leave",
+      "type": "function",
+      "name": "leave",
+      "filePath": "broker/mailbox.go",
+      "lineRange": [177, 193],
+      "summary": "Removes a client from a room and deletes the room once it becomes empty.",
+      "tags": ["broker", "room-management", "cleanup"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:broker/mailbox_test.go:dial",
+      "type": "function",
+      "name": "dial",
+      "filePath": "broker/mailbox_test.go",
+      "lineRange": [15, 27],
+      "summary": "Test helper that opens a WebSocket to the mailbox server and sends a join message for the given room.",
+      "tags": ["test", "fixture", "websocket"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:broker/mailbox_test.go:recv",
+      "type": "function",
+      "name": "recv",
+      "filePath": "broker/mailbox_test.go",
+      "lineRange": [39, 48],
+      "summary": "Test helper that reads a single relayed message from a connection with a timeout and returns its data.",
+      "tags": ["test", "fixture", "websocket"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:broker/mailbox_test.go:TestMailboxKeepaliveEvictsSilentJoiner",
+      "type": "function",
+      "name": "TestMailboxKeepaliveEvictsSilentJoiner",
+      "filePath": "broker/mailbox_test.go",
+      "lineRange": [71, 96],
+      "summary": "Verifies a silent joiner is evicted by keepalive so the room slot frees up for a fresh pair to relay.",
+      "tags": ["test", "keepalive", "broker"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:broker/mailbox_test.go:TestMailboxRelaysBothDirections",
+      "type": "function",
+      "name": "TestMailboxRelaysBothDirections",
+      "filePath": "broker/mailbox_test.go",
+      "lineRange": [98, 113],
+      "summary": "Verifies messages relay in both directions between the two participants of a room.",
+      "tags": ["test", "relay", "broker"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:broker/mailbox_test.go:TestMailboxBuffersUntilPeerJoins",
+      "type": "function",
+      "name": "TestMailboxBuffersUntilPeerJoins",
+      "filePath": "broker/mailbox_test.go",
+      "lineRange": [115, 127],
+      "summary": "Verifies messages sent before a peer joins are buffered and delivered once the second participant connects.",
+      "tags": ["test", "buffering", "broker"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:broker/mailbox_test.go:TestMailboxRoomsAreIsolated",
+      "type": "function",
+      "name": "TestMailboxRoomsAreIsolated",
+      "filePath": "broker/mailbox_test.go",
+      "lineRange": [129, 145],
+      "summary": "Verifies messages in one room are not delivered to participants of a different room.",
+      "tags": ["test", "isolation", "broker"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:broker/mailbox_test.go:TestMailboxThirdPartyRejected",
+      "type": "function",
+      "name": "TestMailboxThirdPartyRejected",
+      "filePath": "broker/mailbox_test.go",
+      "lineRange": [147, 169],
+      "summary": "Verifies a third client attempting to join an already-full two-party room is rejected.",
+      "tags": ["test", "validation", "broker"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:broker/main.go:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "broker/main.go",
+      "lineRange": [9, 35],
+      "summary": "Reads the listen port from the environment, mounts the mailbox, fingerprint-routing, and health handlers on an HTTP mux, and starts the server.",
+      "tags": ["entry-point", "http-server", "bootstrap", "broker"],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {"source": "file:broker/fproute.go", "target": "class:broker/fproute.go:FpMsg", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/fproute.go", "target": "class:broker/fproute.go:FpServer", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/fproute.go", "target": "function:broker/fproute.go:NewFpServer", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/fproute.go", "target": "function:broker/fproute.go:Handler", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/fproute.go", "target": "function:broker/fproute.go:serve", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/fproute.go", "target": "function:broker/fproute.go:route", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/fproute.go", "target": "class:broker/fproute.go:FpMsg", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:broker/fproute.go", "target": "class:broker/fproute.go:FpServer", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:broker/fproute.go", "target": "function:broker/fproute.go:NewFpServer", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:broker/fproute.go", "target": "function:broker/fproute.go:Handler", "type": "exports", "direction": "forward", "weight": 0.8},
+
+    {"source": "file:broker/fproute_test.go", "target": "function:broker/fproute_test.go:newDevice", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/fproute_test.go", "target": "function:broker/fproute_test.go:register", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/fproute_test.go", "target": "function:broker/fproute_test.go:readLoop", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/fproute_test.go", "target": "function:broker/fproute_test.go:TestFpKeepaliveEvictsSilentConnection", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/fproute_test.go", "target": "function:broker/fproute_test.go:TestFpKeepaliveIdleResponsiveStaysRegistered", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/fproute_test.go", "target": "function:broker/fproute_test.go:TestFpRoutesSignalByFingerprint", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/fproute_test.go", "target": "function:broker/fproute_test.go:TestFpUnreachableWhenTargetOffline", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/fproute_test.go", "target": "function:broker/fproute_test.go:TestFpRejectsBadRegistration", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/fproute_test.go", "target": "function:broker/fproute_test.go:TestFpKeepaliveEvictsSilentConnection", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:broker/fproute_test.go", "target": "function:broker/fproute_test.go:TestFpKeepaliveIdleResponsiveStaysRegistered", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:broker/fproute_test.go", "target": "function:broker/fproute_test.go:TestFpRoutesSignalByFingerprint", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:broker/fproute_test.go", "target": "function:broker/fproute_test.go:TestFpUnreachableWhenTargetOffline", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:broker/fproute_test.go", "target": "function:broker/fproute_test.go:TestFpRejectsBadRegistration", "type": "exports", "direction": "forward", "weight": 0.8},
+
+    {"source": "file:broker/heartbeat.go", "target": "function:broker/heartbeat.go:keepalive", "type": "contains", "direction": "forward", "weight": 1.0},
+
+    {"source": "file:broker/mailbox.go", "target": "class:broker/mailbox.go:Msg", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/mailbox.go", "target": "class:broker/mailbox.go:Server", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/mailbox.go", "target": "function:broker/mailbox.go:New", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/mailbox.go", "target": "function:broker/mailbox.go:Handler", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/mailbox.go", "target": "function:broker/mailbox.go:serve", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/mailbox.go", "target": "function:broker/mailbox.go:join", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/mailbox.go", "target": "function:broker/mailbox.go:relay", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/mailbox.go", "target": "function:broker/mailbox.go:leave", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/mailbox.go", "target": "class:broker/mailbox.go:Msg", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:broker/mailbox.go", "target": "class:broker/mailbox.go:Server", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:broker/mailbox.go", "target": "function:broker/mailbox.go:New", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:broker/mailbox.go", "target": "function:broker/mailbox.go:Handler", "type": "exports", "direction": "forward", "weight": 0.8},
+
+    {"source": "file:broker/mailbox_test.go", "target": "function:broker/mailbox_test.go:dial", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/mailbox_test.go", "target": "function:broker/mailbox_test.go:recv", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/mailbox_test.go", "target": "function:broker/mailbox_test.go:TestMailboxKeepaliveEvictsSilentJoiner", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/mailbox_test.go", "target": "function:broker/mailbox_test.go:TestMailboxRelaysBothDirections", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/mailbox_test.go", "target": "function:broker/mailbox_test.go:TestMailboxBuffersUntilPeerJoins", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/mailbox_test.go", "target": "function:broker/mailbox_test.go:TestMailboxRoomsAreIsolated", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/mailbox_test.go", "target": "function:broker/mailbox_test.go:TestMailboxThirdPartyRejected", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:broker/mailbox_test.go", "target": "function:broker/mailbox_test.go:TestMailboxKeepaliveEvictsSilentJoiner", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:broker/mailbox_test.go", "target": "function:broker/mailbox_test.go:TestMailboxRelaysBothDirections", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:broker/mailbox_test.go", "target": "function:broker/mailbox_test.go:TestMailboxBuffersUntilPeerJoins", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:broker/mailbox_test.go", "target": "function:broker/mailbox_test.go:TestMailboxRoomsAreIsolated", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:broker/mailbox_test.go", "target": "function:broker/mailbox_test.go:TestMailboxThirdPartyRejected", "type": "exports", "direction": "forward", "weight": 0.8},
+
+    {"source": "file:broker/main.go", "target": "function:broker/main.go:main", "type": "contains", "direction": "forward", "weight": 1.0},
+
+    {"source": "file:eslint.config.js", "target": "file:svelte.config.js", "type": "imports", "direction": "forward", "weight": 0.7},
+
+    {"source": "function:broker/main.go:main", "target": "function:broker/mailbox.go:New", "type": "calls", "direction": "forward", "weight": 0.8},
+    {"source": "function:broker/main.go:main", "target": "function:broker/fproute.go:NewFpServer", "type": "calls", "direction": "forward", "weight": 0.8},
+    {"source": "function:broker/mailbox.go:serve", "target": "function:broker/heartbeat.go:keepalive", "type": "calls", "direction": "forward", "weight": 0.8},
+    {"source": "function:broker/fproute.go:serve", "target": "function:broker/heartbeat.go:keepalive", "type": "calls", "direction": "forward", "weight": 0.8},
+
+    {"source": "file:broker/fproute.go", "target": "file:broker/fproute_test.go", "type": "tested_by", "direction": "forward", "weight": 0.5},
+    {"source": "file:broker/mailbox.go", "target": "file:broker/mailbox_test.go", "type": "tested_by", "direction": "forward", "weight": 0.5},
+    {"source": "file:broker/fingerprint.go", "target": "file:broker/fproute_test.go", "type": "tested_by", "direction": "forward", "weight": 0.5},
+    {"source": "file:broker/heartbeat.go", "target": "file:broker/fproute_test.go", "type": "tested_by", "direction": "forward", "weight": 0.5},
+    {"source": "file:broker/heartbeat.go", "target": "file:broker/mailbox_test.go", "type": "tested_by", "direction": "forward", "weight": 0.5},
+
+    {"source": "config:broker/go.mod", "target": "file:broker/main.go", "type": "configures", "direction": "forward", "weight": 0.6},
+
+    {"source": "document:openspec/changes/archive/2026-07-28-trusted-devices/specs/rendezvous-broker/spec.md", "target": "file:broker/fproute.go", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:openspec/changes/archive/2026-07-28-trusted-devices/specs/device-pairing/spec.md", "target": "file:broker/fingerprint.go", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:openspec/changes/archive/2026-07-30-harden-transfer-delivery/specs/rendezvous-broker/spec.md", "target": "file:broker/heartbeat.go", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:openspec/changes/archive/2026-07-30-harden-transfer-delivery/specs/rendezvous-broker/spec.md", "target": "file:broker/fproute.go", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:openspec/changes/archive/2026-07-30-harden-transfer-delivery/specs/rendezvous-broker/spec.md", "target": "file:broker/mailbox.go", "type": "documents", "direction": "forward", "weight": 0.5}
+  ]
+}

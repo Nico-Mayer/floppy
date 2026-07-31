@@ -1,0 +1,129 @@
+{
+  "nodes": [
+    {
+      "id": "file:src/lib/components/ui/drawer/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "filePath": "src/lib/components/ui/drawer/index.ts",
+      "summary": "Barrel file for the Drawer UI component set, re-exporting each drawer part under both short names (Root, Content, Header, ...) and prefixed aliases (Drawer, DrawerContent, ...).",
+      "tags": ["barrel", "entry-point", "component", "ui", "type-definition"],
+      "complexity": "simple",
+      "languageNotes": "shadcn-svelte convention: dual export naming exposes both compositional (Drawer.Root) and flat (DrawerRoot) usage styles."
+    },
+    {
+      "id": "file:src/lib/components/ui/drawer/drawer.svelte",
+      "type": "file",
+      "name": "drawer.svelte",
+      "filePath": "src/lib/components/ui/drawer/drawer.svelte",
+      "summary": "Root Drawer component wrapping vaul-svelte's Drawer.Root, forwarding open/activeSnapPoint bindings and enabling background scaling by default.",
+      "tags": ["component", "ui", "drawer", "wrapper"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/drawer/drawer-content.svelte",
+      "type": "file",
+      "name": "drawer-content.svelte",
+      "filePath": "src/lib/components/ui/drawer/drawer-content.svelte",
+      "summary": "Drawer content panel that renders inside a portal with an overlay, applying direction-aware Tailwind styling and a drag handle for the bottom orientation.",
+      "tags": ["component", "ui", "drawer", "wrapper"],
+      "complexity": "simple",
+      "languageNotes": "Uses Svelte 5 runes ($props, $bindable) and composes DrawerPortal + DrawerOverlay around vaul-svelte's Content primitive."
+    },
+    {
+      "id": "file:src/lib/components/ui/drawer/drawer-description.svelte",
+      "type": "file",
+      "name": "drawer-description.svelte",
+      "filePath": "src/lib/components/ui/drawer/drawer-description.svelte",
+      "summary": "Styled description text for a drawer, wrapping vaul-svelte's Description primitive with muted-foreground typography.",
+      "tags": ["component", "ui", "drawer", "wrapper"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/drawer/drawer-footer.svelte",
+      "type": "file",
+      "name": "drawer-footer.svelte",
+      "filePath": "src/lib/components/ui/drawer/drawer-footer.svelte",
+      "summary": "Layout container for drawer footer actions, rendering a styled div slot with element-ref binding.",
+      "tags": ["component", "ui", "drawer", "layout"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/drawer/drawer-header.svelte",
+      "type": "file",
+      "name": "drawer-header.svelte",
+      "filePath": "src/lib/components/ui/drawer/drawer-header.svelte",
+      "summary": "Layout container for the drawer header region, applying direction-aware alignment via a styled div slot.",
+      "tags": ["component", "ui", "drawer", "layout"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/drawer/drawer-nested.svelte",
+      "type": "file",
+      "name": "drawer-nested.svelte",
+      "filePath": "src/lib/components/ui/drawer/drawer-nested.svelte",
+      "summary": "Nested drawer root wrapping vaul-svelte's NestedRoot primitive to support drawers opened from within another drawer.",
+      "tags": ["component", "ui", "drawer", "wrapper"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/drawer/drawer-overlay.svelte",
+      "type": "file",
+      "name": "drawer-overlay.svelte",
+      "filePath": "src/lib/components/ui/drawer/drawer-overlay.svelte",
+      "summary": "Backdrop overlay for the drawer, wrapping vaul-svelte's Overlay primitive with a semi-transparent styled layer.",
+      "tags": ["component", "ui", "drawer", "wrapper"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/drawer/drawer-portal.svelte",
+      "type": "file",
+      "name": "drawer-portal.svelte",
+      "filePath": "src/lib/components/ui/drawer/drawer-portal.svelte",
+      "summary": "Thin pass-through wrapper around vaul-svelte's Portal primitive that renders drawer content into a portal target.",
+      "tags": ["component", "ui", "drawer", "wrapper"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/drawer/drawer-title.svelte",
+      "type": "file",
+      "name": "drawer-title.svelte",
+      "filePath": "src/lib/components/ui/drawer/drawer-title.svelte",
+      "summary": "Styled title heading for a drawer, wrapping vaul-svelte's Title primitive with emphasized typography.",
+      "tags": ["component", "ui", "drawer", "wrapper"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/drawer/drawer-trigger.svelte",
+      "type": "file",
+      "name": "drawer-trigger.svelte",
+      "filePath": "src/lib/components/ui/drawer/drawer-trigger.svelte",
+      "summary": "Thin pass-through wrapper around vaul-svelte's Trigger primitive that toggles the drawer open on interaction.",
+      "tags": ["component", "ui", "drawer", "wrapper"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/drawer/drawer-close.svelte",
+      "type": "file",
+      "name": "drawer-close.svelte",
+      "filePath": "src/lib/components/ui/drawer/drawer-close.svelte",
+      "summary": "Thin pass-through wrapper around vaul-svelte's Close primitive that dismisses the drawer on interaction.",
+      "tags": ["component", "ui", "drawer", "wrapper"],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {"source": "file:src/lib/components/ui/drawer/index.ts", "target": "file:src/lib/components/ui/drawer/drawer.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/drawer/index.ts", "target": "file:src/lib/components/ui/drawer/drawer-content.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/drawer/index.ts", "target": "file:src/lib/components/ui/drawer/drawer-description.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/drawer/index.ts", "target": "file:src/lib/components/ui/drawer/drawer-overlay.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/drawer/index.ts", "target": "file:src/lib/components/ui/drawer/drawer-footer.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/drawer/index.ts", "target": "file:src/lib/components/ui/drawer/drawer-header.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/drawer/index.ts", "target": "file:src/lib/components/ui/drawer/drawer-title.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/drawer/index.ts", "target": "file:src/lib/components/ui/drawer/drawer-nested.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/drawer/index.ts", "target": "file:src/lib/components/ui/drawer/drawer-close.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/drawer/index.ts", "target": "file:src/lib/components/ui/drawer/drawer-trigger.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/drawer/index.ts", "target": "file:src/lib/components/ui/drawer/drawer-portal.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/drawer/drawer-content.svelte", "target": "file:src/lib/components/ui/drawer/drawer-portal.svelte", "type": "depends_on", "direction": "forward", "weight": 0.6},
+    {"source": "file:src/lib/components/ui/drawer/drawer-content.svelte", "target": "file:src/lib/components/ui/drawer/drawer-overlay.svelte", "type": "depends_on", "direction": "forward", "weight": 0.6}
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "projectRoot": "/Users/nimayer/projects/personal/floppy",
+  "batchFiles": [
+    {"path": "openspec/changes/archive/2026-07-31-android-port/.openspec.yaml", "language": "yaml", "sizeLines": 2, "fileCategory": "config"},
+    {"path": "openspec/changes/archive/2026-07-31-android-port/design.md", "language": "markdown", "sizeLines": 117, "fileCategory": "docs"},
+    {"path": "openspec/changes/archive/2026-07-31-android-port/proposal.md", "language": "markdown", "sizeLines": 104, "fileCategory": "docs"},
+    {"path": "openspec/changes/archive/2026-07-31-android-port/tasks.md", "language": "markdown", "sizeLines": 62, "fileCategory": "docs"}
+  ],
+  "batchImportData": {"openspec/changes/archive/2026-07-31-android-port/.openspec.yaml":[],"openspec/changes/archive/2026-07-31-android-port/design.md":[],"openspec/changes/archive/2026-07-31-android-port/proposal.md":[],"openspec/changes/archive/2026-07-31-android-port/tasks.md":[]}
+}

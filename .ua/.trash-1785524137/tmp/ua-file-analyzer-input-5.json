@@ -1,0 +1,17 @@
+{
+  "projectRoot": "/Users/nimayer/projects/personal/floppy",
+  "batchFiles": [
+    {"path": "src/lib/components/ui/dialog/dialog-close.svelte", "language": "svelte", "sizeLines": 11, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/dialog/dialog-content.svelte", "language": "svelte", "sizeLines": 48, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/dialog/dialog-description.svelte", "language": "svelte", "sizeLines": 17, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/dialog/dialog-footer.svelte", "language": "svelte", "sizeLines": 32, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/dialog/dialog-header.svelte", "language": "svelte", "sizeLines": 20, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/dialog/dialog-overlay.svelte", "language": "svelte", "sizeLines": 17, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/dialog/dialog-portal.svelte", "language": "svelte", "sizeLines": 7, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/dialog/dialog-title.svelte", "language": "svelte", "sizeLines": 17, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/dialog/dialog-trigger.svelte", "language": "svelte", "sizeLines": 11, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/dialog/dialog.svelte", "language": "svelte", "sizeLines": 7, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/dialog/index.ts", "language": "typescript", "sizeLines": 34, "fileCategory": "code"}
+  ],
+  "batchImportData": {"src/lib/components/ui/dialog/dialog-close.svelte":[],"src/lib/components/ui/dialog/dialog-content.svelte":[],"src/lib/components/ui/dialog/dialog-description.svelte":[],"src/lib/components/ui/dialog/dialog-footer.svelte":[],"src/lib/components/ui/dialog/dialog-header.svelte":[],"src/lib/components/ui/dialog/dialog-overlay.svelte":[],"src/lib/components/ui/dialog/dialog-portal.svelte":[],"src/lib/components/ui/dialog/dialog-title.svelte":[],"src/lib/components/ui/dialog/dialog-trigger.svelte":[],"src/lib/components/ui/dialog/dialog.svelte":[],"src/lib/components/ui/dialog/index.ts":["src/lib/components/ui/dialog/dialog-close.svelte","src/lib/components/ui/dialog/dialog-content.svelte","src/lib/components/ui/dialog/dialog-description.svelte","src/lib/components/ui/dialog/dialog-footer.svelte","src/lib/components/ui/dialog/dialog-header.svelte","src/lib/components/ui/dialog/dialog-overlay.svelte","src/lib/components/ui/dialog/dialog-portal.svelte","src/lib/components/ui/dialog/dialog-title.svelte","src/lib/components/ui/dialog/dialog-trigger.svelte","src/lib/components/ui/dialog/dialog.svelte"]}
+}

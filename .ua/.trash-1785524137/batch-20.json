@@ -1,0 +1,57 @@
+{
+  "nodes": [
+    {
+      "id": "file:src/lib/components/ui/toggle-group/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "filePath": "src/lib/components/ui/toggle-group/index.ts",
+      "summary": "Barrel file for the toggle-group UI component, re-exporting the Root/Item primitives under both short and descriptive aliases for import ergonomics.",
+      "tags": ["barrel", "entry-point", "component", "ui", "exports"],
+      "complexity": "simple",
+      "languageNotes": "shadcn-svelte style barrel exposing both `Root`/`Item` and `ToggleGroup`/`ToggleGroupItem` aliases."
+    },
+    {
+      "id": "file:src/lib/components/ui/toggle-group/toggle-group.svelte",
+      "type": "file",
+      "name": "toggle-group.svelte",
+      "filePath": "src/lib/components/ui/toggle-group/toggle-group.svelte",
+      "summary": "Toggle-group root component wrapping the bits-ui ToggleGroup primitive; establishes a Svelte context carrying variant, size, spacing, and orientation for child items.",
+      "tags": ["component", "ui", "context-provider", "toggle-group", "svelte"],
+      "complexity": "moderate",
+      "languageNotes": "Uses a Svelte `module` script to expose set/get context helpers and Svelte 5 runes (`$props`, `$bindable`) with getter-based reactive context props."
+    },
+    {
+      "id": "file:src/lib/components/ui/toggle-group/toggle-group-item.svelte",
+      "type": "file",
+      "name": "toggle-group-item.svelte",
+      "filePath": "src/lib/components/ui/toggle-group/toggle-group-item.svelte",
+      "summary": "Individual toggle-group item wrapping the bits-ui ToggleGroup.Item primitive; reads variant/size/spacing from the group context to derive its styling.",
+      "tags": ["component", "ui", "context-consumer", "toggle-group", "svelte"],
+      "complexity": "simple",
+      "languageNotes": "Consumes group context via `getToggleGroupCtx` and composes toggleVariants classes with `cn`."
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:src/lib/components/ui/toggle-group/index.ts",
+      "target": "file:src/lib/components/ui/toggle-group/toggle-group-item.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/toggle-group/index.ts",
+      "target": "file:src/lib/components/ui/toggle-group/toggle-group.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/toggle-group/toggle-group-item.svelte",
+      "target": "file:src/lib/components/ui/toggle-group/toggle-group.svelte",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    }
+  ]
+}

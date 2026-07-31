@@ -1,0 +1,71 @@
+{
+  "nodes": [
+    {
+      "id": "config:openspec/changes/archive/2026-07-31-unify-responsive-shell/.openspec.yaml",
+      "type": "config",
+      "name": ".openspec.yaml",
+      "filePath": "openspec/changes/archive/2026-07-31-unify-responsive-shell/.openspec.yaml",
+      "summary": "OpenSpec metadata for the archived unify-responsive-shell change, recording the schema version and creation date.",
+      "tags": ["configuration", "openspec", "metadata", "documentation"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-31-unify-responsive-shell/design.md",
+      "type": "document",
+      "name": "design.md",
+      "filePath": "openspec/changes/archive/2026-07-31-unify-responsive-shell/design.md",
+      "summary": "Design document detailing seven decisions for unifying the responsive app shell into a single Sidebar.Provider with a shadcn Sheet mobile drawer, edge-swipe gesture, flat navigation, a collapsible desktop icon rail, and chrome-dissolve on the mobile Transfer screen.",
+      "tags": ["documentation", "design", "responsive-shell", "openspec", "ui"],
+      "complexity": "moderate",
+      "languageNotes": "Architecture decision record structured as Context, Goals/Non-Goals, numbered Decisions, Risks, Migration Plan, and Open Questions."
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-31-unify-responsive-shell/proposal.md",
+      "type": "document",
+      "name": "proposal.md",
+      "filePath": "openspec/changes/archive/2026-07-31-unify-responsive-shell/proposal.md",
+      "summary": "Change proposal motivating the unification of the desktop and mobile shells into one responsive layout, enumerating the new and modified capabilities and their impact.",
+      "tags": ["documentation", "proposal", "responsive-shell", "openspec", "planning"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-31-unify-responsive-shell/tasks.md",
+      "type": "document",
+      "name": "tasks.md",
+      "filePath": "openspec/changes/archive/2026-07-31-unify-responsive-shell/tasks.md",
+      "summary": "Implementation task checklist for the unify-responsive-shell change, grouped into seven work items from unifying the Sidebar.Provider through the edge-swipe gesture, Transfer chrome-dissolve, and final verification.",
+      "tags": ["documentation", "tasks", "responsive-shell", "openspec", "checklist"],
+      "complexity": "moderate"
+    }
+  ],
+  "edges": [
+    {
+      "source": "config:openspec/changes/archive/2026-07-31-unify-responsive-shell/.openspec.yaml",
+      "target": "document:openspec/changes/archive/2026-07-31-unify-responsive-shell/proposal.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-31-unify-responsive-shell/proposal.md",
+      "target": "document:openspec/changes/archive/2026-07-31-unify-responsive-shell/design.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-31-unify-responsive-shell/proposal.md",
+      "target": "document:openspec/changes/archive/2026-07-31-unify-responsive-shell/tasks.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-31-unify-responsive-shell/design.md",
+      "target": "document:openspec/changes/archive/2026-07-31-unify-responsive-shell/tasks.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

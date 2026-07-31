@@ -1,0 +1,76 @@
+{
+  "nodes": [
+    {
+      "id": "config:openspec/changes/archive/2026-07-30-pairing-confirm-and-name/.openspec.yaml",
+      "type": "config",
+      "name": ".openspec.yaml",
+      "filePath": "openspec/changes/archive/2026-07-30-pairing-confirm-and-name/.openspec.yaml",
+      "summary": "OpenSpec metadata marker for the archived pairing-confirm-and-name change, recording the schema version and creation date.",
+      "tags": ["configuration", "openspec", "metadata"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-30-pairing-confirm-and-name/proposal.md",
+      "type": "document",
+      "name": "proposal.md",
+      "filePath": "openspec/changes/archive/2026-07-30-pairing-confirm-and-name/proposal.md",
+      "summary": "Archived change proposal adding an initiator-side confirm-and-name gate before trust is written during device pairing, plus rename of trusted devices, keeping the SPAKE2 exchange unchanged.",
+      "tags": ["documentation", "openspec", "device-pairing", "proposal", "security"],
+      "complexity": "simple",
+      "languageNotes": "OpenSpec proposal format with Why / What Changes / Capabilities / Impact sections."
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-30-pairing-confirm-and-name/tasks.md",
+      "type": "document",
+      "name": "tasks.md",
+      "filePath": "openspec/changes/archive/2026-07-30-pairing-confirm-and-name/tasks.md",
+      "summary": "Completed task checklist for the pairing-confirm-and-name change, covering the backend confirm gate, the Tauri IPC surface, and the Svelte frontend confirm/rename UI.",
+      "tags": ["documentation", "openspec", "task-list", "device-pairing"],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "document:openspec/changes/archive/2026-07-30-pairing-confirm-and-name/tasks.md",
+      "target": "document:openspec/changes/archive/2026-07-30-pairing-confirm-and-name/proposal.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:openspec/changes/archive/2026-07-30-pairing-confirm-and-name/.openspec.yaml",
+      "target": "document:openspec/changes/archive/2026-07-30-pairing-confirm-and-name/proposal.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-30-pairing-confirm-and-name/proposal.md",
+      "target": "file:src-tauri/src/pairing/service.rs",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-30-pairing-confirm-and-name/proposal.md",
+      "target": "file:src-tauri/src/pairing/trust.rs",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-30-pairing-confirm-and-name/proposal.md",
+      "target": "file:src-tauri/src/lib.rs",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-30-pairing-confirm-and-name/proposal.md",
+      "target": "file:src/lib/pairing-app.svelte.ts",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "nodes": [
+    {
+      "id": "config:openspec/changes/archive/2026-07-31-ios-port/.openspec.yaml",
+      "type": "config",
+      "name": ".openspec.yaml",
+      "filePath": "openspec/changes/archive/2026-07-31-ios-port/.openspec.yaml",
+      "summary": "OpenSpec metadata for the archived ios-port change, recording the spec schema version and creation date.",
+      "tags": ["configuration", "openspec", "metadata", "documentation"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-31-ios-port/proposal.md",
+      "type": "document",
+      "name": "proposal.md",
+      "filePath": "openspec/changes/archive/2026-07-31-ios-port/proposal.md",
+      "summary": "Change proposal for the iOS port, explaining that the shared mobile foundation from android-port carries over and only Apple-specific work remains: build toolchain traps, Info.plist privacy declarations, and file-input verification.",
+      "tags": ["documentation", "openspec", "ios", "proposal", "mobile"],
+      "complexity": "moderate",
+      "languageNotes": "OpenSpec proposal with Why / What Changes / Non-Goals / Capabilities / Impact / Dependencies sections."
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-31-ios-port/tasks.md",
+      "type": "document",
+      "name": "tasks.md",
+      "filePath": "openspec/changes/archive/2026-07-31-ios-port/tasks.md",
+      "summary": "Task checklist for the iOS port covering launch, plist declarations, file input, and verification; documents which items were closed on the iPhone simulator and which real-hardware items were deferred to follow-up.",
+      "tags": ["documentation", "openspec", "ios", "tasks", "checklist"],
+      "complexity": "moderate"
+    }
+  ],
+  "edges": [
+    {
+      "source": "document:openspec/changes/archive/2026-07-31-ios-port/proposal.md",
+      "target": "document:openspec/changes/archive/2026-07-31-ios-port/tasks.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:openspec/changes/archive/2026-07-31-ios-port/.openspec.yaml",
+      "target": "document:openspec/changes/archive/2026-07-31-ios-port/proposal.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

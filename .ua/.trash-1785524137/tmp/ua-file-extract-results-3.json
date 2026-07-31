@@ -1,0 +1,155 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 1,
+  "filesSkipped": [
+    "src/lib/components/ui/drawer/drawer-close.svelte",
+    "src/lib/components/ui/drawer/drawer-content.svelte",
+    "src/lib/components/ui/drawer/drawer-description.svelte",
+    "src/lib/components/ui/drawer/drawer-footer.svelte",
+    "src/lib/components/ui/drawer/drawer-header.svelte",
+    "src/lib/components/ui/drawer/drawer-nested.svelte",
+    "src/lib/components/ui/drawer/drawer-overlay.svelte",
+    "src/lib/components/ui/drawer/drawer-portal.svelte",
+    "src/lib/components/ui/drawer/drawer-title.svelte",
+    "src/lib/components/ui/drawer/drawer-trigger.svelte",
+    "src/lib/components/ui/drawer/drawer.svelte"
+  ],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 1,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 1,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "results": [
+    {
+      "path": "src/lib/components/ui/drawer/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 38,
+      "nonEmptyLines": 36,
+      "exports": [
+        {
+          "name": "Root",
+          "line": 13,
+          "isDefault": false
+        },
+        {
+          "name": "NestedRoot",
+          "line": 13,
+          "isDefault": false
+        },
+        {
+          "name": "Content",
+          "line": 13,
+          "isDefault": false
+        },
+        {
+          "name": "Description",
+          "line": 13,
+          "isDefault": false
+        },
+        {
+          "name": "Overlay",
+          "line": 13,
+          "isDefault": false
+        },
+        {
+          "name": "Footer",
+          "line": 13,
+          "isDefault": false
+        },
+        {
+          "name": "Header",
+          "line": 13,
+          "isDefault": false
+        },
+        {
+          "name": "Title",
+          "line": 13,
+          "isDefault": false
+        },
+        {
+          "name": "Trigger",
+          "line": 13,
+          "isDefault": false
+        },
+        {
+          "name": "Portal",
+          "line": 13,
+          "isDefault": false
+        },
+        {
+          "name": "Close",
+          "line": 13,
+          "isDefault": false
+        },
+        {
+          "name": "Drawer",
+          "line": 13,
+          "isDefault": false
+        },
+        {
+          "name": "DrawerNestedRoot",
+          "line": 13,
+          "isDefault": false
+        },
+        {
+          "name": "DrawerContent",
+          "line": 13,
+          "isDefault": false
+        },
+        {
+          "name": "DrawerDescription",
+          "line": 13,
+          "isDefault": false
+        },
+        {
+          "name": "DrawerOverlay",
+          "line": 13,
+          "isDefault": false
+        },
+        {
+          "name": "DrawerFooter",
+          "line": 13,
+          "isDefault": false
+        },
+        {
+          "name": "DrawerHeader",
+          "line": 13,
+          "isDefault": false
+        },
+        {
+          "name": "DrawerTitle",
+          "line": 13,
+          "isDefault": false
+        },
+        {
+          "name": "DrawerTrigger",
+          "line": 13,
+          "isDefault": false
+        },
+        {
+          "name": "DrawerPortal",
+          "line": 13,
+          "isDefault": false
+        },
+        {
+          "name": "DrawerClose",
+          "line": 13,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 11,
+        "exportCount": 22,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    }
+  ]
+}

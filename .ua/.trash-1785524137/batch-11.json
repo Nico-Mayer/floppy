@@ -1,0 +1,129 @@
+{
+  "nodes": [
+    {
+      "id": "file:src/lib/components/ui/card/card-action.svelte",
+      "type": "file",
+      "name": "card-action.svelte",
+      "filePath": "src/lib/components/ui/card/card-action.svelte",
+      "summary": "shadcn-svelte Card action primitive rendering a positioned action slot (e.g. buttons) within the card header.",
+      "tags": ["component", "ui", "card", "shadcn"],
+      "complexity": "simple",
+      "languageNotes": "Svelte 5 component using $props() and class-merge utilities typical of shadcn-svelte primitives."
+    },
+    {
+      "id": "file:src/lib/components/ui/card/card-content.svelte",
+      "type": "file",
+      "name": "card-content.svelte",
+      "filePath": "src/lib/components/ui/card/card-content.svelte",
+      "summary": "shadcn-svelte Card content primitive wrapping the main body region of a card with default padding.",
+      "tags": ["component", "ui", "card", "shadcn"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/card/card-description.svelte",
+      "type": "file",
+      "name": "card-description.svelte",
+      "filePath": "src/lib/components/ui/card/card-description.svelte",
+      "summary": "shadcn-svelte Card description primitive rendering muted secondary text beneath the card title.",
+      "tags": ["component", "ui", "card", "shadcn"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/card/card-footer.svelte",
+      "type": "file",
+      "name": "card-footer.svelte",
+      "filePath": "src/lib/components/ui/card/card-footer.svelte",
+      "summary": "shadcn-svelte Card footer primitive laying out actions or metadata at the bottom of a card.",
+      "tags": ["component", "ui", "card", "shadcn"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/card/card-header.svelte",
+      "type": "file",
+      "name": "card-header.svelte",
+      "filePath": "src/lib/components/ui/card/card-header.svelte",
+      "summary": "shadcn-svelte Card header primitive providing the grid container for title, description, and action slots.",
+      "tags": ["component", "ui", "card", "shadcn"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/card/card-title.svelte",
+      "type": "file",
+      "name": "card-title.svelte",
+      "filePath": "src/lib/components/ui/card/card-title.svelte",
+      "summary": "shadcn-svelte Card title primitive rendering the emphasized heading text of a card.",
+      "tags": ["component", "ui", "card", "shadcn"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/card/card.svelte",
+      "type": "file",
+      "name": "card.svelte",
+      "filePath": "src/lib/components/ui/card/card.svelte",
+      "summary": "shadcn-svelte Card root primitive establishing the bordered, rounded container that hosts the card sub-components.",
+      "tags": ["component", "ui", "card", "shadcn"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/card/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "filePath": "src/lib/components/ui/card/index.ts",
+      "summary": "Barrel module that re-exports every Card primitive under both short (Root, Content, Title) and prefixed (Card, CardContent) aliases for ergonomic imports.",
+      "tags": ["barrel", "entry-point", "ui", "card", "exports"],
+      "complexity": "simple",
+      "languageNotes": "TypeScript barrel re-exporting Svelte components with dual naming aliases, a common shadcn-svelte convention."
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:src/lib/components/ui/card/index.ts",
+      "target": "file:src/lib/components/ui/card/card-action.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/card/index.ts",
+      "target": "file:src/lib/components/ui/card/card-content.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/card/index.ts",
+      "target": "file:src/lib/components/ui/card/card-description.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/card/index.ts",
+      "target": "file:src/lib/components/ui/card/card-footer.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/card/index.ts",
+      "target": "file:src/lib/components/ui/card/card-header.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/card/index.ts",
+      "target": "file:src/lib/components/ui/card/card-title.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/card/index.ts",
+      "target": "file:src/lib/components/ui/card/card.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    }
+  ]
+}

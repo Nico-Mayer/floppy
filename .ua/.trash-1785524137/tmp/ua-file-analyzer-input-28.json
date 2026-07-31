@@ -1,0 +1,13 @@
+{
+  "projectRoot": "/Users/nimayer/projects/personal/floppy",
+  "batchFiles": [
+    {"path": "openspec/changes/archive/2026-07-30-pairing-confirm-and-name/.openspec.yaml", "language": "yaml", "sizeLines": 2, "fileCategory": "config"},
+    {"path": "openspec/changes/archive/2026-07-30-pairing-confirm-and-name/proposal.md", "language": "markdown", "sizeLines": 45, "fileCategory": "docs"},
+    {"path": "openspec/changes/archive/2026-07-30-pairing-confirm-and-name/tasks.md", "language": "markdown", "sizeLines": 19, "fileCategory": "docs"}
+  ],
+  "batchImportData": {
+    "openspec/changes/archive/2026-07-30-pairing-confirm-and-name/.openspec.yaml": [],
+    "openspec/changes/archive/2026-07-30-pairing-confirm-and-name/proposal.md": [],
+    "openspec/changes/archive/2026-07-30-pairing-confirm-and-name/tasks.md": []
+  }
+}

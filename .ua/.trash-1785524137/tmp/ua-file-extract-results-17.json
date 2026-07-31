@@ -1,0 +1,88 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 1,
+  "filesSkipped": [
+    "src/lib/components/ui/alert/alert-action.svelte",
+    "src/lib/components/ui/alert/alert-description.svelte",
+    "src/lib/components/ui/alert/alert-title.svelte",
+    "src/lib/components/ui/alert/alert.svelte"
+  ],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 1,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 1,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "results": [
+    {
+      "path": "src/lib/components/ui/alert/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 17,
+      "nonEmptyLines": 16,
+      "exports": [
+        {
+          "name": "alertVariants",
+          "line": 5,
+          "isDefault": false
+        },
+        {
+          "name": "AlertVariant",
+          "line": 5,
+          "isDefault": false
+        },
+        {
+          "name": "Root",
+          "line": 7,
+          "isDefault": false
+        },
+        {
+          "name": "Description",
+          "line": 7,
+          "isDefault": false
+        },
+        {
+          "name": "Title",
+          "line": 7,
+          "isDefault": false
+        },
+        {
+          "name": "Action",
+          "line": 7,
+          "isDefault": false
+        },
+        {
+          "name": "Alert",
+          "line": 7,
+          "isDefault": false
+        },
+        {
+          "name": "AlertDescription",
+          "line": 7,
+          "isDefault": false
+        },
+        {
+          "name": "AlertTitle",
+          "line": 7,
+          "isDefault": false
+        },
+        {
+          "name": "AlertAction",
+          "line": 7,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 4,
+        "exportCount": 10,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    }
+  ]
+}

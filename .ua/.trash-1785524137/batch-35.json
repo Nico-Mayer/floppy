@@ -1,0 +1,70 @@
+{
+  "nodes": [
+    {
+      "id": "config:openspec/changes/archive/2026-07-31-shared-test-broker-harness/.openspec.yaml",
+      "type": "config",
+      "name": ".openspec.yaml",
+      "filePath": "openspec/changes/archive/2026-07-31-shared-test-broker-harness/.openspec.yaml",
+      "summary": "OpenSpec metadata marker for the archived shared-test-broker-harness change, recording its schema version and creation date.",
+      "tags": ["configuration", "openspec", "metadata", "archived"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-31-shared-test-broker-harness/proposal.md",
+      "type": "document",
+      "name": "proposal.md",
+      "filePath": "openspec/changes/archive/2026-07-31-shared-test-broker-harness/proposal.md",
+      "summary": "Change proposal to consolidate three drifting in-process broker mocks and duplicated test helpers in the Rust suite into a single faithful #[cfg(test)] test-support module, with no production or wire-format changes.",
+      "tags": ["documentation", "openspec", "proposal", "test-infrastructure", "refactor"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-31-shared-test-broker-harness/design.md",
+      "type": "document",
+      "name": "design.md",
+      "filePath": "openspec/changes/archive/2026-07-31-shared-test-broker-harness/design.md",
+      "summary": "Design document detailing the context, goals, and decisions for the shared test-support module — a crate-level testsupport mod exposing one faithful mock broker (/ws mailbox + /fp routing) and a unified test_manager builder.",
+      "tags": ["documentation", "openspec", "design", "test-infrastructure", "architecture"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-31-shared-test-broker-harness/tasks.md",
+      "type": "document",
+      "name": "tasks.md",
+      "filePath": "openspec/changes/archive/2026-07-31-shared-test-broker-harness/tasks.md",
+      "summary": "Implementation task checklist for the shared-test-broker-harness change: create the shared test-support module, repoint transport/manager.rs and pairing/service.rs tests at it, and verify cargo test stays green.",
+      "tags": ["documentation", "openspec", "tasks", "checklist", "test-infrastructure"],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "document:openspec/changes/archive/2026-07-31-shared-test-broker-harness/design.md",
+      "target": "document:openspec/changes/archive/2026-07-31-shared-test-broker-harness/proposal.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-31-shared-test-broker-harness/tasks.md",
+      "target": "document:openspec/changes/archive/2026-07-31-shared-test-broker-harness/proposal.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-31-shared-test-broker-harness/tasks.md",
+      "target": "document:openspec/changes/archive/2026-07-31-shared-test-broker-harness/design.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:openspec/changes/archive/2026-07-31-shared-test-broker-harness/.openspec.yaml",
+      "target": "document:openspec/changes/archive/2026-07-31-shared-test-broker-harness/proposal.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

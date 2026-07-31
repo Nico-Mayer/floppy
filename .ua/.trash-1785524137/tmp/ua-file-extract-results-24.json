@@ -1,0 +1,217 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 4,
+  "filesSkipped": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 4,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 0,
+      "failed": 0,
+      "skipped": 4
+    }
+  },
+  "results": [
+    {
+      "path": "openspec/changes/archive/2026-07-27-transfer-panels-redesign/.openspec.yaml",
+      "language": "yaml",
+      "fileCategory": "config",
+      "totalLines": 2,
+      "nonEmptyLines": 2,
+      "sections": [
+        {
+          "heading": "schema",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "created",
+          "level": 1,
+          "line": 2
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 2
+      }
+    },
+    {
+      "path": "openspec/changes/archive/2026-07-27-transfer-panels-redesign/design.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 80,
+      "nonEmptyLines": 51,
+      "sections": [
+        {
+          "heading": "Design: transfer-panels-redesign",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Context",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "Goals / Non-Goals",
+          "level": 2,
+          "line": 14
+        },
+        {
+          "heading": "Decisions",
+          "level": 2,
+          "line": 29
+        },
+        {
+          "heading": "1. Container queries, not viewport breakpoints",
+          "level": 3,
+          "line": 31
+        },
+        {
+          "heading": "2. Touch sizing lives in the ui primitives via `pointer-coarse:`",
+          "level": 3,
+          "line": 38
+        },
+        {
+          "heading": "3. Two-zone scaffold inside TransferCard",
+          "level": 3,
+          "line": 45
+        },
+        {
+          "heading": "4. Mascot: hero row in regular, compact chip in compact",
+          "level": 3,
+          "line": 52
+        },
+        {
+          "heading": "5. Receive input block becomes the visual primary",
+          "level": 3,
+          "line": 60
+        },
+        {
+          "heading": "6. Fill animation + inline clear instead of the provenance hint row",
+          "level": 3,
+          "line": 66
+        },
+        {
+          "heading": "Risks / Trade-offs",
+          "level": 2,
+          "line": 73
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 11
+      }
+    },
+    {
+      "path": "openspec/changes/archive/2026-07-27-transfer-panels-redesign/proposal.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 30,
+      "nonEmptyLines": 19,
+      "sections": [
+        {
+          "heading": "Proposal: transfer-panels-redesign",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Why",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "What Changes",
+          "level": 2,
+          "line": 7
+        },
+        {
+          "heading": "Capabilities",
+          "level": 2,
+          "line": 15
+        },
+        {
+          "heading": "New Capabilities",
+          "level": 3,
+          "line": 17
+        },
+        {
+          "heading": "Modified Capabilities",
+          "level": 3,
+          "line": 21
+        },
+        {
+          "heading": "Impact",
+          "level": 2,
+          "line": 25
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 7
+      }
+    },
+    {
+      "path": "openspec/changes/archive/2026-07-27-transfer-panels-redesign/tasks.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 40,
+      "nonEmptyLines": 28,
+      "sections": [
+        {
+          "heading": "Tasks: transfer-panels-redesign",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "1. UI primitives — touch sizing (`pointer-coarse:`)",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "2. TransferCard — container + two-zone scaffold",
+          "level": 2,
+          "line": 9
+        },
+        {
+          "heading": "3. ReceivePanel restructure",
+          "level": 2,
+          "line": 15
+        },
+        {
+          "heading": "4. SendPanel restructure",
+          "level": 2,
+          "line": 22
+        },
+        {
+          "heading": "5. Clipboard presentation iteration",
+          "level": 2,
+          "line": 29
+        },
+        {
+          "heading": "6. Verify",
+          "level": 2,
+          "line": 35
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 7
+      }
+    }
+  ]
+}

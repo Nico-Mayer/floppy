@@ -1,0 +1,9 @@
+{
+  "projectRoot": "/Users/nimayer/projects/personal/floppy",
+  "batchFiles": [
+    {"path": "openspec/changes/archive/2026-07-31-ios-port/.openspec.yaml", "language": "yaml", "sizeLines": 2, "fileCategory": "config"},
+    {"path": "openspec/changes/archive/2026-07-31-ios-port/proposal.md", "language": "markdown", "sizeLines": 66, "fileCategory": "docs"},
+    {"path": "openspec/changes/archive/2026-07-31-ios-port/tasks.md", "language": "markdown", "sizeLines": 48, "fileCategory": "docs"}
+  ],
+  "batchImportData": {"openspec/changes/archive/2026-07-31-ios-port/.openspec.yaml":[],"openspec/changes/archive/2026-07-31-ios-port/proposal.md":[],"openspec/changes/archive/2026-07-31-ios-port/tasks.md":[]}
+}

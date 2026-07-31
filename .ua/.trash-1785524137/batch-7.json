@@ -1,0 +1,118 @@
+{
+  "nodes": [
+    {
+      "id": "file:src/lib/components/ui/item/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "filePath": "src/lib/components/ui/item/index.ts",
+      "summary": "Barrel file for the shadcn-svelte Item component family, re-exporting all subcomponents under both short (Root, Content, Title) and namespaced (Item, ItemContent, ItemTitle) aliases.",
+      "tags": ["barrel", "entry-point", "component", "ui", "type-definition"],
+      "complexity": "simple",
+      "languageNotes": "TypeScript barrel that aggregates Svelte component modules and provides dual naming conventions for ergonomic imports."
+    },
+    {
+      "id": "file:src/lib/components/ui/item/item.svelte",
+      "type": "file",
+      "name": "item.svelte",
+      "filePath": "src/lib/components/ui/item/item.svelte",
+      "summary": "Root Item container component defining tailwind-variants styling (variant and size) and rendering an optional child snippet or a styled div slot wrapper.",
+      "tags": ["component", "ui", "svelte", "styling", "variant"],
+      "complexity": "moderate",
+      "languageNotes": "Uses tailwind-variants (tv) with a module script to export itemVariants plus ItemSize/ItemVariant types; leverages Svelte 5 $props, $bindable, $derived, and snippet rendering."
+    },
+    {
+      "id": "file:src/lib/components/ui/item/item-media.svelte",
+      "type": "file",
+      "name": "item-media.svelte",
+      "filePath": "src/lib/components/ui/item/item-media.svelte",
+      "summary": "Media slot component for the Item family that renders an icon or image container with variant-based sizing via tailwind-variants.",
+      "tags": ["component", "ui", "svelte", "styling", "variant"],
+      "complexity": "simple",
+      "languageNotes": "Svelte 5 component exporting a tailwind-variants styling helper for media placement within an Item."
+    },
+    {
+      "id": "file:src/lib/components/ui/item/item-content.svelte",
+      "type": "file",
+      "name": "item-content.svelte",
+      "filePath": "src/lib/components/ui/item/item-content.svelte",
+      "summary": "Content region component for the Item family, providing the primary flex-grow text/body slot within an item.",
+      "tags": ["component", "ui", "svelte", "layout"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/item/item-description.svelte",
+      "type": "file",
+      "name": "item-description.svelte",
+      "filePath": "src/lib/components/ui/item/item-description.svelte",
+      "summary": "Secondary description text component for the Item family, rendering muted supporting copy beneath the title.",
+      "tags": ["component", "ui", "svelte", "typography"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/item/item-title.svelte",
+      "type": "file",
+      "name": "item-title.svelte",
+      "filePath": "src/lib/components/ui/item/item-title.svelte",
+      "summary": "Title text component for the Item family, rendering the primary label with emphasized typography.",
+      "tags": ["component", "ui", "svelte", "typography"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/item/item-actions.svelte",
+      "type": "file",
+      "name": "item-actions.svelte",
+      "filePath": "src/lib/components/ui/item/item-actions.svelte",
+      "summary": "Actions slot component for the Item family, hosting trailing interactive controls such as buttons or menus.",
+      "tags": ["component", "ui", "svelte", "layout"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/item/item-header.svelte",
+      "type": "file",
+      "name": "item-header.svelte",
+      "filePath": "src/lib/components/ui/item/item-header.svelte",
+      "summary": "Header slot component for the Item family, rendering a top-aligned region for item grouping headers.",
+      "tags": ["component", "ui", "svelte", "layout"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/item/item-footer.svelte",
+      "type": "file",
+      "name": "item-footer.svelte",
+      "filePath": "src/lib/components/ui/item/item-footer.svelte",
+      "summary": "Footer slot component for the Item family, rendering a bottom-aligned region for supplementary item content.",
+      "tags": ["component", "ui", "svelte", "layout"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/item/item-group.svelte",
+      "type": "file",
+      "name": "item-group.svelte",
+      "filePath": "src/lib/components/ui/item/item-group.svelte",
+      "summary": "Group wrapper component for the Item family, arranging multiple items as a cohesive list container.",
+      "tags": ["component", "ui", "svelte", "layout"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/item/item-separator.svelte",
+      "type": "file",
+      "name": "item-separator.svelte",
+      "filePath": "src/lib/components/ui/item/item-separator.svelte",
+      "summary": "Separator component for the Item family, rendering a dividing rule between items within a group.",
+      "tags": ["component", "ui", "svelte", "layout"],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {"source": "file:src/lib/components/ui/item/index.ts", "target": "file:src/lib/components/ui/item/item-actions.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/item/index.ts", "target": "file:src/lib/components/ui/item/item-content.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/item/index.ts", "target": "file:src/lib/components/ui/item/item-description.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/item/index.ts", "target": "file:src/lib/components/ui/item/item-footer.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/item/index.ts", "target": "file:src/lib/components/ui/item/item-group.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/item/index.ts", "target": "file:src/lib/components/ui/item/item-header.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/item/index.ts", "target": "file:src/lib/components/ui/item/item-media.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/item/index.ts", "target": "file:src/lib/components/ui/item/item-separator.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/item/index.ts", "target": "file:src/lib/components/ui/item/item-title.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/item/index.ts", "target": "file:src/lib/components/ui/item/item.svelte", "type": "imports", "direction": "forward", "weight": 0.7}
+  ]
+}

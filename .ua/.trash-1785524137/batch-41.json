@@ -1,0 +1,358 @@
+{
+  "nodes": [
+    {
+      "id": "document:openspec/changes/archive/2026-07-30-trusted-send-panel-progress/specs/transfer-panel-layout/spec.md",
+      "type": "document",
+      "name": "trusted-send-panel-progress transfer-panel-layout spec.md",
+      "filePath": "openspec/changes/archive/2026-07-30-trusted-send-panel-progress/specs/transfer-panel-layout/spec.md",
+      "summary": "Archived OpenSpec delta modifying the trusted send panel's state machine, covering offered/awaiting, peer-accepts, bytes-moving, and completed states.",
+      "tags": ["documentation", "openspec-delta", "archived", "ui-spec", "transfer-panel"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-31-android-port/specs/app-shell-tauri/spec.md",
+      "type": "document",
+      "name": "android-port app-shell-tauri spec.md",
+      "filePath": "openspec/changes/archive/2026-07-31-android-port/specs/app-shell-tauri/spec.md",
+      "summary": "Archived OpenSpec delta modifying the Tauri app shell's mobile-targets requirement for the Android port, spanning debug launch, end-to-end transfer, downloads, URI file picking, notifications, and deep links.",
+      "tags": ["documentation", "openspec-delta", "archived", "android", "mobile"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-31-download-destination-strategy/specs/download-destination/spec.md",
+      "type": "document",
+      "name": "download-destination-strategy download-destination spec.md",
+      "filePath": "openspec/changes/archive/2026-07-31-download-destination-strategy/specs/download-destination/spec.md",
+      "summary": "Archived OpenSpec delta adding the received-file destination strategy: user-visible locations per platform, a flat time-sortable layout, path sanitization, and no code-phrase folder names.",
+      "tags": ["documentation", "openspec-delta", "archived", "download-destination", "security"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-31-extract-transport-dest/specs/transport-dest/spec.md",
+      "type": "document",
+      "name": "extract-transport-dest transport-dest spec.md",
+      "filePath": "openspec/changes/archive/2026-07-31-extract-transport-dest/specs/transport-dest/spec.md",
+      "summary": "Archived OpenSpec delta extracting receive-destination and naming logic into a single dedicated module, preserving unchanged sanitizing behavior and colocating its tests.",
+      "tags": ["documentation", "openspec-delta", "archived", "refactor", "download-destination"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-31-ios-port/specs/app-shell-tauri/spec.md",
+      "type": "document",
+      "name": "ios-port app-shell-tauri spec.md",
+      "filePath": "openspec/changes/archive/2026-07-31-ios-port/specs/app-shell-tauri/spec.md",
+      "summary": "Archived OpenSpec delta extending the Tauri app shell's mobile-targets requirement to iOS, adding local-network declaration, iOS file picking, Files-visible downloads, and phone-to-phone transfer scenarios.",
+      "tags": ["documentation", "openspec-delta", "archived", "ios", "mobile"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-31-shared-test-broker-harness/specs/test-broker-harness/spec.md",
+      "type": "document",
+      "name": "shared-test-broker-harness test-broker-harness spec.md",
+      "filePath": "openspec/changes/archive/2026-07-31-shared-test-broker-harness/specs/test-broker-harness/spec.md",
+      "summary": "Archived OpenSpec delta adding a single shared mock broker for Rust tests, unifying the mailbox and fingerprint-router mocks while keeping the test gate green.",
+      "tags": ["documentation", "openspec-delta", "archived", "testing", "broker"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-31-tauri-iroh-migration/specs/code-phrase-share/spec.md",
+      "type": "document",
+      "name": "tauri-iroh-migration code-phrase-share spec.md",
+      "filePath": "openspec/changes/archive/2026-07-31-tauri-iroh-migration/specs/code-phrase-share/spec.md",
+      "summary": "Archived OpenSpec delta adding the human code-phrase quick-share capability with PAKE-authenticated ticket exchange, NodeId binding against rendezvous MITM, and no device-trust side effects.",
+      "tags": ["documentation", "openspec-delta", "archived", "code-phrase-share", "security"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-31-tauri-iroh-migration/specs/device-pairing/spec.md",
+      "type": "document",
+      "name": "tauri-iroh-migration device-pairing spec.md",
+      "filePath": "openspec/changes/archive/2026-07-31-tauri-iroh-migration/specs/device-pairing/spec.md",
+      "summary": "Archived OpenSpec delta removing deterministic transfer-code derivation and modifying signed transfer offers to bind the iroh NodeId and reject untrusted, tampered, or substituted senders.",
+      "tags": ["documentation", "openspec-delta", "archived", "device-pairing", "security"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-31-tauri-iroh-migration/specs/rendezvous-broker/spec.md",
+      "type": "document",
+      "name": "tauri-iroh-migration rendezvous-broker spec.md",
+      "filePath": "openspec/changes/archive/2026-07-31-tauri-iroh-migration/specs/rendezvous-broker/spec.md",
+      "summary": "Archived OpenSpec delta adding the code-mailbox rendezvous mode to the broker, pairing two waiting parties without inspecting blobs and isolating the mode from fingerprint routing.",
+      "tags": ["documentation", "openspec-delta", "archived", "rendezvous-broker", "networking"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-31-tauri-iroh-migration/specs/transport-iroh/spec.md",
+      "type": "document",
+      "name": "tauri-iroh-migration transport-iroh spec.md",
+      "filePath": "openspec/changes/archive/2026-07-31-tauri-iroh-migration/specs/transport-iroh/spec.md",
+      "summary": "Archived OpenSpec delta adding the iroh-based transfer transport: direct and relay-fallback transfers, ticket addressing, race-free progress, content-addressed resume, cancellation, and concurrency limits.",
+      "tags": ["documentation", "openspec-delta", "archived", "transport-iroh", "networking"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-31-unify-responsive-shell/specs/app-shell/spec.md",
+      "type": "document",
+      "name": "unify-responsive-shell app-shell spec.md",
+      "filePath": "openspec/changes/archive/2026-07-31-unify-responsive-shell/specs/app-shell/spec.md",
+      "summary": "Archived OpenSpec delta adding the unified responsive shell: one shell tree for desktop and mobile, platform-adaptive header chrome, a collapsible icon-rail sidebar, no in-app back, and safe-area handling.",
+      "tags": ["documentation", "openspec-delta", "archived", "app-shell", "responsive"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-31-unify-responsive-shell/specs/mobile-navigation/spec.md",
+      "type": "document",
+      "name": "unify-responsive-shell mobile-navigation spec.md",
+      "filePath": "openspec/changes/archive/2026-07-31-unify-responsive-shell/specs/mobile-navigation/spec.md",
+      "summary": "Archived OpenSpec delta adding mobile navigation as the sidebar rendered as a left drawer, with hamburger open, navigate-to-collapse, one-handed dismissal, and hardware-back handling.",
+      "tags": ["documentation", "openspec-delta", "archived", "mobile-navigation", "responsive"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-31-unify-responsive-shell/specs/transfer-panel-layout/spec.md",
+      "type": "document",
+      "name": "unify-responsive-shell transfer-panel-layout spec.md",
+      "filePath": "openspec/changes/archive/2026-07-31-unify-responsive-shell/specs/transfer-panel-layout/spec.md",
+      "summary": "Archived OpenSpec delta adding the transfer-panel layout that dissolves card chrome to full-bleed on mobile and anchors a flush segmented mode switcher, while leaving the desktop layout unchanged.",
+      "tags": ["documentation", "openspec-delta", "archived", "transfer-panel", "responsive"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:openspec/config.yaml",
+      "type": "config",
+      "name": "config.yaml",
+      "filePath": "openspec/config.yaml",
+      "summary": "OpenSpec project configuration and single source of truth for floppy's context: tech stack (Rust/Tauri 2, SvelteKit, Go broker, iroh), module layout, IPC contract, transfer/rendezvous model, test gates, and UI copy voice.",
+      "tags": ["configuration", "openspec", "project-context", "documentation", "single-source-of-truth"],
+      "complexity": "moderate",
+      "languageNotes": "YAML with a large literal-block `context` scalar acting as the canonical project brief."
+    },
+    {
+      "id": "document:openspec/specs/app-shell-tauri/spec.md",
+      "type": "document",
+      "name": "app-shell-tauri spec.md",
+      "filePath": "openspec/specs/app-shell-tauri/spec.md",
+      "summary": "Current spec for the Tauri 2 application shell: SvelteKit static SPA frontend, preserved event vocabulary, plugin-backed platform services, image previews, and mobile (Android + iOS) targets.",
+      "tags": ["documentation", "openspec-spec", "app-shell", "tauri", "mobile"],
+      "complexity": "complex"
+    },
+    {
+      "id": "document:openspec/specs/app-shell/spec.md",
+      "type": "document",
+      "name": "app-shell spec.md",
+      "filePath": "openspec/specs/app-shell/spec.md",
+      "summary": "Current spec for the unified responsive shell: one shell tree across platforms and widths, platform-adaptive header chrome, a collapsible icon-rail sidebar, no in-app back, and safe-area handling.",
+      "tags": ["documentation", "openspec-spec", "app-shell", "responsive", "ui-spec"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:openspec/specs/code-phrase-share/spec.md",
+      "type": "document",
+      "name": "code-phrase-share spec.md",
+      "filePath": "openspec/specs/code-phrase-share/spec.md",
+      "summary": "Current spec for human code-phrase quick sharing: generated/typed codes, PAKE-authenticated ticket exchange, NodeId binding against rendezvous MITM, and no device-trust side effects.",
+      "tags": ["documentation", "openspec-spec", "code-phrase-share", "security", "rendezvous"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:openspec/specs/device-management/spec.md",
+      "type": "document",
+      "name": "device-management spec.md",
+      "filePath": "openspec/specs/device-management/spec.md",
+      "summary": "Current spec for the device-management UI: a dedicated Devices page, a symmetric add-a-device flow, one-tap confirmation, local device rename, and links from the send flow into pairing.",
+      "tags": ["documentation", "openspec-spec", "device-management", "ui-spec", "pairing"],
+      "complexity": "complex"
+    },
+    {
+      "id": "document:openspec/specs/device-pairing/spec.md",
+      "type": "document",
+      "name": "device-pairing spec.md",
+      "filePath": "openspec/specs/device-pairing/spec.md",
+      "summary": "Current spec for trusted device pairing: per-device Ed25519 identity, fingerprints, trust store, ECDH shared secret, SAS, signed offers/responses/completions, short-code pairing, and glare resolution.",
+      "tags": ["documentation", "openspec-spec", "device-pairing", "cryptography", "security"],
+      "complexity": "complex"
+    },
+    {
+      "id": "document:openspec/specs/download-destination/spec.md",
+      "type": "document",
+      "name": "download-destination spec.md",
+      "filePath": "openspec/specs/download-destination/spec.md",
+      "summary": "Current spec for received-file destinations: user-visible location per platform, one flat time-sortable layout, no code-phrase folder names, collision avoidance, path sanitization, and permission-free Android writes.",
+      "tags": ["documentation", "openspec-spec", "download-destination", "security", "cross-platform"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:openspec/specs/mobile-navigation/spec.md",
+      "type": "document",
+      "name": "mobile-navigation spec.md",
+      "filePath": "openspec/specs/mobile-navigation/spec.md",
+      "summary": "Current spec for mobile navigation: the sidebar rendered as a left drawer with hamburger open, navigate-to-collapse, one-handed dismissal, and hardware-back handling.",
+      "tags": ["documentation", "openspec-spec", "mobile-navigation", "responsive", "ui-spec"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:openspec/specs/receive-clipboard-detect/spec.md",
+      "type": "document",
+      "name": "receive-clipboard-detect spec.md",
+      "filePath": "openspec/specs/receive-clipboard-detect/spec.md",
+      "summary": "Current spec for clipboard detection on the Receive tab: checking the clipboard on focus, auto-filling detected croc codes without overwriting typed input, showing provenance and clear controls, and suppressing auto-fill when appropriate.",
+      "tags": ["documentation", "openspec-spec", "clipboard", "receive", "ui-spec"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:openspec/specs/rendezvous-broker/spec.md",
+      "type": "document",
+      "name": "rendezvous-broker spec.md",
+      "filePath": "openspec/specs/rendezvous-broker/spec.md",
+      "summary": "Current spec for the Go rendezvous broker: device registration with proof of ownership, fingerprint signal routing, unreachable notices, one live connection per fingerprint, stateless operation, WebSocket keepalive/eviction, and the code-mailbox mode.",
+      "tags": ["documentation", "openspec-spec", "rendezvous-broker", "networking", "websocket"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:openspec/specs/test-broker-harness/spec.md",
+      "type": "document",
+      "name": "test-broker-harness spec.md",
+      "filePath": "openspec/specs/test-broker-harness/spec.md",
+      "summary": "Current spec for a single shared mock broker in the Rust test suite, unifying the mailbox and fingerprint-router mocks so no duplicated broker mocks remain and the test gate stays green.",
+      "tags": ["documentation", "openspec-spec", "testing", "broker", "refactor"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:openspec/specs/transfer-delivery/spec.md",
+      "type": "document",
+      "name": "transfer-delivery spec.md",
+      "filePath": "openspec/specs/transfer-delivery/spec.md",
+      "summary": "Current spec for transfer delivery semantics: a single active transfer session (send XOR receive), passive send completing on receiver acknowledgement, and send-slot expiry when stuck or unaccepted.",
+      "tags": ["documentation", "openspec-spec", "transfer-delivery", "concurrency", "networking"],
+      "complexity": "moderate"
+    }
+  ],
+  "edges": [
+    {
+      "source": "document:openspec/changes/archive/2026-07-31-android-port/specs/app-shell-tauri/spec.md",
+      "target": "document:openspec/specs/app-shell-tauri/spec.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-31-ios-port/specs/app-shell-tauri/spec.md",
+      "target": "document:openspec/specs/app-shell-tauri/spec.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-31-download-destination-strategy/specs/download-destination/spec.md",
+      "target": "document:openspec/specs/download-destination/spec.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-31-extract-transport-dest/specs/transport-dest/spec.md",
+      "target": "document:openspec/specs/download-destination/spec.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-31-shared-test-broker-harness/specs/test-broker-harness/spec.md",
+      "target": "document:openspec/specs/test-broker-harness/spec.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-31-tauri-iroh-migration/specs/code-phrase-share/spec.md",
+      "target": "document:openspec/specs/code-phrase-share/spec.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-31-tauri-iroh-migration/specs/device-pairing/spec.md",
+      "target": "document:openspec/specs/device-pairing/spec.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-31-tauri-iroh-migration/specs/rendezvous-broker/spec.md",
+      "target": "document:openspec/specs/rendezvous-broker/spec.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-31-tauri-iroh-migration/specs/transport-iroh/spec.md",
+      "target": "document:openspec/specs/transfer-delivery/spec.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-31-unify-responsive-shell/specs/app-shell/spec.md",
+      "target": "document:openspec/specs/app-shell/spec.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-31-unify-responsive-shell/specs/mobile-navigation/spec.md",
+      "target": "document:openspec/specs/mobile-navigation/spec.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-30-trusted-send-panel-progress/specs/transfer-panel-layout/spec.md",
+      "target": "document:openspec/changes/archive/2026-07-31-unify-responsive-shell/specs/transfer-panel-layout/spec.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:openspec/config.yaml",
+      "target": "document:openspec/specs/app-shell-tauri/spec.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:openspec/config.yaml",
+      "target": "document:openspec/specs/rendezvous-broker/spec.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:openspec/config.yaml",
+      "target": "document:openspec/specs/device-pairing/spec.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:openspec/config.yaml",
+      "target": "document:openspec/specs/transfer-delivery/spec.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:openspec/config.yaml",
+      "target": "document:openspec/specs/code-phrase-share/spec.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:openspec/config.yaml",
+      "target": "document:openspec/specs/download-destination/spec.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

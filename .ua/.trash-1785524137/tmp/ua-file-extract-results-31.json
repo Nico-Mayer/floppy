@@ -1,0 +1,232 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 4,
+  "filesSkipped": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 4,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 0,
+      "failed": 0,
+      "skipped": 4
+    }
+  },
+  "results": [
+    {
+      "path": "openspec/changes/archive/2026-07-31-android-port/.openspec.yaml",
+      "language": "yaml",
+      "fileCategory": "config",
+      "totalLines": 2,
+      "nonEmptyLines": 2,
+      "sections": [
+        {
+          "heading": "schema",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "created",
+          "level": 1,
+          "line": 2
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 2
+      }
+    },
+    {
+      "path": "openspec/changes/archive/2026-07-31-android-port/design.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 117,
+      "nonEmptyLines": 92,
+      "sections": [
+        {
+          "heading": "Design: Android port",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Context",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "The three shims",
+          "level": 2,
+          "line": 14
+        },
+        {
+          "heading": "Decisions",
+          "level": 2,
+          "line": 46
+        },
+        {
+          "heading": "D1. `tauri-plugin-fs` for URI resolution, not a hand-rolled plugin",
+          "level": 3,
+          "line": 48
+        },
+        {
+          "heading": "D2. Materialize a sandbox copy; do not try to stream into iroh",
+          "level": 3,
+          "line": 59
+        },
+        {
+          "heading": "D3. Broker URL baked at compile time, env override kept",
+          "level": 3,
+          "line": 76
+        },
+        {
+          "heading": "D4. Foreground, not focus",
+          "level": 3,
+          "line": 88
+        },
+        {
+          "heading": "D5. Preview budgets keyed to platform, not measured at runtime",
+          "level": 3,
+          "line": 97
+        },
+        {
+          "heading": "Risks",
+          "level": 2,
+          "line": 103
+        },
+        {
+          "heading": "Open questions",
+          "level": 2,
+          "line": 112
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 11
+      }
+    },
+    {
+      "path": "openspec/changes/archive/2026-07-31-android-port/proposal.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 104,
+      "nonEmptyLines": 85,
+      "sections": [
+        {
+          "heading": "Android port",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Why",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "What Changes",
+          "level": 2,
+          "line": 35
+        },
+        {
+          "heading": "Shared mobile foundation (iOS inherits)",
+          "level": 3,
+          "line": 37
+        },
+        {
+          "heading": "Android specifics",
+          "level": 3,
+          "line": 61
+        },
+        {
+          "heading": "Non-Goals",
+          "level": 2,
+          "line": 75
+        },
+        {
+          "heading": "Capabilities",
+          "level": 2,
+          "line": 86
+        },
+        {
+          "heading": "Modified Capabilities",
+          "level": 3,
+          "line": 88
+        },
+        {
+          "heading": "Impact",
+          "level": 2,
+          "line": 94
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 9
+      }
+    },
+    {
+      "path": "openspec/changes/archive/2026-07-31-android-port/tasks.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 62,
+      "nonEmptyLines": 47,
+      "sections": [
+        {
+          "heading": "Tasks: android-port",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "1. Launch",
+          "level": 2,
+          "line": 7
+        },
+        {
+          "heading": "2. Reachability",
+          "level": 2,
+          "line": 15
+        },
+        {
+          "heading": "3. Directories",
+          "level": 2,
+          "line": 21
+        },
+        {
+          "heading": "4. File input (shared shim)",
+          "level": 2,
+          "line": 27
+        },
+        {
+          "heading": "5. Platform services",
+          "level": 2,
+          "line": 36
+        },
+        {
+          "heading": "6. Mobile chrome",
+          "level": 2,
+          "line": 46
+        },
+        {
+          "heading": "7. Verification",
+          "level": 2,
+          "line": 54
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 8
+      }
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "nodes": [
+    {
+      "id": "config:src-tauri/Cargo.toml",
+      "type": "config",
+      "name": "Cargo.toml",
+      "filePath": "src-tauri/Cargo.toml",
+      "summary": "Rust crate manifest for the floppy Tauri backend, declaring the cdylib/rlib/staticlib library, core crypto and transport dependencies (iroh, iroh-blobs, rustls/ring, ed25519/x25519, spake2, chacha20poly1305), Tauri plugins, and platform-gated mobile dependencies for Android and iOS.",
+      "tags": ["configuration", "build-system", "rust", "dependencies", "tauri"],
+      "complexity": "moderate",
+      "languageNotes": "Uses cfg-gated [target.'cfg(...)'.dependencies] tables to include mobile-only crates (tauri-plugin-android-fs pinned with '=', tauri-plugin-ios-webview-insets) without adding weight to desktop builds."
+    },
+    {
+      "id": "config:src-tauri/tauri.conf.json",
+      "type": "config",
+      "name": "tauri.conf.json",
+      "filePath": "src-tauri/tauri.conf.json",
+      "summary": "Tauri 2 application configuration defining the app identifier, dev/build commands and frontend dist path, the main window geometry and overlay title bar, the 'floppy' deep-link scheme for desktop and mobile, and bundle targets and icons.",
+      "tags": ["configuration", "tauri", "deployment", "deep-link", "bundle"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:src-tauri/Info.ios.plist",
+      "type": "config",
+      "name": "Info.ios.plist",
+      "filePath": "src-tauri/Info.ios.plist",
+      "summary": "iOS property list merged into the generated Info.plist at build, exposing the app's Documents directory in the Files app (UIFileSharingEnabled, LSSupportsOpeningDocumentsInPlace) and declaring local-network and photo-library usage descriptions required for iroh LAN hole-punching and the photo picker.",
+      "tags": ["configuration", "ios", "permissions", "mobile", "plist"],
+      "complexity": "simple",
+      "languageNotes": "Kept as a separate merge file so the entries survive an 'ios init' regeneration of the generated plist."
+    }
+  ],
+  "edges": [
+    {
+      "source": "config:src-tauri/Cargo.toml",
+      "target": "file:src-tauri/src/lib.rs",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:src-tauri/tauri.conf.json",
+      "target": "file:src-tauri/src/lib.rs",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:src-tauri/Info.ios.plist",
+      "target": "file:src-tauri/src/lib.rs",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    }
+  ]
+}

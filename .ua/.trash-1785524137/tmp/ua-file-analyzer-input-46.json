@@ -1,0 +1,21 @@
+{
+  "projectRoot": "/Users/nimayer/projects/personal/floppy",
+  "batchFiles": [
+    {"path": "src/lib/ipc/runtime.ts", "language": "typescript", "sizeLines": 45, "fileCategory": "code"},
+    {"path": "src/lib/motion.ts", "language": "typescript", "sizeLines": 19, "fileCategory": "code"},
+    {"path": "src/lib/nav-items.ts", "language": "typescript", "sizeLines": 25, "fileCategory": "code"},
+    {"path": "src/lib/platform.ts", "language": "typescript", "sizeLines": 25, "fileCategory": "code"},
+    {"path": "src/lib/safe-area.ts", "language": "typescript", "sizeLines": 51, "fileCategory": "code"},
+    {"path": "src/lib/utils.ts", "language": "typescript", "sizeLines": 13, "fileCategory": "code"},
+    {"path": "src/routes/+layout.svelte", "language": "svelte", "sizeLines": 159, "fileCategory": "code"},
+    {"path": "src/routes/+layout.ts", "language": "typescript", "sizeLines": 5, "fileCategory": "code"},
+    {"path": "src/routes/+page.svelte", "language": "svelte", "sizeLines": 60, "fileCategory": "code"},
+    {"path": "src/routes/activity/+page.svelte", "language": "svelte", "sizeLines": 13, "fileCategory": "code"},
+    {"path": "src/routes/devices/+page.svelte", "language": "svelte", "sizeLines": 391, "fileCategory": "code"},
+    {"path": "src/routes/layout.css", "language": "css", "sizeLines": 282, "fileCategory": "markup"},
+    {"path": "src/routes/settings/+page.svelte", "language": "svelte", "sizeLines": 13, "fileCategory": "code"},
+    {"path": "svelte.config.js", "language": "javascript", "sizeLines": 21, "fileCategory": "code"},
+    {"path": "vite.config.js", "language": "javascript", "sizeLines": 26, "fileCategory": "code"}
+  ],
+  "batchImportData": {"src/lib/ipc/runtime.ts":[],"src/lib/motion.ts":[],"src/lib/nav-items.ts":[],"src/lib/platform.ts":[],"src/lib/safe-area.ts":[],"src/lib/utils.ts":[],"src/routes/+layout.svelte":[],"src/routes/+layout.ts":[],"src/routes/+page.svelte":[],"src/routes/activity/+page.svelte":[],"src/routes/devices/+page.svelte":[],"src/routes/layout.css":[],"src/routes/settings/+page.svelte":[],"svelte.config.js":[],"vite.config.js":[]}
+}

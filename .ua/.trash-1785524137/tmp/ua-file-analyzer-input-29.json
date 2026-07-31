@@ -1,0 +1,10 @@
+{
+  "projectRoot": "/Users/nimayer/projects/personal/floppy",
+  "batchFiles": [
+    {"path": "openspec/changes/archive/2026-07-30-redesign-device-pairing/.openspec.yaml", "language": "yaml", "sizeLines": 2, "fileCategory": "config"},
+    {"path": "openspec/changes/archive/2026-07-30-redesign-device-pairing/design.md", "language": "markdown", "sizeLines": 158, "fileCategory": "docs"},
+    {"path": "openspec/changes/archive/2026-07-30-redesign-device-pairing/proposal.md", "language": "markdown", "sizeLines": 75, "fileCategory": "docs"},
+    {"path": "openspec/changes/archive/2026-07-30-redesign-device-pairing/tasks.md", "language": "markdown", "sizeLines": 60, "fileCategory": "docs"}
+  ],
+  "batchImportData": {"openspec/changes/archive/2026-07-30-redesign-device-pairing/.openspec.yaml":[],"openspec/changes/archive/2026-07-30-redesign-device-pairing/design.md":[],"openspec/changes/archive/2026-07-30-redesign-device-pairing/proposal.md":[],"openspec/changes/archive/2026-07-30-redesign-device-pairing/tasks.md":[]}
+}

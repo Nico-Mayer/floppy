@@ -1,0 +1,71 @@
+{
+  "nodes": [
+    {
+      "id": "config:openspec/changes/archive/2026-07-31-download-destination-strategy/.openspec.yaml",
+      "type": "config",
+      "name": ".openspec.yaml",
+      "filePath": "openspec/changes/archive/2026-07-31-download-destination-strategy/.openspec.yaml",
+      "summary": "OpenSpec metadata for the archived download-destination-strategy change, recording the spec schema version and creation date.",
+      "tags": ["configuration", "openspec", "metadata", "archived"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-31-download-destination-strategy/design.md",
+      "type": "document",
+      "name": "design.md",
+      "filePath": "openspec/changes/archive/2026-07-31-download-destination-strategy/design.md",
+      "summary": "Design document for routing received files to a user-visible Downloads location, detailing five decisions: flat-chronological folder layout, a per-platform destination service, Android via tauri-plugin-android-fs, iOS Documents/Files exposure, and deferring custom folders.",
+      "tags": ["documentation", "design", "download-destination", "cross-platform", "archived"],
+      "complexity": "moderate",
+      "languageNotes": "Structured OpenSpec design doc with Context, Goals/Non-Goals, numbered Decisions, Risks, and Migration Plan sections."
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-31-download-destination-strategy/proposal.md",
+      "type": "document",
+      "name": "proposal.md",
+      "filePath": "openspec/changes/archive/2026-07-31-download-destination-strategy/proposal.md",
+      "summary": "Change proposal motivating a user-visible download destination strategy, enumerating what changes and the new and modified capabilities it introduces.",
+      "tags": ["documentation", "proposal", "download-destination", "capabilities", "archived"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-31-download-destination-strategy/tasks.md",
+      "type": "document",
+      "name": "tasks.md",
+      "filePath": "openspec/changes/archive/2026-07-31-download-destination-strategy/tasks.md",
+      "summary": "Implementation task checklist for the download-destination-strategy change, grouped into flat-chronological naming, destination root service, Android and iOS delivery, opening the received folder, and verification.",
+      "tags": ["documentation", "tasks", "checklist", "download-destination", "archived"],
+      "complexity": "moderate"
+    }
+  ],
+  "edges": [
+    {
+      "source": "document:openspec/changes/archive/2026-07-31-download-destination-strategy/proposal.md",
+      "target": "document:openspec/changes/archive/2026-07-31-download-destination-strategy/design.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-31-download-destination-strategy/proposal.md",
+      "target": "document:openspec/changes/archive/2026-07-31-download-destination-strategy/tasks.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-31-download-destination-strategy/design.md",
+      "target": "document:openspec/changes/archive/2026-07-31-download-destination-strategy/tasks.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:openspec/changes/archive/2026-07-31-download-destination-strategy/.openspec.yaml",
+      "target": "document:openspec/changes/archive/2026-07-31-download-destination-strategy/proposal.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

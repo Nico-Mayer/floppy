@@ -1,0 +1,56 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 1,
+  "filesSkipped": [
+    "src/lib/components/ui/toggle-group/toggle-group-item.svelte",
+    "src/lib/components/ui/toggle-group/toggle-group.svelte"
+  ],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 1,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 1,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "results": [
+    {
+      "path": "src/lib/components/ui/toggle-group/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 10,
+      "nonEmptyLines": 9,
+      "exports": [
+        {
+          "name": "Root",
+          "line": 4,
+          "isDefault": false
+        },
+        {
+          "name": "Item",
+          "line": 4,
+          "isDefault": false
+        },
+        {
+          "name": "ToggleGroup",
+          "line": 4,
+          "isDefault": false
+        },
+        {
+          "name": "ToggleGroupItem",
+          "line": 4,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 2,
+        "exportCount": 4,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    }
+  ]
+}

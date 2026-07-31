@@ -1,0 +1,14 @@
+{
+  "projectRoot": "/Users/nimayer/projects/personal/floppy",
+  "batchFiles": [
+    {"path": "src/lib/components/ui/card/card-action.svelte", "language": "svelte", "sizeLines": 23, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/card/card-content.svelte", "language": "svelte", "sizeLines": 20, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/card/card-description.svelte", "language": "svelte", "sizeLines": 20, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/card/card-footer.svelte", "language": "svelte", "sizeLines": 20, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/card/card-header.svelte", "language": "svelte", "sizeLines": 23, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/card/card-title.svelte", "language": "svelte", "sizeLines": 20, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/card/card.svelte", "language": "svelte", "sizeLines": 22, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/card/index.ts", "language": "typescript", "sizeLines": 25, "fileCategory": "code"}
+  ],
+  "batchImportData": {"src/lib/components/ui/card/card-action.svelte":[],"src/lib/components/ui/card/card-content.svelte":[],"src/lib/components/ui/card/card-description.svelte":[],"src/lib/components/ui/card/card-footer.svelte":[],"src/lib/components/ui/card/card-header.svelte":[],"src/lib/components/ui/card/card-title.svelte":[],"src/lib/components/ui/card/card.svelte":[],"src/lib/components/ui/card/index.ts":["src/lib/components/ui/card/card-action.svelte","src/lib/components/ui/card/card-content.svelte","src/lib/components/ui/card/card-description.svelte","src/lib/components/ui/card/card-footer.svelte","src/lib/components/ui/card/card-header.svelte","src/lib/components/ui/card/card-title.svelte","src/lib/components/ui/card/card.svelte"]}
+}

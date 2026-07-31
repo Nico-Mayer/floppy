@@ -1,0 +1,10 @@
+{
+  "projectRoot": "/Users/nimayer/projects/personal/floppy",
+  "batchFiles": [
+    {"path": "src-tauri/gen/android/app/src/main/res/values/colors.xml", "language": "xml", "sizeLines": 9, "fileCategory": "config"},
+    {"path": "src-tauri/gen/android/app/src/main/res/values/ic_launcher_background.xml", "language": "xml", "sizeLines": 3, "fileCategory": "config"},
+    {"path": "src-tauri/gen/android/app/src/main/res/values/strings.xml", "language": "xml", "sizeLines": 3, "fileCategory": "config"},
+    {"path": "src-tauri/gen/android/app/src/main/res/values/themes.xml", "language": "xml", "sizeLines": 20, "fileCategory": "config"}
+  ],
+  "batchImportData": {"src-tauri/gen/android/app/src/main/res/values/colors.xml":[],"src-tauri/gen/android/app/src/main/res/values/ic_launcher_background.xml":[],"src-tauri/gen/android/app/src/main/res/values/strings.xml":[],"src-tauri/gen/android/app/src/main/res/values/themes.xml":[]}
+}

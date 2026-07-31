@@ -1,0 +1,323 @@
+{
+  "nodes": [
+    {
+      "id": "file:src/lib/components/shell/NavEdgeSwipe.svelte",
+      "type": "file",
+      "name": "NavEdgeSwipe.svelte",
+      "filePath": "src/lib/components/shell/NavEdgeSwipe.svelte",
+      "summary": "Invisible shell helper that wires a left-edge swipe gesture to open the mobile sidebar drawer; renders nothing and is active on iOS/Android only.",
+      "tags": ["component", "svelte", "mobile", "gesture", "navigation"],
+      "complexity": "simple",
+      "languageNotes": "Uses a Svelte action (use:edgeSwipe) to attach window listeners to a hidden node."
+    },
+    {
+      "id": "file:src/lib/components/spell/qrcode/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "filePath": "src/lib/components/spell/qrcode/index.ts",
+      "summary": "Barrel module re-exporting the QRCode component from qrcode.svelte for a clean public import path.",
+      "tags": ["barrel", "entry-point", "typescript", "re-export"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/spell/qrcode/qrcode.svelte",
+      "type": "file",
+      "name": "qrcode.svelte",
+      "filePath": "src/lib/components/spell/qrcode/qrcode.svelte",
+      "summary": "Renders a value as a dot-style SVG QR code with rounded finder patterns, using the qrcode package to compute the module matrix and Svelte $derived to lay out circles.",
+      "tags": ["component", "svelte", "qrcode", "svg", "rendering"],
+      "complexity": "moderate",
+      "languageNotes": "Heavy use of $derived/$derived.by to recompute the SVG geometry reactively from the QR module matrix."
+    },
+    {
+      "id": "file:src/lib/components/transfer/DeviceGlyph.svelte",
+      "type": "file",
+      "name": "DeviceGlyph.svelte",
+      "filePath": "src/lib/components/transfer/DeviceGlyph.svelte",
+      "summary": "Small framed laptop icon shown while connecting to a trusted device, tinted by the surrounding transfer panel's accent.",
+      "tags": ["component", "svelte", "icon", "presentational", "transfer"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/transfer/FileCard.svelte",
+      "type": "file",
+      "name": "FileCard.svelte",
+      "filePath": "src/lib/components/transfer/FileCard.svelte",
+      "summary": "Grid tile for a queued file showing an extension glyph or inline image thumbnail plus name/size, with a hover/focus remove button.",
+      "tags": ["component", "svelte", "file-preview", "transfer", "queue"],
+      "complexity": "moderate",
+      "languageNotes": "Tracks per-path ready/failed state instead of boolean flags so thumbnails reset automatically when a tile is reused."
+    },
+    {
+      "id": "file:src/lib/components/transfer/Mascot.svelte",
+      "type": "file",
+      "name": "Mascot.svelte",
+      "filePath": "src/lib/components/transfer/Mascot.svelte",
+      "summary": "Pixel-art floppy-disk mascot drawn as an inline SVG of rects, recolored per accent (send=orange, receive=blue) via a shared palette merged with accent-specific shell colors.",
+      "tags": ["component", "svelte", "svg", "pixel-art", "branding"],
+      "complexity": "complex",
+      "languageNotes": "One drawing parameterized by an accent-derived color map; only shell and label-stripe colors vary between send/receive."
+    },
+    {
+      "id": "file:src/lib/components/transfer/ModeSwitcher.svelte",
+      "type": "file",
+      "name": "ModeSwitcher.svelte",
+      "filePath": "src/lib/components/transfer/ModeSwitcher.svelte",
+      "summary": "Tab control that toggles the app between Send and Receive modes, with Cmd/Ctrl+1/2 keyboard shortcuts and a busy spinner per mode.",
+      "tags": ["component", "svelte", "tabs", "keyboard-shortcut", "transfer"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/transfer/TransferCard.svelte",
+      "type": "file",
+      "name": "TransferCard.svelte",
+      "filePath": "src/lib/components/transfer/TransferCard.svelte",
+      "summary": "Shared card chrome for the send and receive panels: accent-tinted header with title, status line, badge, optional alert, an anchored actions zone, and file-drop-target opt-in.",
+      "tags": ["component", "svelte", "layout", "transfer", "container"],
+      "complexity": "moderate",
+      "languageNotes": "Publishes the accent as CSS custom properties (--tint/--tint-fg) and uses @container queries so children respond to card width, not viewport."
+    },
+    {
+      "id": "file:src/lib/components/transfer/TransferProgress.svelte",
+      "type": "file",
+      "name": "TransferProgress.svelte",
+      "filePath": "src/lib/components/transfer/TransferProgress.svelte",
+      "summary": "Progress display for an in-flight transfer showing a tweened percentage, bar, and a detail line of bytes/rate/ETA, falling back to a spinner when no progress is known.",
+      "tags": ["component", "svelte", "progress", "transfer", "stats"],
+      "complexity": "simple",
+      "languageNotes": "Uses Svelte's Tween.of to smoothly animate the percentage toward the reported progress."
+    },
+    {
+      "id": "file:src/lib/components/transfer/WaitingHint.svelte",
+      "type": "file",
+      "name": "WaitingHint.svelte",
+      "filePath": "src/lib/components/transfer/WaitingHint.svelte",
+      "summary": "Small 'still working' footer line for transfer panels: a spinner beside an uppercase status label.",
+      "tags": ["component", "svelte", "presentational", "transfer", "status"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/transfer/files.ts",
+      "type": "file",
+      "name": "files.ts",
+      "filePath": "src/lib/components/transfer/files.ts",
+      "summary": "File helpers for the transfer queue: derive a short uppercase extension badge, test whether a file is a previewable image, and build a thumbnail URL via the thumb:// custom protocol.",
+      "tags": ["utility", "typescript", "file-preview", "transfer", "helpers"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/transfer/receive/ReceiveCodeForm.svelte",
+      "type": "file",
+      "name": "ReceiveCodeForm.svelte",
+      "filePath": "src/lib/components/transfer/receive/ReceiveCodeForm.svelte",
+      "summary": "Idle-state receive form with a code input and Get-the-files button, including clipboard auto-fill of a complete code on mount and window focus with one-click undo.",
+      "tags": ["component", "svelte", "form", "clipboard", "receive"],
+      "complexity": "moderate",
+      "languageNotes": "Reads the native clipboard only on discrete focus moments via $effect + onWindowFocus, guarding against overwriting user input and re-filling dismissed values."
+    },
+    {
+      "id": "file:src/lib/components/transfer/receive/ReceiveComplete.svelte",
+      "type": "file",
+      "name": "ReceiveComplete.svelte",
+      "filePath": "src/lib/components/transfer/receive/ReceiveComplete.svelte",
+      "summary": "Done-state screen for a completed receive, confirming success and showing where the files were saved.",
+      "tags": ["component", "svelte", "receive", "completion", "presentational"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/transfer/receive/ReceiveDevice.svelte",
+      "type": "file",
+      "name": "ReceiveDevice.svelte",
+      "filePath": "src/lib/components/transfer/receive/ReceiveDevice.svelte",
+      "summary": "Connecting-state screen for an accepted device receive, naming the sender and previewing the incoming file count and total size before bytes arrive.",
+      "tags": ["component", "svelte", "receive", "device", "status"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/transfer/receive/ReceiveIdle.svelte",
+      "type": "file",
+      "name": "ReceiveIdle.svelte",
+      "filePath": "src/lib/components/transfer/receive/ReceiveIdle.svelte",
+      "summary": "Idle hero screen for the receive panel showing the receive-accent mascot and a prompt to enter the sender's code; the input itself lives in the card's actions zone.",
+      "tags": ["component", "svelte", "receive", "empty-state", "presentational"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/transfer/receive/ReceivePanel.svelte",
+      "type": "file",
+      "name": "ReceivePanel.svelte",
+      "filePath": "src/lib/components/transfer/receive/ReceivePanel.svelte",
+      "summary": "Top-level receive panel that maps each receive-flow status (idle, connecting, receiving, done, cancelling) to a sub-screen and renders the appropriate actions inside a TransferCard.",
+      "tags": ["component", "svelte", "receive", "state-machine", "transfer"],
+      "complexity": "moderate",
+      "languageNotes": "Derives headline/badge from receive state and branches the card body on app.receive.status."
+    },
+    {
+      "id": "file:src/lib/components/transfer/receive/ReceiveSearching.svelte",
+      "type": "file",
+      "name": "ReceiveSearching.svelte",
+      "filePath": "src/lib/components/transfer/receive/ReceiveSearching.svelte",
+      "summary": "Connecting-state screen for a code receive, shown while searching for the sender before a connection is established.",
+      "tags": ["component", "svelte", "receive", "status", "presentational"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/transfer/send/SendCode.svelte",
+      "type": "file",
+      "name": "SendCode.svelte",
+      "filePath": "src/lib/components/transfer/send/SendCode.svelte",
+      "summary": "Waiting-state screen for a code send that displays the share phrase as a QR code and copyable text, with an animated border beam signalling it is still waiting for a peer.",
+      "tags": ["component", "svelte", "send", "qrcode", "clipboard"],
+      "complexity": "moderate",
+      "languageNotes": "Copies via the native Go-side clipboard with a navigator.clipboard fallback; embeds the QRCode component and a motion-gated BorderBeam."
+    },
+    {
+      "id": "file:src/lib/components/transfer/send/SendComplete.svelte",
+      "type": "file",
+      "name": "SendComplete.svelte",
+      "filePath": "src/lib/components/transfer/send/SendComplete.svelte",
+      "summary": "Done-state screen for a completed send, summarizing what was sent and to which target.",
+      "tags": ["component", "svelte", "send", "completion", "presentational"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/transfer/send/SendDevice.svelte",
+      "type": "file",
+      "name": "SendDevice.svelte",
+      "filePath": "src/lib/components/transfer/send/SendDevice.svelte",
+      "summary": "Pre-transfer screen for a device send covering both the waiting-for-acceptance and accepted/connecting states, with no code or QR since the peer is derived from pairing keys.",
+      "tags": ["component", "svelte", "send", "device", "status"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/transfer/send/SendPanel.svelte",
+      "type": "file",
+      "name": "SendPanel.svelte",
+      "filePath": "src/lib/components/transfer/send/SendPanel.svelte",
+      "summary": "Top-level send panel that manages the target selection (code or trusted device), maps each send-flow status to a sub-screen, warns on large transfers, and dispatches the send inside a drop-accepting TransferCard.",
+      "tags": ["component", "svelte", "send", "state-machine", "transfer"],
+      "complexity": "moderate",
+      "languageNotes": "Derives the effective target so un-trusting a device falls back to code without an effect; dispatchSend routes to send.start() or pairing.sendTo()."
+    },
+    {
+      "id": "file:src/lib/components/transfer/send/SendQueue.svelte",
+      "type": "file",
+      "name": "SendQueue.svelte",
+      "filePath": "src/lib/components/transfer/send/SendQueue.svelte",
+      "summary": "Idle send screen showing either a drop/browse empty state with mascot or a responsive grid of FileCard tiles for the queued files, plus an in-grid Add-files tile.",
+      "tags": ["component", "svelte", "send", "queue", "file-preview"],
+      "complexity": "moderate",
+      "languageNotes": "Uses animate:flip for tile motion on removal and container-query grid columns keyed off the card width."
+    },
+    {
+      "id": "file:src/lib/components/transfer/send/SendTargetPicker.svelte",
+      "type": "file",
+      "name": "SendTargetPicker.svelte",
+      "filePath": "src/lib/components/transfer/send/SendTargetPicker.svelte",
+      "summary": "Bindable picker choosing where files are sent — a shared code or a trusted device fingerprint — and surfacing the pairing entry point when no devices exist yet.",
+      "tags": ["component", "svelte", "send", "select", "pairing"],
+      "complexity": "moderate",
+      "languageNotes": "Uses a $bindable value prop and derives the display label from the pairing device list."
+    },
+    {
+      "id": "file:src/lib/components/ui/badge/badge.svelte",
+      "type": "file",
+      "name": "badge.svelte",
+      "filePath": "src/lib/components/ui/badge/badge.svelte",
+      "summary": "shadcn-style Badge primitive rendering a span or anchor with tailwind-variants-driven style variants (default, secondary, destructive, outline, ghost, link).",
+      "tags": ["component", "svelte", "ui-primitive", "design-system", "type-definition"],
+      "complexity": "simple",
+      "languageNotes": "Defines badgeVariants and the BadgeVariant type in a module <script>, consumed by the instance script and re-exported via index.ts."
+    },
+    {
+      "id": "file:src/lib/components/ui/badge/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "filePath": "src/lib/components/ui/badge/index.ts",
+      "summary": "Barrel module re-exporting the Badge component along with its badgeVariants and BadgeVariant type.",
+      "tags": ["barrel", "entry-point", "typescript", "re-export"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/lib/components/transfer/files.ts:ext",
+      "type": "function",
+      "name": "ext",
+      "filePath": "src/lib/components/transfer/files.ts",
+      "lineRange": [2, 6],
+      "summary": "Returns a short uppercase file extension (up to 4 chars) for the file-row badge, or 'FILE' when there is no extension.",
+      "tags": ["utility", "string", "file-preview"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/lib/components/transfer/files.ts:isPreviewable",
+      "type": "function",
+      "name": "isPreviewable",
+      "filePath": "src/lib/components/transfer/files.ts",
+      "lineRange": [14, 18],
+      "summary": "Reports whether a file's extension is in the set of image types the webview can render inline as a queue thumbnail.",
+      "tags": ["utility", "validation", "file-preview"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/lib/components/transfer/files.ts:previewURL",
+      "type": "function",
+      "name": "previewURL",
+      "filePath": "src/lib/components/transfer/files.ts",
+      "lineRange": [29, 31],
+      "summary": "Builds a webview-loadable URL for a local file preview via Tauri's convertFileSrc over the thumb:// custom protocol.",
+      "tags": ["utility", "tauri", "file-preview"],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:src/lib/components/spell/qrcode/index.ts",
+      "target": "file:src/lib/components/spell/qrcode/qrcode.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/transfer/files.ts",
+      "target": "function:src/lib/components/transfer/files.ts:ext",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/lib/components/transfer/files.ts",
+      "target": "function:src/lib/components/transfer/files.ts:isPreviewable",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/lib/components/transfer/files.ts",
+      "target": "function:src/lib/components/transfer/files.ts:previewURL",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/lib/components/transfer/files.ts",
+      "target": "function:src/lib/components/transfer/files.ts:ext",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/lib/components/transfer/files.ts",
+      "target": "function:src/lib/components/transfer/files.ts:isPreviewable",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/lib/components/transfer/files.ts",
+      "target": "function:src/lib/components/transfer/files.ts:previewURL",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    }
+  ]
+}

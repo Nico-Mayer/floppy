@@ -1,0 +1,16 @@
+{
+  "fixedSectionOk": true,
+  "nodesRecovered": 0,
+  "edgesRestored": 0,
+  "crossBatchEdgesAdded": 0,
+  "typesRemapped": 0,
+  "complexityRemapped": 0,
+  "notes": [
+    "Fixed section is minimal and reasonable: only 1 correction total (1 tested_by edge dropped for an orphan/same-kind endpoint) plus 4 broker .go production nodes tagged 'tested'. Zero ID corrections and zero complexity remaps indicates unusually clean batch output from the analyzer.",
+    "No 'Could not fix' items existed to recover: 0 nodes missing an id, 0 unknown node types, 0 unknown complexity values, 0 dangling edges after merge (573 nodes / 594 edges all endpoint-resolved).",
+    "importMap fully satisfied: all 204 import pairs across the 49 non-empty entries (.ts/.rs/.js sources) are already present as 'imports' edges, and every target resolves to an existing file node. The merge script's 'Recovered 0 imports edges' was correct, not a miss. Rust src-tauri/ module graph (14 .rs sources) is complete.",
+    "STRUCTURAL GAP (scanner-upstream, not fixable here without speculation): all 182 .svelte files appear as importMap KEYS but every one has an EMPTY outgoing-import array. The scanner does not resolve imports declared inside .svelte files — e.g. src/routes/+page.svelte imports ModeSwitcher/ReceivePanel/SendPanel .svelte components and $lib/motion, $lib/transfer-app.svelte, yet importMap lists none. Result: the entire Svelte-to-Svelte component import graph is absent, leaving 32 orphan .svelte file nodes (of 89 total orphan nodes: 52 file / 21 config / 16 document). Per Step 3 these edges cannot be added because importMap has no data backing them; adding them would require parsing .svelte sources (path-alias + barrel/index resolution), which is speculative. Recommend re-running the project scanner with Svelte import-resolution enabled, then re-merging.",
+    "Go broker is correctly modeled: 7 .go files form a single 'main' package (no inter-file 'imports' edges expected) and are well-connected via contains/tested_by/calls edges; the 5 tested_by edges map broker prod files to their _test.go counterparts.",
+    "Svelte files are not fully disconnected despite the import gap: 146 of 182 appear as import TARGETS (imported by .ts modules) and most carry 'contains' edges, so only 32 remain true orphans."
+  ]
+}

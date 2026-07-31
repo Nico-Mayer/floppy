@@ -1,0 +1,13 @@
+{
+  "projectRoot": "/Users/nimayer/projects/personal/floppy",
+  "batchFiles": [
+    {"path": "src/lib/components/ui/avatar/avatar-badge.svelte", "language": "svelte", "sizeLines": 26, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/avatar/avatar-fallback.svelte", "language": "svelte", "sizeLines": 20, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/avatar/avatar-group-count.svelte", "language": "svelte", "sizeLines": 23, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/avatar/avatar-group.svelte", "language": "svelte", "sizeLines": 23, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/avatar/avatar-image.svelte", "language": "svelte", "sizeLines": 17, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/avatar/avatar.svelte", "language": "svelte", "sizeLines": 26, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/avatar/index.ts", "language": "typescript", "sizeLines": 22, "fileCategory": "code"}
+  ],
+  "batchImportData": {"src/lib/components/ui/avatar/avatar-badge.svelte":[],"src/lib/components/ui/avatar/avatar-fallback.svelte":[],"src/lib/components/ui/avatar/avatar-group-count.svelte":[],"src/lib/components/ui/avatar/avatar-group.svelte":[],"src/lib/components/ui/avatar/avatar-image.svelte":[],"src/lib/components/ui/avatar/avatar.svelte":[],"src/lib/components/ui/avatar/index.ts":["src/lib/components/ui/avatar/avatar-badge.svelte","src/lib/components/ui/avatar/avatar-fallback.svelte","src/lib/components/ui/avatar/avatar-group-count.svelte","src/lib/components/ui/avatar/avatar-group.svelte","src/lib/components/ui/avatar/avatar-image.svelte","src/lib/components/ui/avatar/avatar.svelte"]}
+}

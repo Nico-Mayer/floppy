@@ -1,0 +1,12 @@
+{
+  "projectRoot": "/Users/nimayer/projects/personal/floppy",
+  "batchFiles": [
+    {"path": "src/lib/components/ui/tooltip/index.ts", "language": "typescript", "sizeLines": 19, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/tooltip/tooltip-content.svelte", "language": "svelte", "sizeLines": 52, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/tooltip/tooltip-portal.svelte", "language": "svelte", "sizeLines": 7, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/tooltip/tooltip-provider.svelte", "language": "svelte", "sizeLines": 7, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/tooltip/tooltip-trigger.svelte", "language": "svelte", "sizeLines": 7, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/tooltip/tooltip.svelte", "language": "svelte", "sizeLines": 7, "fileCategory": "code"}
+  ],
+  "batchImportData": {"src/lib/components/ui/tooltip/index.ts":["src/lib/components/ui/tooltip/tooltip-content.svelte","src/lib/components/ui/tooltip/tooltip-portal.svelte","src/lib/components/ui/tooltip/tooltip-provider.svelte","src/lib/components/ui/tooltip/tooltip-trigger.svelte","src/lib/components/ui/tooltip/tooltip.svelte"],"src/lib/components/ui/tooltip/tooltip-content.svelte":[],"src/lib/components/ui/tooltip/tooltip-portal.svelte":[],"src/lib/components/ui/tooltip/tooltip-provider.svelte":[],"src/lib/components/ui/tooltip/tooltip-trigger.svelte":[],"src/lib/components/ui/tooltip/tooltip.svelte":[]}
+}

@@ -1,0 +1,71 @@
+{
+  "nodes": [
+    {
+      "id": "config:openspec/changes/archive/2026-07-28-trusted-devices/.openspec.yaml",
+      "type": "config",
+      "name": ".openspec.yaml",
+      "filePath": "openspec/changes/archive/2026-07-28-trusted-devices/.openspec.yaml",
+      "summary": "OpenSpec metadata marker for the archived trusted-devices change, recording the schema version and creation date.",
+      "tags": ["configuration", "openspec", "metadata", "documentation"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-28-trusted-devices/design.md",
+      "type": "document",
+      "name": "design.md",
+      "filePath": "openspec/changes/archive/2026-07-28-trusted-devices/design.md",
+      "summary": "Design notes for the trusted-devices (codeless transfer) feature, detailing the pairing protocol, the rendezvous broker, the mobile-first end-to-end flow, residual risk analysis, and phasing decisions.",
+      "tags": ["documentation", "design", "pairing", "architecture", "security"],
+      "complexity": "moderate",
+      "languageNotes": "OpenSpec design document with 9 sections covering two subproblems (device pairing and broker relay) that croc does not solve."
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-28-trusted-devices/proposal.md",
+      "type": "document",
+      "name": "proposal.md",
+      "filePath": "openspec/changes/archive/2026-07-28-trusted-devices/proposal.md",
+      "summary": "Change proposal for trusted-devices codeless push-to-accept transfers, motivating the feature and enumerating new and modified capabilities plus its relationship to other changes.",
+      "tags": ["documentation", "proposal", "openspec", "feature-spec"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-28-trusted-devices/tasks.md",
+      "type": "document",
+      "name": "tasks.md",
+      "filePath": "openspec/changes/archive/2026-07-28-trusted-devices/tasks.md",
+      "summary": "Implementation task checklist for trusted-devices, sequencing the pairing core, minimal WebSocket broker, client wiring, pairing UI, and first desktop end-to-end verification.",
+      "tags": ["documentation", "tasks", "planning", "openspec"],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "config:openspec/changes/archive/2026-07-28-trusted-devices/.openspec.yaml",
+      "target": "document:openspec/changes/archive/2026-07-28-trusted-devices/proposal.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-28-trusted-devices/proposal.md",
+      "target": "document:openspec/changes/archive/2026-07-28-trusted-devices/design.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-28-trusted-devices/proposal.md",
+      "target": "document:openspec/changes/archive/2026-07-28-trusted-devices/tasks.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-28-trusted-devices/design.md",
+      "target": "document:openspec/changes/archive/2026-07-28-trusted-devices/tasks.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "projectRoot": "/Users/nimayer/projects/personal/floppy",
+  "batchFiles": [
+    {"path": "openspec/changes/archive/2026-07-28-trusted-devices/.openspec.yaml", "language": "yaml", "sizeLines": 2, "fileCategory": "config"},
+    {"path": "openspec/changes/archive/2026-07-28-trusted-devices/design.md", "language": "markdown", "sizeLines": 176, "fileCategory": "docs"},
+    {"path": "openspec/changes/archive/2026-07-28-trusted-devices/proposal.md", "language": "markdown", "sizeLines": 83, "fileCategory": "docs"},
+    {"path": "openspec/changes/archive/2026-07-28-trusted-devices/tasks.md", "language": "markdown", "sizeLines": 50, "fileCategory": "docs"}
+  ],
+  "batchImportData": {"openspec/changes/archive/2026-07-28-trusted-devices/.openspec.yaml":[],"openspec/changes/archive/2026-07-28-trusted-devices/design.md":[],"openspec/changes/archive/2026-07-28-trusted-devices/proposal.md":[],"openspec/changes/archive/2026-07-28-trusted-devices/tasks.md":[]}
+}

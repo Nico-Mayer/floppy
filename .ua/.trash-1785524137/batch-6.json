@@ -1,0 +1,117 @@
+{
+  "nodes": [
+    {
+      "id": "file:src/lib/components/ui/field/field-content.svelte",
+      "type": "file",
+      "name": "field-content.svelte",
+      "filePath": "src/lib/components/ui/field/field-content.svelte",
+      "summary": "shadcn-svelte Field primitive rendering the content slot region of a form field, forwarding class and rest props to a div.",
+      "tags": ["component", "ui", "form-field", "shadcn-svelte"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/field/field-description.svelte",
+      "type": "file",
+      "name": "field-description.svelte",
+      "filePath": "src/lib/components/ui/field/field-description.svelte",
+      "summary": "shadcn-svelte Field primitive rendering helper/description text below a form field.",
+      "tags": ["component", "ui", "form-field", "shadcn-svelte"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/field/field-error.svelte",
+      "type": "file",
+      "name": "field-error.svelte",
+      "filePath": "src/lib/components/ui/field/field-error.svelte",
+      "summary": "shadcn-svelte Field primitive that conditionally renders validation errors, supporting a slotted message, a single error, or a bulleted list of multiple errors.",
+      "tags": ["component", "ui", "form-field", "validation", "shadcn-svelte"],
+      "complexity": "simple",
+      "languageNotes": "Uses Svelte 5 runes ($derived.by) to compute error-display state from the errors prop."
+    },
+    {
+      "id": "file:src/lib/components/ui/field/field-group.svelte",
+      "type": "file",
+      "name": "field-group.svelte",
+      "filePath": "src/lib/components/ui/field/field-group.svelte",
+      "summary": "shadcn-svelte Field primitive that groups multiple fields together with consistent spacing.",
+      "tags": ["component", "ui", "form-field", "layout", "shadcn-svelte"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/field/field-label.svelte",
+      "type": "file",
+      "name": "field-label.svelte",
+      "filePath": "src/lib/components/ui/field/field-label.svelte",
+      "summary": "shadcn-svelte Field primitive rendering the accessible label for a form field.",
+      "tags": ["component", "ui", "form-field", "accessibility", "shadcn-svelte"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/field/field-legend.svelte",
+      "type": "file",
+      "name": "field-legend.svelte",
+      "filePath": "src/lib/components/ui/field/field-legend.svelte",
+      "summary": "shadcn-svelte Field primitive rendering a legend heading for a fieldset grouping.",
+      "tags": ["component", "ui", "form-field", "accessibility", "shadcn-svelte"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/field/field-separator.svelte",
+      "type": "file",
+      "name": "field-separator.svelte",
+      "filePath": "src/lib/components/ui/field/field-separator.svelte",
+      "summary": "shadcn-svelte Field primitive rendering a visual separator, optionally with inline content, between fields.",
+      "tags": ["component", "ui", "form-field", "layout", "shadcn-svelte"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/field/field-set.svelte",
+      "type": "file",
+      "name": "field-set.svelte",
+      "filePath": "src/lib/components/ui/field/field-set.svelte",
+      "summary": "shadcn-svelte Field primitive wrapping related fields in a semantic fieldset element.",
+      "tags": ["component", "ui", "form-field", "accessibility", "shadcn-svelte"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/field/field-title.svelte",
+      "type": "file",
+      "name": "field-title.svelte",
+      "filePath": "src/lib/components/ui/field/field-title.svelte",
+      "summary": "shadcn-svelte Field primitive rendering a title heading within a field content region.",
+      "tags": ["component", "ui", "form-field", "shadcn-svelte"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/field/field.svelte",
+      "type": "file",
+      "name": "field.svelte",
+      "filePath": "src/lib/components/ui/field/field.svelte",
+      "summary": "Core shadcn-svelte Field container defining tailwind-variants for vertical, horizontal, and responsive orientations and rendering a role=group wrapper around field children.",
+      "tags": ["component", "ui", "form-field", "layout", "shadcn-svelte"],
+      "complexity": "simple",
+      "languageNotes": "Exports fieldVariants and the FieldOrientation type from a module-level script block using tailwind-variants (tv)."
+    },
+    {
+      "id": "file:src/lib/components/ui/field/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "filePath": "src/lib/components/ui/field/index.ts",
+      "summary": "Barrel file re-exporting all Field primitives under both short (Field, Label, Error) and prefixed (FieldLabel, FieldError) aliases for the shadcn-svelte field component set.",
+      "tags": ["barrel", "entry-point", "ui", "form-field", "type-definition"],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {"source": "file:src/lib/components/ui/field/index.ts", "target": "file:src/lib/components/ui/field/field-content.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/field/index.ts", "target": "file:src/lib/components/ui/field/field-description.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/field/index.ts", "target": "file:src/lib/components/ui/field/field-error.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/field/index.ts", "target": "file:src/lib/components/ui/field/field-group.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/field/index.ts", "target": "file:src/lib/components/ui/field/field-label.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/field/index.ts", "target": "file:src/lib/components/ui/field/field-legend.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/field/index.ts", "target": "file:src/lib/components/ui/field/field-separator.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/field/index.ts", "target": "file:src/lib/components/ui/field/field-set.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/field/index.ts", "target": "file:src/lib/components/ui/field/field-title.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/field/index.ts", "target": "file:src/lib/components/ui/field/field.svelte", "type": "imports", "direction": "forward", "weight": 0.7}
+  ]
+}

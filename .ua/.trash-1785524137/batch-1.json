@@ -1,0 +1,483 @@
+{
+  "nodes": [
+    {
+      "id": "file:src/lib/components/ui/sidebar/constants.ts",
+      "type": "file",
+      "name": "constants.ts",
+      "filePath": "src/lib/components/ui/sidebar/constants.ts",
+      "summary": "Defines shared configuration constants for the sidebar component such as cookie name, widths, and keyboard shortcut used across the sidebar subcomponents.",
+      "tags": ["ui-component", "constants", "configuration", "sidebar"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/sidebar/context.svelte.ts",
+      "type": "file",
+      "name": "context.svelte.ts",
+      "filePath": "src/lib/components/ui/sidebar/context.svelte.ts",
+      "summary": "Holds the reactive SidebarState class and context helpers (setSidebar/useSidebar) that manage open/collapsed and mobile state shared across all sidebar subcomponents.",
+      "tags": ["ui-component", "state-management", "context", "svelte-runes", "sidebar"],
+      "complexity": "moderate",
+      "languageNotes": "Uses Svelte 5 runes ($state, $derived.by) and a private class field for reactive state stored in Svelte context keyed by a Symbol."
+    },
+    {
+      "id": "file:src/lib/components/ui/sidebar/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "filePath": "src/lib/components/ui/sidebar/index.ts",
+      "summary": "Barrel module that re-exports all sidebar subcomponents and the useSidebar hook under aliased names (Root, Content, Menu, etc.) for ergonomic namespaced imports.",
+      "tags": ["barrel", "entry-point", "ui-component", "sidebar"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/sidebar/sidebar-content.svelte",
+      "type": "file",
+      "name": "sidebar-content.svelte",
+      "filePath": "src/lib/components/ui/sidebar/sidebar-content.svelte",
+      "summary": "Scrollable content region container of the sidebar that renders child menu groups within the collapsible layout.",
+      "tags": ["ui-component", "component", "layout", "sidebar"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/sidebar/sidebar-footer.svelte",
+      "type": "file",
+      "name": "sidebar-footer.svelte",
+      "filePath": "src/lib/components/ui/sidebar/sidebar-footer.svelte",
+      "summary": "Footer region wrapper of the sidebar, typically holding user or account controls pinned to the bottom.",
+      "tags": ["ui-component", "component", "layout", "sidebar"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/sidebar/sidebar-group-action.svelte",
+      "type": "file",
+      "name": "sidebar-group-action.svelte",
+      "filePath": "src/lib/components/ui/sidebar/sidebar-group-action.svelte",
+      "summary": "Action button rendered alongside a sidebar group label, optionally rendered as a child element via a render snippet.",
+      "tags": ["ui-component", "component", "button", "sidebar"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/sidebar/sidebar-group-content.svelte",
+      "type": "file",
+      "name": "sidebar-group-content.svelte",
+      "filePath": "src/lib/components/ui/sidebar/sidebar-group-content.svelte",
+      "summary": "Content wrapper inside a sidebar group that holds the group's menu items.",
+      "tags": ["ui-component", "component", "layout", "sidebar"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/sidebar/sidebar-group-label.svelte",
+      "type": "file",
+      "name": "sidebar-group-label.svelte",
+      "filePath": "src/lib/components/ui/sidebar/sidebar-group-label.svelte",
+      "summary": "Label heading for a sidebar group, supporting an optional child render snippet for custom elements.",
+      "tags": ["ui-component", "component", "label", "sidebar"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/sidebar/sidebar-group.svelte",
+      "type": "file",
+      "name": "sidebar-group.svelte",
+      "filePath": "src/lib/components/ui/sidebar/sidebar-group.svelte",
+      "summary": "Container that groups a labelled set of sidebar menu items into a logical section.",
+      "tags": ["ui-component", "component", "layout", "sidebar"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/sidebar/sidebar-header.svelte",
+      "type": "file",
+      "name": "sidebar-header.svelte",
+      "filePath": "src/lib/components/ui/sidebar/sidebar-header.svelte",
+      "summary": "Header region wrapper of the sidebar, typically holding branding or a logo pinned to the top.",
+      "tags": ["ui-component", "component", "layout", "sidebar"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/sidebar/sidebar-input.svelte",
+      "type": "file",
+      "name": "sidebar-input.svelte",
+      "filePath": "src/lib/components/ui/sidebar/sidebar-input.svelte",
+      "summary": "Styled input field wrapper for search or filter controls placed within the sidebar.",
+      "tags": ["ui-component", "component", "input", "sidebar"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/sidebar/sidebar-inset.svelte",
+      "type": "file",
+      "name": "sidebar-inset.svelte",
+      "filePath": "src/lib/components/ui/sidebar/sidebar-inset.svelte",
+      "summary": "Main content inset container that sits beside the sidebar and holds the primary page content.",
+      "tags": ["ui-component", "component", "layout", "sidebar"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/sidebar/sidebar-menu-action.svelte",
+      "type": "file",
+      "name": "sidebar-menu-action.svelte",
+      "filePath": "src/lib/components/ui/sidebar/sidebar-menu-action.svelte",
+      "summary": "Secondary action button attached to a sidebar menu item, with optional show-on-hover behavior and child render snippet support.",
+      "tags": ["ui-component", "component", "button", "sidebar"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/sidebar/sidebar-menu-badge.svelte",
+      "type": "file",
+      "name": "sidebar-menu-badge.svelte",
+      "filePath": "src/lib/components/ui/sidebar/sidebar-menu-badge.svelte",
+      "summary": "Small badge element attached to a sidebar menu item for counts or status indicators.",
+      "tags": ["ui-component", "component", "badge", "sidebar"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/sidebar/sidebar-menu-button.svelte",
+      "type": "file",
+      "name": "sidebar-menu-button.svelte",
+      "filePath": "src/lib/components/ui/sidebar/sidebar-menu-button.svelte",
+      "summary": "Primary interactive menu button for sidebar items, supporting size/variant styles via tailwind-variants, active state, and a collapsed-mode tooltip.",
+      "tags": ["ui-component", "component", "button", "variant", "sidebar"],
+      "complexity": "moderate",
+      "languageNotes": "Uses a module-level script to export tailwind-variants (tv) style definitions plus derived variant type props, and wraps the button in a Tooltip when collapsed."
+    },
+    {
+      "id": "file:src/lib/components/ui/sidebar/sidebar-menu-item.svelte",
+      "type": "file",
+      "name": "sidebar-menu-item.svelte",
+      "filePath": "src/lib/components/ui/sidebar/sidebar-menu-item.svelte",
+      "summary": "List-item wrapper for a single sidebar menu entry that hosts a menu button and its actions.",
+      "tags": ["ui-component", "component", "list-item", "sidebar"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/sidebar/sidebar-menu-skeleton.svelte",
+      "type": "file",
+      "name": "sidebar-menu-skeleton.svelte",
+      "filePath": "src/lib/components/ui/sidebar/sidebar-menu-skeleton.svelte",
+      "summary": "Loading-state placeholder that renders skeleton bars in the shape of a sidebar menu item while data loads.",
+      "tags": ["ui-component", "component", "skeleton", "loading", "sidebar"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/sidebar/sidebar-menu-sub-button.svelte",
+      "type": "file",
+      "name": "sidebar-menu-sub-button.svelte",
+      "filePath": "src/lib/components/ui/sidebar/sidebar-menu-sub-button.svelte",
+      "summary": "Interactive button for a nested submenu entry in the sidebar, supporting size variants, active state, and a child render snippet.",
+      "tags": ["ui-component", "component", "button", "submenu", "sidebar"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/sidebar/sidebar-menu-sub-item.svelte",
+      "type": "file",
+      "name": "sidebar-menu-sub-item.svelte",
+      "filePath": "src/lib/components/ui/sidebar/sidebar-menu-sub-item.svelte",
+      "summary": "List-item wrapper for a single nested submenu entry within a sidebar menu.",
+      "tags": ["ui-component", "component", "list-item", "submenu", "sidebar"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/sidebar/sidebar-menu-sub.svelte",
+      "type": "file",
+      "name": "sidebar-menu-sub.svelte",
+      "filePath": "src/lib/components/ui/sidebar/sidebar-menu-sub.svelte",
+      "summary": "Container that renders a nested submenu list beneath a parent sidebar menu item.",
+      "tags": ["ui-component", "component", "submenu", "sidebar"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/sidebar/sidebar-menu.svelte",
+      "type": "file",
+      "name": "sidebar-menu.svelte",
+      "filePath": "src/lib/components/ui/sidebar/sidebar-menu.svelte",
+      "summary": "Top-level menu list container that holds the sidebar menu items within a group.",
+      "tags": ["ui-component", "component", "menu", "sidebar"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/sidebar/sidebar-provider.svelte",
+      "type": "file",
+      "name": "sidebar-provider.svelte",
+      "filePath": "src/lib/components/ui/sidebar/sidebar-provider.svelte",
+      "summary": "Root provider that instantiates the shared SidebarState, wires open-state binding and keyboard shortcut handling, and exposes context to all descendant sidebar components.",
+      "tags": ["ui-component", "provider", "context", "state-management", "sidebar"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/lib/components/ui/sidebar/sidebar-rail.svelte",
+      "type": "file",
+      "name": "sidebar-rail.svelte",
+      "filePath": "src/lib/components/ui/sidebar/sidebar-rail.svelte",
+      "summary": "Thin clickable rail along the sidebar edge that toggles the sidebar open or collapsed state.",
+      "tags": ["ui-component", "component", "toggle", "sidebar"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/sidebar/sidebar-separator.svelte",
+      "type": "file",
+      "name": "sidebar-separator.svelte",
+      "filePath": "src/lib/components/ui/sidebar/sidebar-separator.svelte",
+      "summary": "Horizontal divider used to visually separate sections within the sidebar.",
+      "tags": ["ui-component", "component", "separator", "sidebar"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/sidebar/sidebar-trigger.svelte",
+      "type": "file",
+      "name": "sidebar-trigger.svelte",
+      "filePath": "src/lib/components/ui/sidebar/sidebar-trigger.svelte",
+      "summary": "Button that toggles the sidebar via the shared context, typically placed in a page header or toolbar.",
+      "tags": ["ui-component", "component", "toggle", "button", "sidebar"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/sidebar/sidebar.svelte",
+      "type": "file",
+      "name": "sidebar.svelte",
+      "filePath": "src/lib/components/ui/sidebar/sidebar.svelte",
+      "summary": "Root sidebar shell that renders one of three layouts (non-collapsible, mobile Sheet, or desktop fixed panel) based on collapsible mode and mobile state from the shared context.",
+      "tags": ["ui-component", "component", "layout", "responsive", "sidebar"],
+      "complexity": "moderate",
+      "languageNotes": "Branches rendering on sidebar.isMobile, reusing the Sheet component for the mobile drawer and heavy Tailwind group-data selectors for desktop collapse transitions."
+    },
+    {
+      "id": "class:src/lib/components/ui/sidebar/context.svelte.ts:SidebarState",
+      "type": "class",
+      "name": "SidebarState",
+      "filePath": "src/lib/components/ui/sidebar/context.svelte.ts",
+      "lineRange": [23, 58],
+      "summary": "Reactive state class tracking sidebar open/collapsed and mobile-open state, exposing derived state, a mobile detection getter, a global keyboard shortcut handler, and a toggle method.",
+      "tags": ["state-management", "svelte-runes", "class", "sidebar"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/lib/components/ui/sidebar/context.svelte.ts:setSidebar",
+      "type": "function",
+      "name": "setSidebar",
+      "filePath": "src/lib/components/ui/sidebar/context.svelte.ts",
+      "lineRange": [68, 70],
+      "summary": "Instantiates a SidebarState from the given props and stores it in Svelte context under a namespaced Symbol key.",
+      "tags": ["context", "factory", "state-management", "sidebar"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/lib/components/ui/sidebar/context.svelte.ts:useSidebar",
+      "type": "function",
+      "name": "useSidebar",
+      "filePath": "src/lib/components/ui/sidebar/context.svelte.ts",
+      "lineRange": [77, 79],
+      "summary": "Retrieves the shared SidebarState instance from Svelte context so subcomponents can read and mutate sidebar state.",
+      "tags": ["context", "hook", "state-management", "sidebar"],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:src/lib/components/ui/sidebar/context.svelte.ts",
+      "target": "file:src/lib/components/ui/sidebar/constants.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/index.ts",
+      "target": "file:src/lib/components/ui/sidebar/context.svelte.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/index.ts",
+      "target": "file:src/lib/components/ui/sidebar/sidebar-content.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/index.ts",
+      "target": "file:src/lib/components/ui/sidebar/sidebar-footer.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/index.ts",
+      "target": "file:src/lib/components/ui/sidebar/sidebar-group-action.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/index.ts",
+      "target": "file:src/lib/components/ui/sidebar/sidebar-group-content.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/index.ts",
+      "target": "file:src/lib/components/ui/sidebar/sidebar-group-label.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/index.ts",
+      "target": "file:src/lib/components/ui/sidebar/sidebar-group.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/index.ts",
+      "target": "file:src/lib/components/ui/sidebar/sidebar-header.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/index.ts",
+      "target": "file:src/lib/components/ui/sidebar/sidebar-input.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/index.ts",
+      "target": "file:src/lib/components/ui/sidebar/sidebar-inset.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/index.ts",
+      "target": "file:src/lib/components/ui/sidebar/sidebar-menu-action.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/index.ts",
+      "target": "file:src/lib/components/ui/sidebar/sidebar-menu-badge.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/index.ts",
+      "target": "file:src/lib/components/ui/sidebar/sidebar-menu-button.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/index.ts",
+      "target": "file:src/lib/components/ui/sidebar/sidebar-menu-item.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/index.ts",
+      "target": "file:src/lib/components/ui/sidebar/sidebar-menu-skeleton.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/index.ts",
+      "target": "file:src/lib/components/ui/sidebar/sidebar-menu-sub-button.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/index.ts",
+      "target": "file:src/lib/components/ui/sidebar/sidebar-menu-sub-item.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/index.ts",
+      "target": "file:src/lib/components/ui/sidebar/sidebar-menu-sub.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/index.ts",
+      "target": "file:src/lib/components/ui/sidebar/sidebar-menu.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/index.ts",
+      "target": "file:src/lib/components/ui/sidebar/sidebar-provider.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/index.ts",
+      "target": "file:src/lib/components/ui/sidebar/sidebar-rail.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/index.ts",
+      "target": "file:src/lib/components/ui/sidebar/sidebar-separator.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/index.ts",
+      "target": "file:src/lib/components/ui/sidebar/sidebar-trigger.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/index.ts",
+      "target": "file:src/lib/components/ui/sidebar/sidebar.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/context.svelte.ts",
+      "target": "class:src/lib/components/ui/sidebar/context.svelte.ts:SidebarState",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/context.svelte.ts",
+      "target": "function:src/lib/components/ui/sidebar/context.svelte.ts:setSidebar",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/context.svelte.ts",
+      "target": "function:src/lib/components/ui/sidebar/context.svelte.ts:useSidebar",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/context.svelte.ts",
+      "target": "function:src/lib/components/ui/sidebar/context.svelte.ts:setSidebar",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/lib/components/ui/sidebar/context.svelte.ts",
+      "target": "function:src/lib/components/ui/sidebar/context.svelte.ts:useSidebar",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    }
+  ]
+}

@@ -1,0 +1,126 @@
+{
+  "nodes": [
+    {
+      "id": "file:src/lib/components/ui/select/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "filePath": "src/lib/components/ui/select/index.ts",
+      "summary": "Barrel file for the Select UI component family, re-exporting the bits-ui Root/Group/Label primitives and the local Svelte wrapper subcomponents under both short and Select-prefixed aliases.",
+      "tags": ["barrel", "entry-point", "component", "ui", "type-definition"],
+      "complexity": "simple",
+      "languageNotes": "shadcn-svelte pattern: aggregates a composite component's parts into a single import surface with dual naming (Content and SelectContent)."
+    },
+    {
+      "id": "file:src/lib/components/ui/select/select-content.svelte",
+      "type": "file",
+      "name": "select-content.svelte",
+      "filePath": "src/lib/components/ui/select/select-content.svelte",
+      "summary": "Dropdown content panel for the Select component, wrapping bits-ui Content inside a portal with viewport, scroll buttons, and blurred glass styling.",
+      "tags": ["component", "ui", "select", "svelte", "styling"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/select/select-group-heading.svelte",
+      "type": "file",
+      "name": "select-group-heading.svelte",
+      "filePath": "src/lib/components/ui/select/select-group-heading.svelte",
+      "summary": "Styled group heading label rendered above a set of grouped select options.",
+      "tags": ["component", "ui", "select", "svelte"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/select/select-group.svelte",
+      "type": "file",
+      "name": "select-group.svelte",
+      "filePath": "src/lib/components/ui/select/select-group.svelte",
+      "summary": "Thin wrapper around the bits-ui Select Group primitive for grouping related options.",
+      "tags": ["component", "ui", "select", "svelte"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/select/select-item.svelte",
+      "type": "file",
+      "name": "select-item.svelte",
+      "filePath": "src/lib/components/ui/select/select-item.svelte",
+      "summary": "Selectable option row for the Select dropdown, rendering the item label with a checkmark indicator for the selected state.",
+      "tags": ["component", "ui", "select", "svelte", "styling"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/select/select-label.svelte",
+      "type": "file",
+      "name": "select-label.svelte",
+      "filePath": "src/lib/components/ui/select/select-label.svelte",
+      "summary": "Styled label element for annotating a select field or option group.",
+      "tags": ["component", "ui", "select", "svelte"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/select/select-portal.svelte",
+      "type": "file",
+      "name": "select-portal.svelte",
+      "filePath": "src/lib/components/ui/select/select-portal.svelte",
+      "summary": "Minimal re-export wrapper of the bits-ui Select Portal used to render dropdown content into a portal layer.",
+      "tags": ["component", "ui", "select", "svelte"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/select/select-scroll-down-button.svelte",
+      "type": "file",
+      "name": "select-scroll-down-button.svelte",
+      "filePath": "src/lib/components/ui/select/select-scroll-down-button.svelte",
+      "summary": "Downward scroll affordance shown at the bottom of an overflowing select dropdown, with a chevron-down icon.",
+      "tags": ["component", "ui", "select", "svelte"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/select/select-scroll-up-button.svelte",
+      "type": "file",
+      "name": "select-scroll-up-button.svelte",
+      "filePath": "src/lib/components/ui/select/select-scroll-up-button.svelte",
+      "summary": "Upward scroll affordance shown at the top of an overflowing select dropdown, with a chevron-up icon.",
+      "tags": ["component", "ui", "select", "svelte"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/select/select-separator.svelte",
+      "type": "file",
+      "name": "select-separator.svelte",
+      "filePath": "src/lib/components/ui/select/select-separator.svelte",
+      "summary": "Horizontal divider used to visually separate groups of options within the select dropdown.",
+      "tags": ["component", "ui", "select", "svelte"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/select/select-trigger.svelte",
+      "type": "file",
+      "name": "select-trigger.svelte",
+      "filePath": "src/lib/components/ui/select/select-trigger.svelte",
+      "summary": "Clickable trigger button that opens the select dropdown, rendering the current value alongside a chevron indicator.",
+      "tags": ["component", "ui", "select", "svelte", "styling"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/select/select.svelte",
+      "type": "file",
+      "name": "select.svelte",
+      "filePath": "src/lib/components/ui/select/select.svelte",
+      "summary": "Root Select component wrapping the bits-ui Select primitive that binds value and coordinates the composite subcomponents.",
+      "tags": ["component", "ui", "select", "svelte", "entry-point"],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {"source": "file:src/lib/components/ui/select/index.ts", "target": "file:src/lib/components/ui/select/select-content.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/select/index.ts", "target": "file:src/lib/components/ui/select/select-group-heading.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/select/index.ts", "target": "file:src/lib/components/ui/select/select-group.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/select/index.ts", "target": "file:src/lib/components/ui/select/select-item.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/select/index.ts", "target": "file:src/lib/components/ui/select/select-label.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/select/index.ts", "target": "file:src/lib/components/ui/select/select-portal.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/select/index.ts", "target": "file:src/lib/components/ui/select/select-scroll-down-button.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/select/index.ts", "target": "file:src/lib/components/ui/select/select-scroll-up-button.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/select/index.ts", "target": "file:src/lib/components/ui/select/select-separator.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/select/index.ts", "target": "file:src/lib/components/ui/select/select-trigger.svelte", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:src/lib/components/ui/select/index.ts", "target": "file:src/lib/components/ui/select/select.svelte", "type": "imports", "direction": "forward", "weight": 0.7}
+  ]
+}

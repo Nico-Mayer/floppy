@@ -1,0 +1,1095 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 14,
+  "filesSkipped": [
+    "scripts/doctor-windows.ps1",
+    "src-tauri/gen/android/app/proguard-floppy.pro",
+    "src-tauri/gen/android/app/proguard-rules.pro",
+    "src-tauri/gen/android/app/src/main/AndroidManifest.xml",
+    "src-tauri/gen/android/app/src/main/res/drawable-v24/ic_launcher_foreground.xml",
+    "src-tauri/gen/android/app/src/main/res/drawable/ic_launcher_background.xml",
+    "src-tauri/gen/android/app/src/main/res/layout/activity_main.xml",
+    "src-tauri/gen/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
+    "src-tauri/gen/android/app/src/main/res/values-night/themes.xml",
+    "src-tauri/gen/android/app/src/main/res/xml/file_paths.xml",
+    "src-tauri/gen/android/gradle.properties"
+  ],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 14,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 8,
+      "failed": 0,
+      "skipped": 6
+    }
+  },
+  "results": [
+    {
+      "path": "openspec/specs/transfer-panel-layout/spec.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 135,
+      "nonEmptyLines": 84,
+      "sections": [
+        {
+          "heading": "transfer-panel-layout",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Purpose",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "Requirements",
+          "level": 2,
+          "line": 7
+        },
+        {
+          "heading": "Requirement: Panels adapt to their container width",
+          "level": 3,
+          "line": 9
+        },
+        {
+          "heading": "Scenario: Narrow card uses compact layout",
+          "level": 4,
+          "line": 13
+        },
+        {
+          "heading": "Scenario: Wide card uses regular layout",
+          "level": 4,
+          "line": 18
+        },
+        {
+          "heading": "Scenario: Send waiting state leads with QR when compact",
+          "level": 4,
+          "line": 23
+        },
+        {
+          "heading": "Requirement: Touch devices get minimum 44px targets and 16px code text",
+          "level": 3,
+          "line": 28
+        },
+        {
+          "heading": "Scenario: Coarse pointer enlarges controls",
+          "level": 4,
+          "line": 32
+        },
+        {
+          "heading": "Scenario: Fine pointer keeps desktop density",
+          "level": 4,
+          "line": 37
+        },
+        {
+          "heading": "Scenario: Code input does not trigger mobile zoom",
+          "level": 4,
+          "line": 42
+        },
+        {
+          "heading": "Requirement: Mascot is retained in idle states",
+          "level": 3,
+          "line": 47
+        },
+        {
+          "heading": "Scenario: Compact idle keeps mascot",
+          "level": 4,
+          "line": 51
+        },
+        {
+          "heading": "Scenario: Regular idle shows hero row",
+          "level": 4,
+          "line": 56
+        },
+        {
+          "heading": "Requirement: All states share a stable two-zone structure",
+          "level": 3,
+          "line": 61
+        },
+        {
+          "heading": "Scenario: Action row does not jump between states",
+          "level": 4,
+          "line": 65
+        },
+        {
+          "heading": "Scenario: Tall content scrolls inside the status zone",
+          "level": 4,
+          "line": 70
+        },
+        {
+          "heading": "Requirement: Receive clipboard auto-fill presentation survives the restructure",
+          "level": 3,
+          "line": 75
+        },
+        {
+          "heading": "Scenario: Fill signal and clear control in both layouts",
+          "level": 4,
+          "line": 79
+        },
+        {
+          "heading": "Requirement: The Transfer screen dissolves its card chrome on mobile",
+          "level": 3,
+          "line": 84
+        },
+        {
+          "heading": "Scenario: Mobile card is full-bleed",
+          "level": 4,
+          "line": 94
+        },
+        {
+          "heading": "Scenario: Desktop card is unchanged",
+          "level": 4,
+          "line": 100
+        },
+        {
+          "heading": "Scenario: Full-bleed width triggers the roomy panel layouts",
+          "level": 4,
+          "line": 106
+        },
+        {
+          "heading": "Scenario: Feature parity holds on mobile",
+          "level": 4,
+          "line": 113
+        },
+        {
+          "heading": "Requirement: The mobile mode switcher is a flush, bottom-anchored segmented control",
+          "level": 3,
+          "line": 119
+        },
+        {
+          "heading": "Scenario: Mobile switcher is flush and bottom-anchored",
+          "level": 4,
+          "line": 126
+        },
+        {
+          "heading": "Scenario: Desktop switcher is unchanged",
+          "level": 4,
+          "line": 132
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 27
+      }
+    },
+    {
+      "path": "openspec/specs/transport-dest/spec.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 57,
+      "nonEmptyLines": 41,
+      "sections": [
+        {
+          "heading": "transport-dest Specification",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Purpose",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "Requirements",
+          "level": 2,
+          "line": 5
+        },
+        {
+          "heading": "Requirement: Receive-destination and name logic lives in one module",
+          "level": 3,
+          "line": 6
+        },
+        {
+          "heading": "Scenario: Destination logic is not defined in manager",
+          "level": 4,
+          "line": 15
+        },
+        {
+          "heading": "Requirement: Destination and sanitizing behavior is unchanged",
+          "level": 3,
+          "line": 22
+        },
+        {
+          "heading": "Scenario: One dated folder per transfer",
+          "level": 4,
+          "line": 27
+        },
+        {
+          "heading": "Scenario: Names cannot escape the destination",
+          "level": 4,
+          "line": 34
+        },
+        {
+          "heading": "Scenario: The stamp is filename-safe and sortable",
+          "level": 4,
+          "line": 41
+        },
+        {
+          "heading": "Requirement: Tests move with the code and cover sanitizing directly",
+          "level": 3,
+          "line": 47
+        },
+        {
+          "heading": "Scenario: dest module owns its tests, green",
+          "level": 4,
+          "line": 53
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 11
+      }
+    },
+    {
+      "path": "openspec/specs/transport-iroh/spec.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 83,
+      "nonEmptyLines": 48,
+      "sections": [
+        {
+          "heading": "transport-iroh Specification",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Purpose",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "Requirements",
+          "level": 2,
+          "line": 5
+        },
+        {
+          "heading": "Requirement: iroh-based transfer transport",
+          "level": 3,
+          "line": 6
+        },
+        {
+          "heading": "Scenario: Direct transfer between two peers",
+          "level": 4,
+          "line": 10
+        },
+        {
+          "heading": "Scenario: Relay fallback",
+          "level": 4,
+          "line": 15
+        },
+        {
+          "heading": "Requirement: Ticket-based addressing",
+          "level": 3,
+          "line": 20
+        },
+        {
+          "heading": "Scenario: Receiver fetches from a ticket",
+          "level": 4,
+          "line": 24
+        },
+        {
+          "heading": "Requirement: Progress reporting without a data race",
+          "level": 3,
+          "line": 29
+        },
+        {
+          "heading": "Scenario: Progress events during transfer",
+          "level": 4,
+          "line": 33
+        },
+        {
+          "heading": "Scenario: Final progress precedes done",
+          "level": 4,
+          "line": 38
+        },
+        {
+          "heading": "Requirement: Content-addressed resume",
+          "level": 3,
+          "line": 43
+        },
+        {
+          "heading": "Scenario: Resume an interrupted receive",
+          "level": 4,
+          "line": 47
+        },
+        {
+          "heading": "Scenario: No CWD dependency",
+          "level": 4,
+          "line": 52
+        },
+        {
+          "heading": "Requirement: Cancellation",
+          "level": 3,
+          "line": 57
+        },
+        {
+          "heading": "Scenario: Cancel a running transfer",
+          "level": 4,
+          "line": 61
+        },
+        {
+          "heading": "Requirement: Concurrency limits",
+          "level": 3,
+          "line": 66
+        },
+        {
+          "heading": "Scenario: Second send rejected",
+          "level": 4,
+          "line": 70
+        },
+        {
+          "heading": "Requirement: Configurable relay",
+          "level": 3,
+          "line": 75
+        },
+        {
+          "heading": "Scenario: Self-hosted relay",
+          "level": 4,
+          "line": 79
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 20
+      }
+    },
+    {
+      "path": "prettier.config.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 13,
+      "nonEmptyLines": 12,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "scripts/doctor-macos.sh",
+      "language": "shell",
+      "fileCategory": "script",
+      "totalLines": 87,
+      "nonEmptyLines": 80,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "src-tauri/build.rs",
+      "language": "rust",
+      "fileCategory": "code",
+      "totalLines": 3,
+      "nonEmptyLines": 3,
+      "functions": [
+        {
+          "name": "main",
+          "startLine": 1,
+          "endLine": 3,
+          "params": []
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "main",
+          "callee": "tauri_build::build",
+          "lineNumber": 2
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "src-tauri/capabilities/android.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 8,
+      "nonEmptyLines": 8,
+      "sections": [
+        {
+          "heading": "$schema",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "identifier",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "description",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "platforms",
+          "level": 1,
+          "line": 5
+        },
+        {
+          "heading": "windows",
+          "level": 1,
+          "line": 6
+        },
+        {
+          "heading": "permissions",
+          "level": 1,
+          "line": 7
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    },
+    {
+      "path": "src-tauri/capabilities/default.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 20,
+      "nonEmptyLines": 20,
+      "sections": [
+        {
+          "heading": "$schema",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "identifier",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "description",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "windows",
+          "level": 1,
+          "line": 5
+        },
+        {
+          "heading": "permissions",
+          "level": 1,
+          "line": 6
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 5
+      }
+    },
+    {
+      "path": "src-tauri/gen/android/app/build.gradle.kts",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 71,
+      "nonEmptyLines": 65,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "src-tauri/gen/android/app/src/main/java/com/nimayer/floppy/MainActivity.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 58,
+      "nonEmptyLines": 52,
+      "functions": [
+        {
+          "name": "onCreate",
+          "startLine": 21,
+          "endLine": 24,
+          "params": [
+            "savedInstanceState"
+          ]
+        },
+        {
+          "name": "onWebViewCreate",
+          "startLine": 26,
+          "endLine": 51,
+          "params": [
+            "webView"
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "name": "MainActivity",
+          "startLine": 17,
+          "endLine": 58,
+          "methods": [
+            "onCreate",
+            "onWebViewCreate"
+          ],
+          "properties": [
+            "insets"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "onCreate",
+          "line": 21,
+          "isDefault": false
+        },
+        {
+          "name": "onWebViewCreate",
+          "line": 26,
+          "isDefault": false
+        },
+        {
+          "name": "MainActivity",
+          "line": 17,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "onCreate",
+          "callee": "enableEdgeToEdge",
+          "lineNumber": 22
+        },
+        {
+          "caller": "onCreate",
+          "callee": "onCreate",
+          "lineNumber": 23
+        },
+        {
+          "caller": "onWebViewCreate",
+          "callee": "addJavascriptInterface",
+          "lineNumber": 29
+        },
+        {
+          "caller": "onWebViewCreate",
+          "callee": "SafeAreaBridge",
+          "lineNumber": 29
+        },
+        {
+          "caller": "onWebViewCreate",
+          "callee": "setOnApplyWindowInsetsListener",
+          "lineNumber": 33
+        },
+        {
+          "caller": "onWebViewCreate",
+          "callee": "getInsets",
+          "lineNumber": 34
+        },
+        {
+          "caller": "onWebViewCreate",
+          "callee": "systemBars",
+          "lineNumber": 35
+        },
+        {
+          "caller": "onWebViewCreate",
+          "callee": "displayCutout",
+          "lineNumber": 35
+        },
+        {
+          "caller": "onWebViewCreate",
+          "callee": "getInsets",
+          "lineNumber": 37
+        },
+        {
+          "caller": "onWebViewCreate",
+          "callee": "ime",
+          "lineNumber": 37
+        },
+        {
+          "caller": "onWebViewCreate",
+          "callee": "maxOf",
+          "lineNumber": 41
+        },
+        {
+          "caller": "onWebViewCreate",
+          "callee": "evaluateJavascript",
+          "lineNumber": 44
+        },
+        {
+          "caller": "onWebViewCreate",
+          "callee": "requestApplyInsets",
+          "lineNumber": 50
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 3,
+        "functionCount": 2,
+        "classCount": 1
+      }
+    },
+    {
+      "path": "src-tauri/gen/android/build.gradle.kts",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 22,
+      "nonEmptyLines": 19,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "src-tauri/gen/android/buildSrc/build.gradle.kts",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 23,
+      "nonEmptyLines": 19,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/BuildTask.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 68,
+      "nonEmptyLines": 63,
+      "functions": [
+        {
+          "name": "assemble",
+          "startLine": 17,
+          "endLine": 45,
+          "params": []
+        },
+        {
+          "name": "runTauriCli",
+          "startLine": 47,
+          "endLine": 67,
+          "params": [
+            "executable"
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "name": "BuildTask",
+          "startLine": 9,
+          "endLine": 68,
+          "methods": [
+            "assemble",
+            "runTauriCli"
+          ],
+          "properties": [
+            "rootDirRel",
+            "target",
+            "release"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "rootDirRel",
+          "line": 10,
+          "isDefault": false
+        },
+        {
+          "name": "target",
+          "line": 12,
+          "isDefault": false
+        },
+        {
+          "name": "release",
+          "line": 14,
+          "isDefault": false
+        },
+        {
+          "name": "assemble",
+          "line": 17,
+          "isDefault": false
+        },
+        {
+          "name": "runTauriCli",
+          "line": 47,
+          "isDefault": false
+        },
+        {
+          "name": "BuildTask",
+          "line": 9,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "assemble",
+          "callee": "runTauriCli",
+          "lineNumber": 21
+        },
+        {
+          "caller": "assemble",
+          "callee": "isFamily",
+          "lineNumber": 23
+        },
+        {
+          "caller": "assemble",
+          "callee": "listOf",
+          "lineNumber": 25
+        },
+        {
+          "caller": "assemble",
+          "callee": "runTauriCli",
+          "lineNumber": 34
+        },
+        {
+          "caller": "runTauriCli",
+          "callee": "GradleException",
+          "lineNumber": 48
+        },
+        {
+          "caller": "runTauriCli",
+          "callee": "GradleException",
+          "lineNumber": 49
+        },
+        {
+          "caller": "runTauriCli",
+          "callee": "GradleException",
+          "lineNumber": 50
+        },
+        {
+          "caller": "runTauriCli",
+          "callee": "listOf",
+          "lineNumber": 51
+        },
+        {
+          "caller": "runTauriCli",
+          "callee": "assertNormalExitValue",
+          "lineNumber": 53
+        },
+        {
+          "caller": "runTauriCli",
+          "callee": "exec",
+          "lineNumber": 53
+        },
+        {
+          "caller": "runTauriCli",
+          "callee": "workingDir",
+          "lineNumber": 54
+        },
+        {
+          "caller": "runTauriCli",
+          "callee": "File",
+          "lineNumber": 54
+        },
+        {
+          "caller": "runTauriCli",
+          "callee": "executable",
+          "lineNumber": 55
+        },
+        {
+          "caller": "runTauriCli",
+          "callee": "args",
+          "lineNumber": 56
+        },
+        {
+          "caller": "runTauriCli",
+          "callee": "isEnabled",
+          "lineNumber": 57
+        },
+        {
+          "caller": "runTauriCli",
+          "callee": "args",
+          "lineNumber": 58
+        },
+        {
+          "caller": "runTauriCli",
+          "callee": "isEnabled",
+          "lineNumber": 59
+        },
+        {
+          "caller": "runTauriCli",
+          "callee": "args",
+          "lineNumber": 60
+        },
+        {
+          "caller": "runTauriCli",
+          "callee": "args",
+          "lineNumber": 63
+        },
+        {
+          "caller": "runTauriCli",
+          "callee": "args",
+          "lineNumber": 65
+        },
+        {
+          "caller": "runTauriCli",
+          "callee": "listOf",
+          "lineNumber": 65
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 6,
+        "functionCount": 2,
+        "classCount": 1
+      }
+    },
+    {
+      "path": "src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/RustPlugin.kt",
+      "language": "kotlin",
+      "fileCategory": "code",
+      "totalLines": 85,
+      "nonEmptyLines": 73,
+      "functions": [
+        {
+          "name": "apply",
+          "startLine": 17,
+          "endLine": 84,
+          "params": [
+            "project"
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "name": "Config",
+          "startLine": 10,
+          "endLine": 12,
+          "methods": [],
+          "properties": [
+            "rootDirRel"
+          ]
+        },
+        {
+          "name": "RustPlugin",
+          "startLine": 14,
+          "endLine": 85,
+          "methods": [
+            "apply"
+          ],
+          "properties": [
+            "config"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "rootDirRel",
+          "line": 11,
+          "isDefault": false
+        },
+        {
+          "name": "Config",
+          "line": 10,
+          "isDefault": false
+        },
+        {
+          "name": "apply",
+          "line": 17,
+          "isDefault": false
+        },
+        {
+          "name": "RustPlugin",
+          "line": 14,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "apply",
+          "callee": "with",
+          "lineNumber": 17
+        },
+        {
+          "caller": "apply",
+          "callee": "create",
+          "lineNumber": 18
+        },
+        {
+          "caller": "apply",
+          "callee": "listOf",
+          "lineNumber": 20
+        },
+        {
+          "caller": "apply",
+          "callee": "split",
+          "lineNumber": 21
+        },
+        {
+          "caller": "apply",
+          "callee": "findProperty",
+          "lineNumber": 21
+        },
+        {
+          "caller": "apply",
+          "callee": "listOf",
+          "lineNumber": 23
+        },
+        {
+          "caller": "apply",
+          "callee": "split",
+          "lineNumber": 24
+        },
+        {
+          "caller": "apply",
+          "callee": "findProperty",
+          "lineNumber": 24
+        },
+        {
+          "caller": "apply",
+          "callee": "split",
+          "lineNumber": 26
+        },
+        {
+          "caller": "apply",
+          "callee": "findProperty",
+          "lineNumber": 26
+        },
+        {
+          "caller": "apply",
+          "callee": "listOf",
+          "lineNumber": 26
+        },
+        {
+          "caller": "apply",
+          "callee": "add",
+          "lineNumber": 30
+        },
+        {
+          "caller": "apply",
+          "callee": "productFlavors",
+          "lineNumber": 31
+        },
+        {
+          "caller": "apply",
+          "callee": "create",
+          "lineNumber": 32
+        },
+        {
+          "caller": "apply",
+          "callee": "ndk",
+          "lineNumber": 34
+        },
+        {
+          "caller": "apply",
+          "callee": "forEachIndexed",
+          "lineNumber": 38
+        },
+        {
+          "caller": "apply",
+          "callee": "create",
+          "lineNumber": 39
+        },
+        {
+          "caller": "apply",
+          "callee": "ndk",
+          "lineNumber": 41
+        },
+        {
+          "caller": "apply",
+          "callee": "add",
+          "lineNumber": 42
+        },
+        {
+          "caller": "apply",
+          "callee": "afterEvaluate",
+          "lineNumber": 49
+        },
+        {
+          "caller": "apply",
+          "callee": "listOf",
+          "lineNumber": 50
+        },
+        {
+          "caller": "apply",
+          "callee": "replaceFirstChar",
+          "lineNumber": 51
+        },
+        {
+          "caller": "apply",
+          "callee": "uppercase",
+          "lineNumber": 51
+        },
+        {
+          "caller": "apply",
+          "callee": "apply",
+          "lineNumber": 52
+        },
+        {
+          "caller": "apply",
+          "callee": "maybeCreate",
+          "lineNumber": 52
+        },
+        {
+          "caller": "apply",
+          "callee": "dependsOn",
+          "lineNumber": 60
+        },
+        {
+          "caller": "apply",
+          "callee": "withIndex",
+          "lineNumber": 62
+        },
+        {
+          "caller": "apply",
+          "callee": "replaceFirstChar",
+          "lineNumber": 65
+        },
+        {
+          "caller": "apply",
+          "callee": "uppercase",
+          "lineNumber": 65
+        },
+        {
+          "caller": "apply",
+          "callee": "apply",
+          "lineNumber": 66
+        },
+        {
+          "caller": "apply",
+          "callee": "maybeCreate",
+          "lineNumber": 66
+        },
+        {
+          "caller": "apply",
+          "callee": "dependsOn",
+          "lineNumber": 77
+        },
+        {
+          "caller": "apply",
+          "callee": "dependsOn",
+          "lineNumber": 78
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 4,
+        "functionCount": 1,
+        "classCount": 2
+      }
+    }
+  ]
+}

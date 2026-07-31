@@ -1,0 +1,82 @@
+{
+  "nodes": [
+    {
+      "id": "file:src/lib/components/ui/tabs/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "filePath": "src/lib/components/ui/tabs/index.ts",
+      "summary": "Barrel module for the shadcn-svelte Tabs UI component, re-exporting the Root, List, Trigger, and Content parts under both primitive and namespaced aliases along with the tabsListVariants styling helper.",
+      "tags": ["barrel", "entry-point", "component", "ui", "type-definition"],
+      "complexity": "simple",
+      "languageNotes": "Aggregates Svelte component parts and re-exports them with paired aliases (e.g. Root/Tabs, Content/TabsContent) following the shadcn-svelte convention."
+    },
+    {
+      "id": "file:src/lib/components/ui/tabs/tabs.svelte",
+      "type": "file",
+      "name": "tabs.svelte",
+      "filePath": "src/lib/components/ui/tabs/tabs.svelte",
+      "summary": "Root Tabs component wrapping bits-ui TabsPrimitive.Root with bindable ref/value props and orientation-aware layout classes.",
+      "tags": ["component", "ui", "svelte", "wrapper"],
+      "complexity": "simple",
+      "languageNotes": "Svelte 5 runes: uses $props(), $bindable() for ref and value, and merges class names via the cn utility."
+    },
+    {
+      "id": "file:src/lib/components/ui/tabs/tabs-list.svelte",
+      "type": "file",
+      "name": "tabs-list.svelte",
+      "filePath": "src/lib/components/ui/tabs/tabs-list.svelte",
+      "summary": "Tabs list container wrapping bits-ui TabsPrimitive.List, exposing a default/line variant via a tailwind-variants (tv) styling definition exported as tabsListVariants.",
+      "tags": ["component", "ui", "svelte", "styling", "variant"],
+      "complexity": "simple",
+      "languageNotes": "Module-level <script module> block exports the tabsListVariants tv() config and the derived TabsListVariant type using tailwind-variants VariantProps."
+    },
+    {
+      "id": "file:src/lib/components/ui/tabs/tabs-trigger.svelte",
+      "type": "file",
+      "name": "tabs-trigger.svelte",
+      "filePath": "src/lib/components/ui/tabs/tabs-trigger.svelte",
+      "summary": "Individual tab trigger button wrapping bits-ui TabsPrimitive.Trigger with extensive Tailwind classes for active/hover/focus states across horizontal, vertical, and line variants.",
+      "tags": ["component", "ui", "svelte", "wrapper", "styling"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/components/ui/tabs/tabs-content.svelte",
+      "type": "file",
+      "name": "tabs-content.svelte",
+      "filePath": "src/lib/components/ui/tabs/tabs-content.svelte",
+      "summary": "Tab panel content component wrapping bits-ui TabsPrimitive.Content with a bindable ref and minimal styling.",
+      "tags": ["component", "ui", "svelte", "wrapper"],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:src/lib/components/ui/tabs/index.ts",
+      "target": "file:src/lib/components/ui/tabs/tabs-content.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/tabs/index.ts",
+      "target": "file:src/lib/components/ui/tabs/tabs-list.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/tabs/index.ts",
+      "target": "file:src/lib/components/ui/tabs/tabs-trigger.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib/components/ui/tabs/index.ts",
+      "target": "file:src/lib/components/ui/tabs/tabs.svelte",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    }
+  ]
+}

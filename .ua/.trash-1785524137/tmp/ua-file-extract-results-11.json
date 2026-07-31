@@ -1,0 +1,111 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 1,
+  "filesSkipped": [
+    "src/lib/components/ui/card/card-action.svelte",
+    "src/lib/components/ui/card/card-content.svelte",
+    "src/lib/components/ui/card/card-description.svelte",
+    "src/lib/components/ui/card/card-footer.svelte",
+    "src/lib/components/ui/card/card-header.svelte",
+    "src/lib/components/ui/card/card-title.svelte",
+    "src/lib/components/ui/card/card.svelte"
+  ],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 1,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 1,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "results": [
+    {
+      "path": "src/lib/components/ui/card/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 25,
+      "nonEmptyLines": 24,
+      "exports": [
+        {
+          "name": "Root",
+          "line": 9,
+          "isDefault": false
+        },
+        {
+          "name": "Content",
+          "line": 9,
+          "isDefault": false
+        },
+        {
+          "name": "Description",
+          "line": 9,
+          "isDefault": false
+        },
+        {
+          "name": "Footer",
+          "line": 9,
+          "isDefault": false
+        },
+        {
+          "name": "Header",
+          "line": 9,
+          "isDefault": false
+        },
+        {
+          "name": "Title",
+          "line": 9,
+          "isDefault": false
+        },
+        {
+          "name": "Action",
+          "line": 9,
+          "isDefault": false
+        },
+        {
+          "name": "Card",
+          "line": 9,
+          "isDefault": false
+        },
+        {
+          "name": "CardContent",
+          "line": 9,
+          "isDefault": false
+        },
+        {
+          "name": "CardDescription",
+          "line": 9,
+          "isDefault": false
+        },
+        {
+          "name": "CardFooter",
+          "line": 9,
+          "isDefault": false
+        },
+        {
+          "name": "CardHeader",
+          "line": 9,
+          "isDefault": false
+        },
+        {
+          "name": "CardTitle",
+          "line": 9,
+          "isDefault": false
+        },
+        {
+          "name": "CardAction",
+          "line": 9,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 7,
+        "exportCount": 14,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    }
+  ]
+}

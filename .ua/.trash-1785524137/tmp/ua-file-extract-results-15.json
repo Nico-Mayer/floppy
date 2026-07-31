@@ -1,0 +1,100 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 1,
+  "filesSkipped": [
+    "src/lib/components/ui/input-group/input-group-addon.svelte",
+    "src/lib/components/ui/input-group/input-group-button.svelte",
+    "src/lib/components/ui/input-group/input-group-input.svelte",
+    "src/lib/components/ui/input-group/input-group-text.svelte",
+    "src/lib/components/ui/input-group/input-group-textarea.svelte",
+    "src/lib/components/ui/input-group/input-group.svelte"
+  ],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 1,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 1,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "results": [
+    {
+      "path": "src/lib/components/ui/input-group/index.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 22,
+      "nonEmptyLines": 21,
+      "exports": [
+        {
+          "name": "Root",
+          "line": 8,
+          "isDefault": false
+        },
+        {
+          "name": "Addon",
+          "line": 8,
+          "isDefault": false
+        },
+        {
+          "name": "Button",
+          "line": 8,
+          "isDefault": false
+        },
+        {
+          "name": "Input",
+          "line": 8,
+          "isDefault": false
+        },
+        {
+          "name": "Text",
+          "line": 8,
+          "isDefault": false
+        },
+        {
+          "name": "Textarea",
+          "line": 8,
+          "isDefault": false
+        },
+        {
+          "name": "InputGroup",
+          "line": 8,
+          "isDefault": false
+        },
+        {
+          "name": "InputGroupAddon",
+          "line": 8,
+          "isDefault": false
+        },
+        {
+          "name": "InputGroupButton",
+          "line": 8,
+          "isDefault": false
+        },
+        {
+          "name": "InputGroupInput",
+          "line": 8,
+          "isDefault": false
+        },
+        {
+          "name": "InputGroupText",
+          "line": 8,
+          "isDefault": false
+        },
+        {
+          "name": "InputGroupTextarea",
+          "line": 8,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 6,
+        "exportCount": 12,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    }
+  ]
+}

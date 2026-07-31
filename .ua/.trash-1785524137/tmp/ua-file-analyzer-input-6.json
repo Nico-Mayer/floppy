@@ -1,0 +1,17 @@
+{
+  "projectRoot": "/Users/nimayer/projects/personal/floppy",
+  "batchFiles": [
+    {"path": "src/lib/components/ui/field/field-content.svelte", "language": "svelte", "sizeLines": 20, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/field/field-description.svelte", "language": "svelte", "sizeLines": 25, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/field/field-error.svelte", "language": "svelte", "sizeLines": 58, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/field/field-group.svelte", "language": "svelte", "sizeLines": 23, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/field/field-label.svelte", "language": "svelte", "sizeLines": 25, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/field/field-legend.svelte", "language": "svelte", "sizeLines": 24, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/field/field-separator.svelte", "language": "svelte", "sizeLines": 35, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/field/field-set.svelte", "language": "svelte", "sizeLines": 20, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/field/field-title.svelte", "language": "svelte", "sizeLines": 20, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/field/field.svelte", "language": "svelte", "sizeLines": 47, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/field/index.ts", "language": "typescript", "sizeLines": 33, "fileCategory": "code"}
+  ],
+  "batchImportData": {"src/lib/components/ui/field/field-content.svelte":[],"src/lib/components/ui/field/field-description.svelte":[],"src/lib/components/ui/field/field-error.svelte":[],"src/lib/components/ui/field/field-group.svelte":[],"src/lib/components/ui/field/field-label.svelte":[],"src/lib/components/ui/field/field-legend.svelte":[],"src/lib/components/ui/field/field-separator.svelte":[],"src/lib/components/ui/field/field-set.svelte":[],"src/lib/components/ui/field/field-title.svelte":[],"src/lib/components/ui/field/field.svelte":[],"src/lib/components/ui/field/index.ts":["src/lib/components/ui/field/field-content.svelte","src/lib/components/ui/field/field-description.svelte","src/lib/components/ui/field/field-error.svelte","src/lib/components/ui/field/field-group.svelte","src/lib/components/ui/field/field-label.svelte","src/lib/components/ui/field/field-legend.svelte","src/lib/components/ui/field/field-separator.svelte","src/lib/components/ui/field/field-set.svelte","src/lib/components/ui/field/field-title.svelte","src/lib/components/ui/field/field.svelte"]}
+}

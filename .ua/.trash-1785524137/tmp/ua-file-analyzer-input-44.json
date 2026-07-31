@@ -1,0 +1,31 @@
+{
+  "projectRoot": "/Users/nimayer/projects/personal/floppy",
+  "batchFiles": [
+    {"path": "src/lib/components/shell/NavEdgeSwipe.svelte", "language": "svelte", "sizeLines": 13, "fileCategory": "code"},
+    {"path": "src/lib/components/spell/qrcode/index.ts", "language": "typescript", "sizeLines": 2, "fileCategory": "code"},
+    {"path": "src/lib/components/spell/qrcode/qrcode.svelte", "language": "svelte", "sizeLines": 139, "fileCategory": "code"},
+    {"path": "src/lib/components/transfer/DeviceGlyph.svelte", "language": "svelte", "sizeLines": 10, "fileCategory": "code"},
+    {"path": "src/lib/components/transfer/FileCard.svelte", "language": "svelte", "sizeLines": 93, "fileCategory": "code"},
+    {"path": "src/lib/components/transfer/Mascot.svelte", "language": "svelte", "sizeLines": 432, "fileCategory": "code"},
+    {"path": "src/lib/components/transfer/ModeSwitcher.svelte", "language": "svelte", "sizeLines": 47, "fileCategory": "code"},
+    {"path": "src/lib/components/transfer/TransferCard.svelte", "language": "svelte", "sizeLines": 99, "fileCategory": "code"},
+    {"path": "src/lib/components/transfer/TransferProgress.svelte", "language": "svelte", "sizeLines": 47, "fileCategory": "code"},
+    {"path": "src/lib/components/transfer/WaitingHint.svelte", "language": "svelte", "sizeLines": 12, "fileCategory": "code"},
+    {"path": "src/lib/components/transfer/files.ts", "language": "typescript", "sizeLines": 31, "fileCategory": "code"},
+    {"path": "src/lib/components/transfer/receive/ReceiveCodeForm.svelte", "language": "svelte", "sizeLines": 83, "fileCategory": "code"},
+    {"path": "src/lib/components/transfer/receive/ReceiveComplete.svelte", "language": "svelte", "sizeLines": 27, "fileCategory": "code"},
+    {"path": "src/lib/components/transfer/receive/ReceiveDevice.svelte", "language": "svelte", "sizeLines": 35, "fileCategory": "code"},
+    {"path": "src/lib/components/transfer/receive/ReceiveIdle.svelte", "language": "svelte", "sizeLines": 25, "fileCategory": "code"},
+    {"path": "src/lib/components/transfer/receive/ReceivePanel.svelte", "language": "svelte", "sizeLines": 80, "fileCategory": "code"},
+    {"path": "src/lib/components/transfer/receive/ReceiveSearching.svelte", "language": "svelte", "sizeLines": 21, "fileCategory": "code"},
+    {"path": "src/lib/components/transfer/send/SendCode.svelte", "language": "svelte", "sizeLines": 80, "fileCategory": "code"},
+    {"path": "src/lib/components/transfer/send/SendComplete.svelte", "language": "svelte", "sizeLines": 23, "fileCategory": "code"},
+    {"path": "src/lib/components/transfer/send/SendDevice.svelte", "language": "svelte", "sizeLines": 38, "fileCategory": "code"},
+    {"path": "src/lib/components/transfer/send/SendPanel.svelte", "language": "svelte", "sizeLines": 142, "fileCategory": "code"},
+    {"path": "src/lib/components/transfer/send/SendQueue.svelte", "language": "svelte", "sizeLines": 93, "fileCategory": "code"},
+    {"path": "src/lib/components/transfer/send/SendTargetPicker.svelte", "language": "svelte", "sizeLines": 88, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/badge/badge.svelte", "language": "svelte", "sizeLines": 49, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/badge/index.ts", "language": "typescript", "sizeLines": 2, "fileCategory": "code"}
+  ],
+  "batchImportData": {"src/lib/components/shell/NavEdgeSwipe.svelte":[],"src/lib/components/spell/qrcode/index.ts":["src/lib/components/spell/qrcode/qrcode.svelte"],"src/lib/components/spell/qrcode/qrcode.svelte":[],"src/lib/components/transfer/DeviceGlyph.svelte":[],"src/lib/components/transfer/FileCard.svelte":[],"src/lib/components/transfer/Mascot.svelte":[],"src/lib/components/transfer/ModeSwitcher.svelte":[],"src/lib/components/transfer/TransferCard.svelte":[],"src/lib/components/transfer/TransferProgress.svelte":[],"src/lib/components/transfer/WaitingHint.svelte":[],"src/lib/components/transfer/files.ts":[],"src/lib/components/transfer/receive/ReceiveCodeForm.svelte":[],"src/lib/components/transfer/receive/ReceiveComplete.svelte":[],"src/lib/components/transfer/receive/ReceiveDevice.svelte":[],"src/lib/components/transfer/receive/ReceiveIdle.svelte":[],"src/lib/components/transfer/receive/ReceivePanel.svelte":[],"src/lib/components/transfer/receive/ReceiveSearching.svelte":[],"src/lib/components/transfer/send/SendCode.svelte":[],"src/lib/components/transfer/send/SendComplete.svelte":[],"src/lib/components/transfer/send/SendDevice.svelte":[],"src/lib/components/transfer/send/SendPanel.svelte":[],"src/lib/components/transfer/send/SendQueue.svelte":[],"src/lib/components/transfer/send/SendTargetPicker.svelte":[],"src/lib/components/ui/badge/badge.svelte":[],"src/lib/components/ui/badge/index.ts":[]}
+}

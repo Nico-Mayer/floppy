@@ -1,0 +1,13 @@
+{
+  "projectRoot": "/Users/nimayer/projects/personal/floppy",
+  "batchFiles": [
+    {"path": "src/lib/components/ui/empty/empty-content.svelte", "language": "svelte", "sizeLines": 23, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/empty/empty-description.svelte", "language": "svelte", "sizeLines": 23, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/empty/empty-header.svelte", "language": "svelte", "sizeLines": 20, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/empty/empty-media.svelte", "language": "svelte", "sizeLines": 41, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/empty/empty-title.svelte", "language": "svelte", "sizeLines": 20, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/empty/empty.svelte", "language": "svelte", "sizeLines": 23, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/empty/index.ts", "language": "typescript", "sizeLines": 22, "fileCategory": "code"}
+  ],
+  "batchImportData": {"src/lib/components/ui/empty/empty-content.svelte":[],"src/lib/components/ui/empty/empty-description.svelte":[],"src/lib/components/ui/empty/empty-header.svelte":[],"src/lib/components/ui/empty/empty-media.svelte":[],"src/lib/components/ui/empty/empty-title.svelte":[],"src/lib/components/ui/empty/empty.svelte":[],"src/lib/components/ui/empty/index.ts":["src/lib/components/ui/empty/empty-content.svelte","src/lib/components/ui/empty/empty-description.svelte","src/lib/components/ui/empty/empty-header.svelte","src/lib/components/ui/empty/empty-media.svelte","src/lib/components/ui/empty/empty-title.svelte","src/lib/components/ui/empty/empty.svelte"]}
+}

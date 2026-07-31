@@ -1,0 +1,191 @@
+{
+  "nodes": [
+    {
+      "id": "file:src/lib/ipc/runtime.ts",
+      "type": "file",
+      "name": "runtime.ts",
+      "filePath": "src/lib/ipc/runtime.ts",
+      "summary": "Runtime IPC helpers bridging the frontend to the Tauri window/clipboard APIs, including a window-focus subscription used to refresh state on regained focus.",
+      "tags": ["ipc", "utility", "tauri", "event-handler"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/lib/ipc/runtime.ts:onWindowFocus",
+      "type": "function",
+      "name": "onWindowFocus",
+      "filePath": "src/lib/ipc/runtime.ts",
+      "lineRange": [33, 45],
+      "summary": "Subscribes to the Tauri window focus-changed event and invokes the callback whenever the window regains focus, returning an unlisten cleanup function.",
+      "tags": ["event-handler", "tauri", "subscription"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/motion.ts",
+      "type": "file",
+      "name": "motion.ts",
+      "filePath": "src/lib/motion.ts",
+      "summary": "Motion helpers exposing prefers-reduced-motion-aware durations and distances (fast, normal, shift) so transitions collapse to zero when the user disables animation.",
+      "tags": ["utility", "animation", "accessibility"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/nav-items.ts",
+      "type": "file",
+      "name": "nav-items.ts",
+      "filePath": "src/lib/nav-items.ts",
+      "summary": "Single source of truth for the app's top-level navigation destinations, plus a titleFor helper mapping a pathname to its display label, consumed by the sidebar, mobile bottom bar, and app-bar title.",
+      "tags": ["navigation", "data-model", "utility"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/platform.ts",
+      "type": "file",
+      "name": "platform.ts",
+      "filePath": "src/lib/platform.ts",
+      "summary": "Platform detection flags (isMac, isWindows, isMobile) and the modifier-key label derived from the user agent, driving OS-specific window chrome and shortcut hints.",
+      "tags": ["utility", "platform", "detection"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/safe-area.ts",
+      "type": "file",
+      "name": "safe-area.ts",
+      "filePath": "src/lib/safe-area.ts",
+      "summary": "Watches native safe-area insets on Android via a Tauri bridge and applies them to CSS custom properties, letting the layout clear notches, gesture rails, and the home indicator.",
+      "tags": ["utility", "mobile", "safe-area", "tauri"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/lib/safe-area.ts:watchSafeArea",
+      "type": "function",
+      "name": "watchSafeArea",
+      "filePath": "src/lib/safe-area.ts",
+      "lineRange": [36, 51],
+      "summary": "Reads initial safe-area insets from the native bridge, subscribes to inset-change events, and returns a teardown that removes the listener.",
+      "tags": ["subscription", "mobile", "safe-area"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib/utils.ts",
+      "type": "file",
+      "name": "utils.ts",
+      "filePath": "src/lib/utils.ts",
+      "summary": "Shared class-name utility exposing cn(), which merges clsx conditionals with tailwind-merge deduplication for Tailwind-based components.",
+      "tags": ["utility", "styling", "tailwind"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/routes/+layout.svelte",
+      "type": "file",
+      "name": "+layout.svelte",
+      "filePath": "src/routes/+layout.svelte",
+      "summary": "Root layout that wires the one responsive app shell (header, sidebar/drawer, edge-swipe) and mounts cross-route concerns: transfer/pairing event streams, native drag-drop, safe-area watching, Android back handling, and global dialogs and toasts.",
+      "tags": ["entry-point", "layout", "component", "event-handler"],
+      "complexity": "moderate",
+      "languageNotes": "Svelte 5 runes ($props, $state) with onMount lifecycle orchestrating multiple Tauri event subscriptions and a single teardown."
+    },
+    {
+      "id": "file:src/routes/+layout.ts",
+      "type": "file",
+      "name": "+layout.ts",
+      "filePath": "src/routes/+layout.ts",
+      "summary": "Layout load module disabling SSR (ssr = false) so the app runs as a client-side SPA inside the Tauri webview.",
+      "tags": ["config", "entry-point", "spa"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/routes/+page.svelte",
+      "type": "file",
+      "name": "+page.svelte",
+      "filePath": "src/routes/+page.svelte",
+      "summary": "Home route: the main transfer surface with send/receive tabs, a mode switcher, and a dismissible transport error alert bound to the transfer app store.",
+      "tags": ["entry-point", "component", "transfer"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/routes/activity/+page.svelte",
+      "type": "file",
+      "name": "+page.svelte",
+      "filePath": "src/routes/activity/+page.svelte",
+      "summary": "Activity route wrapping the ActivityView component that logs everything sent and received.",
+      "tags": ["component", "route", "activity"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/routes/devices/+page.svelte",
+      "type": "file",
+      "name": "+page.svelte",
+      "filePath": "src/routes/devices/+page.svelte",
+      "summary": "Devices route: the home for trusted-device pairing — rename this device, show a code (with QR behind a blur veil), enter a peer's code, and rename or remove paired devices with a confirm step.",
+      "tags": ["component", "pairing", "route", "form"],
+      "complexity": "complex",
+      "languageNotes": "Svelte 5 component using $state/$effect runes, a reusable {#snippet} for edit actions, and responsive dialog/drawer for destructive confirmation."
+    },
+    {
+      "id": "file:src/routes/layout.css",
+      "type": "file",
+      "name": "layout.css",
+      "filePath": "src/routes/layout.css",
+      "summary": "Global layout stylesheet defining shell tokens (header height, safe-area insets, QR background) and cross-platform chrome styling imported by the root layout.",
+      "tags": ["styling", "css", "layout", "theme"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/routes/settings/+page.svelte",
+      "type": "file",
+      "name": "+page.svelte",
+      "filePath": "src/routes/settings/+page.svelte",
+      "summary": "Settings route wrapping the SettingsView component for tuning how Floppy saves, looks, and connects.",
+      "tags": ["component", "route", "settings"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:svelte.config.js",
+      "type": "file",
+      "name": "svelte.config.js",
+      "filePath": "svelte.config.js",
+      "summary": "SvelteKit configuration using adapter-static with an index.html fallback to build the frontend as an SPA for the Tauri webview, since Tauri has no Node SSR server.",
+      "tags": ["configuration", "build-system", "sveltekit", "spa"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:vite.config.js",
+      "type": "file",
+      "name": "vite.config.js",
+      "filePath": "vite.config.js",
+      "summary": "Vite configuration tailored for Tauri: Tailwind and SvelteKit plugins, a fixed strict dev port, HMR over the Tauri dev host, and ignoring src-tauri from the file watcher.",
+      "tags": ["configuration", "build-system", "vite", "tauri"],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:src/lib/ipc/runtime.ts",
+      "target": "function:src/lib/ipc/runtime.ts:onWindowFocus",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/lib/ipc/runtime.ts",
+      "target": "function:src/lib/ipc/runtime.ts:onWindowFocus",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/lib/safe-area.ts",
+      "target": "function:src/lib/safe-area.ts:watchSafeArea",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/lib/safe-area.ts",
+      "target": "function:src/lib/safe-area.ts:watchSafeArea",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    }
+  ]
+}

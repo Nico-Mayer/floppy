@@ -1,0 +1,9 @@
+{
+  "projectRoot": "/Users/nimayer/projects/personal/floppy",
+  "batchFiles": [
+    {"path": "src-tauri/Cargo.toml", "language": "toml", "sizeLines": 80, "fileCategory": "config"},
+    {"path": "src-tauri/Info.ios.plist", "language": "xml", "sizeLines": 26, "fileCategory": "config"},
+    {"path": "src-tauri/tauri.conf.json", "language": "json", "sizeLines": 49, "fileCategory": "config"}
+  ],
+  "batchImportData": {"src-tauri/Cargo.toml":[],"src-tauri/Info.ios.plist":[],"src-tauri/tauri.conf.json":[]}
+}

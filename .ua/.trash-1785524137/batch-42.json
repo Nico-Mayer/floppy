@@ -1,0 +1,436 @@
+{
+  "nodes": [
+    {
+      "id": "document:openspec/specs/transfer-panel-layout/spec.md",
+      "type": "document",
+      "name": "transfer-panel-layout/spec.md",
+      "filePath": "openspec/specs/transfer-panel-layout/spec.md",
+      "summary": "OpenSpec specification for the responsive Transfer panel layout, defining container-width adaptation, touch target sizing, mascot retention, a stable two-zone structure, and mobile card chrome dissolution across 7 requirements with Given/When/Then scenarios.",
+      "tags": ["documentation", "specification", "ui-layout", "responsive", "openspec"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:openspec/specs/transport-dest/spec.md",
+      "type": "document",
+      "name": "transport-dest/spec.md",
+      "filePath": "openspec/specs/transport-dest/spec.md",
+      "summary": "OpenSpec specification for the receive-destination module, requiring dated per-transfer folders, path-escape-safe filename sanitizing, and colocated tests, keeping destination logic out of the transport manager.",
+      "tags": ["documentation", "specification", "download-destination", "openspec", "security"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:openspec/specs/transport-iroh/spec.md",
+      "type": "document",
+      "name": "transport-iroh/spec.md",
+      "filePath": "openspec/specs/transport-iroh/spec.md",
+      "summary": "OpenSpec specification for the iroh-based P2P transfer transport, covering direct/relay transfer, ticket addressing, race-free progress reporting, content-addressed resume, cancellation, concurrency limits, and configurable relay.",
+      "tags": ["documentation", "specification", "transport", "iroh", "openspec"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:prettier.config.js",
+      "type": "file",
+      "name": "prettier.config.js",
+      "filePath": "prettier.config.js",
+      "summary": "Prettier formatting configuration for the project, wiring in the Svelte and Tailwind plugins and code-style options.",
+      "tags": ["configuration", "formatting", "build-system", "tooling"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:scripts/doctor-macos.sh",
+      "type": "file",
+      "name": "doctor-macos.sh",
+      "filePath": "scripts/doctor-macos.sh",
+      "summary": "macOS dev-environment doctor script invoked by `mise run doctor` that verifies and self-heals the toolchain for iOS, Android, and desktop Tauri builds (xcode-select, rustup default, mobile Rust targets, Android SDK/NDK/AVD, and Gradle/Vite port traps).",
+      "tags": ["script", "tooling", "developer-experience", "diagnostics", "build-system"],
+      "complexity": "moderate",
+      "languageNotes": "Uses `set -uo pipefail` and captures rustc output before grep to avoid SIGPIPE under pipefail."
+    },
+    {
+      "id": "file:scripts/doctor-windows.ps1",
+      "type": "file",
+      "name": "doctor-windows.ps1",
+      "filePath": "scripts/doctor-windows.ps1",
+      "summary": "Windows dev-environment doctor script that verifies the desktop-only Tauri build toolchain, self-healing a broken bare rustc via rustup default and warning when the MSVC link.exe linker is missing.",
+      "tags": ["script", "tooling", "developer-experience", "diagnostics", "windows"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src-tauri/build.rs",
+      "type": "file",
+      "name": "build.rs",
+      "filePath": "src-tauri/build.rs",
+      "summary": "Cargo build script for the Tauri crate that delegates to tauri_build::build() to generate platform bindings and embed app metadata at compile time.",
+      "tags": ["build-system", "tauri", "rust", "entry-point"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:src-tauri/capabilities/android.json",
+      "type": "config",
+      "name": "android.json",
+      "filePath": "src-tauri/capabilities/android.json",
+      "summary": "Android-only Tauri capability granting the android-fs permission so received transfers can be written to the public Downloads collection without needing storage permission on API 29+.",
+      "tags": ["configuration", "tauri", "capabilities", "android", "security"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:src-tauri/capabilities/default.json",
+      "type": "config",
+      "name": "default.json",
+      "filePath": "src-tauri/capabilities/default.json",
+      "summary": "Default Tauri capability for the main window, allowing window controls plus opener, dialog, clipboard, notification, deep-link, and filesystem plugin permissions.",
+      "tags": ["configuration", "tauri", "capabilities", "security", "permissions"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src-tauri/gen/android/app/build.gradle.kts",
+      "type": "file",
+      "name": "app/build.gradle.kts",
+      "filePath": "src-tauri/gen/android/app/build.gradle.kts",
+      "summary": "Gradle build script for the Android app module, configuring SDK levels, the com.nimayer.floppy application id, debug/release build types with ProGuard and cleartext toggles, the rust plugin, and AndroidX dependencies.",
+      "tags": ["build-system", "gradle", "android", "kotlin", "configuration"],
+      "complexity": "moderate",
+      "languageNotes": "Reads versionCode/versionName from tauri.properties and glob-collects *.pro ProGuard files for the release build type."
+    },
+    {
+      "id": "file:src-tauri/gen/android/app/proguard-floppy.pro",
+      "type": "file",
+      "name": "proguard-floppy.pro",
+      "filePath": "src-tauri/gen/android/app/proguard-floppy.pro",
+      "summary": "App-specific ProGuard/R8 keep rules for the floppy release build, preserving classes that reflection or JNI would otherwise strip.",
+      "tags": ["configuration", "android", "proguard", "release", "build-system"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src-tauri/gen/android/app/proguard-rules.pro",
+      "type": "file",
+      "name": "proguard-rules.pro",
+      "filePath": "src-tauri/gen/android/app/proguard-rules.pro",
+      "summary": "Default ProGuard/R8 configuration for the Android app module, holding project-wide code-shrinking and obfuscation keep rules for release builds.",
+      "tags": ["configuration", "android", "proguard", "release", "build-system"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:src-tauri/gen/android/app/src/main/AndroidManifest.xml",
+      "type": "config",
+      "name": "AndroidManifest.xml",
+      "filePath": "src-tauri/gen/android/app/src/main/AndroidManifest.xml",
+      "summary": "Android app manifest declaring the INTERNET permission, the singleTask MainActivity with launcher and floppy:// deep-link intent filters, AndroidTV leanback support, and a FileProvider for sharing received files.",
+      "tags": ["configuration", "android", "manifest", "deep-link", "permissions"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src-tauri/gen/android/app/src/main/java/com/nimayer/floppy/MainActivity.kt",
+      "type": "file",
+      "name": "MainActivity.kt",
+      "filePath": "src-tauri/gen/android/app/src/main/java/com/nimayer/floppy/MainActivity.kt",
+      "summary": "Android entry Activity extending Tauri's Wry activity, enabling edge-to-edge rendering and bridging system-bar, cutout, and IME insets into the WebView as safe-area CSS variables via a JavaScript interface.",
+      "tags": ["android", "entry-point", "kotlin", "webview", "safe-area"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:src-tauri/gen/android/app/src/main/res/drawable-v24/ic_launcher_foreground.xml",
+      "type": "config",
+      "name": "ic_launcher_foreground.xml",
+      "filePath": "src-tauri/gen/android/app/src/main/res/drawable-v24/ic_launcher_foreground.xml",
+      "summary": "Vector drawable defining the adaptive launcher icon foreground layer for API 24+ Android devices.",
+      "tags": ["configuration", "android", "resource", "drawable", "icon"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:src-tauri/gen/android/app/src/main/res/drawable/ic_launcher_background.xml",
+      "type": "config",
+      "name": "ic_launcher_background.xml",
+      "filePath": "src-tauri/gen/android/app/src/main/res/drawable/ic_launcher_background.xml",
+      "summary": "Vector drawable defining the adaptive launcher icon background layer, composed of many path elements forming the icon backdrop.",
+      "tags": ["configuration", "android", "resource", "drawable", "icon"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:src-tauri/gen/android/app/src/main/res/layout/activity_main.xml",
+      "type": "config",
+      "name": "activity_main.xml",
+      "filePath": "src-tauri/gen/android/app/src/main/res/layout/activity_main.xml",
+      "summary": "Android layout resource for the main activity, hosting the Tauri WebView container.",
+      "tags": ["configuration", "android", "resource", "layout", "ui"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:src-tauri/gen/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
+      "type": "config",
+      "name": "ic_launcher.xml",
+      "filePath": "src-tauri/gen/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
+      "summary": "Adaptive icon resource for API 26+ that composes the launcher foreground and background drawable layers.",
+      "tags": ["configuration", "android", "resource", "mipmap", "icon"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:src-tauri/gen/android/app/src/main/res/values-night/themes.xml",
+      "type": "config",
+      "name": "themes.xml",
+      "filePath": "src-tauri/gen/android/app/src/main/res/values-night/themes.xml",
+      "summary": "Night-mode (dark theme) resource defining the Theme.floppy style overrides applied when the device is in dark mode.",
+      "tags": ["configuration", "android", "resource", "theme", "dark-mode"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:src-tauri/gen/android/app/src/main/res/xml/file_paths.xml",
+      "type": "config",
+      "name": "file_paths.xml",
+      "filePath": "src-tauri/gen/android/app/src/main/res/xml/file_paths.xml",
+      "summary": "FileProvider path configuration declaring which directories the app may expose as content URIs for sharing received files.",
+      "tags": ["configuration", "android", "resource", "file-provider", "security"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src-tauri/gen/android/build.gradle.kts",
+      "type": "file",
+      "name": "build.gradle.kts",
+      "filePath": "src-tauri/gen/android/build.gradle.kts",
+      "summary": "Root Gradle build script for the Android project, declaring the Android Gradle Plugin and Kotlin plugin classpath and shared repositories for all modules.",
+      "tags": ["build-system", "gradle", "android", "kotlin", "configuration"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src-tauri/gen/android/buildSrc/build.gradle.kts",
+      "type": "file",
+      "name": "buildSrc/build.gradle.kts",
+      "filePath": "src-tauri/gen/android/buildSrc/build.gradle.kts",
+      "summary": "Gradle build script for the buildSrc module that compiles the custom Kotlin `rust` plugin, pulling in the Android Gradle Plugin and Kotlin Gradle plugin as dependencies.",
+      "tags": ["build-system", "gradle", "android", "kotlin", "configuration"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/BuildTask.kt",
+      "type": "file",
+      "name": "BuildTask.kt",
+      "filePath": "src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/BuildTask.kt",
+      "summary": "Custom Gradle task that builds the Rust dynamic library for a given Android target by shelling out to the Tauri CLI (npm/cargo/pnpm), threading through the target triple and release flag.",
+      "tags": ["build-system", "gradle", "android", "kotlin", "rust"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/RustPlugin.kt",
+      "type": "file",
+      "name": "RustPlugin.kt",
+      "filePath": "src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/RustPlugin.kt",
+      "summary": "Custom Gradle plugin that wires Rust cross-compilation into the Android build, creating per-ABI product flavors and registering BuildTask instances per architecture that the JNI-lib merge tasks depend on.",
+      "tags": ["build-system", "gradle", "android", "kotlin", "rust"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:src-tauri/gen/android/gradle.properties",
+      "type": "config",
+      "name": "gradle.properties",
+      "filePath": "src-tauri/gen/android/gradle.properties",
+      "summary": "Project-wide Gradle properties setting daemon JVM args, enabling AndroidX, official Kotlin code style, and non-transitive R classes for the Android build.",
+      "tags": ["configuration", "gradle", "android", "build-system"],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src-tauri/gen/android/app/src/main/java/com/nimayer/floppy/MainActivity.kt:MainActivity",
+      "type": "class",
+      "name": "MainActivity",
+      "filePath": "src-tauri/gen/android/app/src/main/java/com/nimayer/floppy/MainActivity.kt",
+      "lineRange": [17, 58],
+      "summary": "Tauri WebView host Activity that enables edge-to-edge display and forwards system window insets into the WebView as safe-area values.",
+      "tags": ["android", "activity", "webview", "entry-point"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src-tauri/gen/android/app/src/main/java/com/nimayer/floppy/MainActivity.kt:onWebViewCreate",
+      "type": "function",
+      "name": "onWebViewCreate",
+      "filePath": "src-tauri/gen/android/app/src/main/java/com/nimayer/floppy/MainActivity.kt",
+      "lineRange": [26, 51],
+      "summary": "Installs a JavaScript SafeAreaBridge and a window-insets listener that computes system-bar, cutout, and IME insets and pushes them into the WebView as CSS safe-area variables.",
+      "tags": ["android", "webview", "safe-area", "insets", "event-handler"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/BuildTask.kt:BuildTask",
+      "type": "class",
+      "name": "BuildTask",
+      "filePath": "src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/BuildTask.kt",
+      "lineRange": [9, 68],
+      "summary": "Gradle DefaultTask that invokes the Tauri CLI to build the Rust library for one Android target triple in debug or release mode.",
+      "tags": ["build-system", "gradle", "task", "rust", "android"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/BuildTask.kt:assemble",
+      "type": "function",
+      "name": "assemble",
+      "filePath": "src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/BuildTask.kt",
+      "lineRange": [17, 45],
+      "summary": "Task action that resolves the platform-appropriate Tauri CLI executable and runs the Android build for the configured target.",
+      "tags": ["build-system", "gradle", "task-action", "rust"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/BuildTask.kt:runTauriCli",
+      "type": "function",
+      "name": "runTauriCli",
+      "filePath": "src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/BuildTask.kt",
+      "lineRange": [47, 67],
+      "summary": "Executes the Tauri CLI android-build command in the project root with the target and release arguments, asserting a normal exit and raising a GradleException on invalid configuration.",
+      "tags": ["build-system", "gradle", "process-exec", "rust"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/RustPlugin.kt:RustPlugin",
+      "type": "class",
+      "name": "RustPlugin",
+      "filePath": "src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/RustPlugin.kt",
+      "lineRange": [14, 85],
+      "summary": "Gradle Plugin that integrates Rust cross-compilation into the Android build by declaring per-ABI product flavors and registering per-architecture BuildTasks.",
+      "tags": ["build-system", "gradle", "plugin", "rust", "android"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/RustPlugin.kt:apply",
+      "type": "function",
+      "name": "apply",
+      "filePath": "src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/RustPlugin.kt",
+      "lineRange": [17, 84],
+      "summary": "Plugin entry point that reads ABI/arch/target properties, creates the universal and per-arch product flavors, and after evaluation registers rustBuild tasks wired into the JNI-lib merge tasks.",
+      "tags": ["build-system", "gradle", "plugin-apply", "rust", "android"],
+      "complexity": "complex"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:src-tauri/gen/android/app/src/main/java/com/nimayer/floppy/MainActivity.kt",
+      "target": "class:src-tauri/gen/android/app/src/main/java/com/nimayer/floppy/MainActivity.kt:MainActivity",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src-tauri/gen/android/app/src/main/java/com/nimayer/floppy/MainActivity.kt",
+      "target": "function:src-tauri/gen/android/app/src/main/java/com/nimayer/floppy/MainActivity.kt:onWebViewCreate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src-tauri/gen/android/app/src/main/java/com/nimayer/floppy/MainActivity.kt",
+      "target": "class:src-tauri/gen/android/app/src/main/java/com/nimayer/floppy/MainActivity.kt:MainActivity",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/BuildTask.kt",
+      "target": "class:src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/BuildTask.kt:BuildTask",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/BuildTask.kt",
+      "target": "function:src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/BuildTask.kt:assemble",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/BuildTask.kt",
+      "target": "function:src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/BuildTask.kt:runTauriCli",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/BuildTask.kt",
+      "target": "class:src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/BuildTask.kt:BuildTask",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/BuildTask.kt:assemble",
+      "target": "function:src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/BuildTask.kt:runTauriCli",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/RustPlugin.kt",
+      "target": "class:src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/RustPlugin.kt:RustPlugin",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/RustPlugin.kt",
+      "target": "function:src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/RustPlugin.kt:apply",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/RustPlugin.kt",
+      "target": "class:src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/RustPlugin.kt:RustPlugin",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/RustPlugin.kt",
+      "target": "file:src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/BuildTask.kt",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:src-tauri/gen/android/app/src/main/AndroidManifest.xml",
+      "target": "file:src-tauri/gen/android/app/src/main/java/com/nimayer/floppy/MainActivity.kt",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:src-tauri/gen/android/app/src/main/res/xml/file_paths.xml",
+      "target": "config:src-tauri/gen/android/app/src/main/AndroidManifest.xml",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:src-tauri/gen/android/app/build.gradle.kts",
+      "target": "file:src-tauri/gen/android/app/src/main/java/com/nimayer/floppy/MainActivity.kt",
+      "type": "deploys",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src-tauri/gen/android/app/build.gradle.kts",
+      "target": "file:src-tauri/gen/android/app/proguard-rules.pro",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:src-tauri/gen/android/app/build.gradle.kts",
+      "target": "file:src-tauri/gen/android/app/proguard-floppy.pro",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:src-tauri/gen/android/buildSrc/build.gradle.kts",
+      "target": "file:src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/RustPlugin.kt",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:src-tauri/gen/android/app/build.gradle.kts",
+      "target": "file:src-tauri/gen/android/buildSrc/src/main/java/com/nimayer/floppy/kotlin/RustPlugin.kt",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    }
+  ]
+}

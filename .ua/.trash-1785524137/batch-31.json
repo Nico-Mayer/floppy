@@ -1,0 +1,71 @@
+{
+  "nodes": [
+    {
+      "id": "config:openspec/changes/archive/2026-07-31-android-port/.openspec.yaml",
+      "type": "config",
+      "name": ".openspec.yaml",
+      "filePath": "openspec/changes/archive/2026-07-31-android-port/.openspec.yaml",
+      "summary": "OpenSpec metadata for the archived android-port change, recording the schema version and creation date used by the OpenSpec tooling to track this proposal.",
+      "tags": ["configuration", "openspec", "metadata", "documentation"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-31-android-port/design.md",
+      "type": "document",
+      "name": "design.md",
+      "filePath": "openspec/changes/archive/2026-07-31-android-port/design.md",
+      "summary": "Design document for the Android port describing the three platform shims (file input, directories, foreground/reachability) and five key decisions including using tauri-plugin-fs for URI resolution and materializing sandbox copies rather than streaming into iroh.",
+      "tags": ["documentation", "design", "android", "architecture", "openspec"],
+      "complexity": "moderate",
+      "languageNotes": "Architecture decision record style: numbered decisions (D1-D5) with rationale, plus Risks and Open questions sections."
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-31-android-port/proposal.md",
+      "type": "document",
+      "name": "proposal.md",
+      "filePath": "openspec/changes/archive/2026-07-31-android-port/proposal.md",
+      "summary": "Change proposal for porting the floppy file-transfer app to Android, outlining the motivation, the shared mobile foundation that iOS also inherits, Android-specific work, non-goals, and capability/impact scope.",
+      "tags": ["documentation", "proposal", "android", "mobile", "openspec"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:openspec/changes/archive/2026-07-31-android-port/tasks.md",
+      "type": "document",
+      "name": "tasks.md",
+      "filePath": "openspec/changes/archive/2026-07-31-android-port/tasks.md",
+      "summary": "Implementation task checklist for the android-port change, grouped into seven work areas: launch, reachability, directories, shared file-input shim, platform services, mobile chrome, and verification.",
+      "tags": ["documentation", "tasks", "checklist", "android", "openspec"],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "document:openspec/changes/archive/2026-07-31-android-port/design.md",
+      "target": "document:openspec/changes/archive/2026-07-31-android-port/proposal.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-31-android-port/tasks.md",
+      "target": "document:openspec/changes/archive/2026-07-31-android-port/proposal.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:openspec/changes/archive/2026-07-31-android-port/tasks.md",
+      "target": "document:openspec/changes/archive/2026-07-31-android-port/design.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:openspec/changes/archive/2026-07-31-android-port/.openspec.yaml",
+      "target": "document:openspec/changes/archive/2026-07-31-android-port/proposal.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

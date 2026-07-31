@@ -1,0 +1,31 @@
+{
+  "projectRoot": "/Users/nimayer/projects/personal/floppy",
+  "batchFiles": [
+    {"path": "src/lib/components/ui/button/button.svelte", "language": "svelte", "sizeLines": 82, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/button/index.ts", "language": "typescript", "sizeLines": 17, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/input/index.ts", "language": "typescript", "sizeLines": 7, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/input/input.svelte", "language": "svelte", "sizeLines": 48, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/label/index.ts", "language": "typescript", "sizeLines": 7, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/label/label.svelte", "language": "svelte", "sizeLines": 20, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/progress/index.ts", "language": "typescript", "sizeLines": 7, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/progress/progress.svelte", "language": "svelte", "sizeLines": 27, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/separator/index.ts", "language": "typescript", "sizeLines": 7, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/separator/separator.svelte", "language": "svelte", "sizeLines": 23, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/skeleton/index.ts", "language": "typescript", "sizeLines": 7, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/skeleton/skeleton.svelte", "language": "svelte", "sizeLines": 17, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/sonner/index.ts", "language": "typescript", "sizeLines": 1, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/sonner/sonner.svelte", "language": "svelte", "sizeLines": 34, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/spinner/index.ts", "language": "typescript", "sizeLines": 1, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/spinner/spinner.svelte", "language": "svelte", "sizeLines": 18, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/switch/index.ts", "language": "typescript", "sizeLines": 7, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/switch/switch.svelte", "language": "svelte", "sizeLines": 31, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/textarea/index.ts", "language": "typescript", "sizeLines": 7, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/textarea/textarea.svelte", "language": "svelte", "sizeLines": 23, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/toggle/index.ts", "language": "typescript", "sizeLines": 13, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/toggle/toggle.svelte", "language": "svelte", "sizeLines": 51, "fileCategory": "code"},
+    {"path": "src/lib/hooks/is-mobile.svelte.ts", "language": "typescript", "sizeLines": 9, "fileCategory": "code"},
+    {"path": "src/lib/ipc/bindings.ts", "language": "typescript", "sizeLines": 204, "fileCategory": "code"},
+    {"path": "src/lib/ipc/index.ts", "language": "typescript", "sizeLines": 46, "fileCategory": "code"}
+  ],
+  "batchImportData": {"src/lib/components/ui/button/button.svelte":[],"src/lib/components/ui/button/index.ts":["src/lib/components/ui/button/button.svelte"],"src/lib/components/ui/input/index.ts":["src/lib/components/ui/input/input.svelte"],"src/lib/components/ui/input/input.svelte":[],"src/lib/components/ui/label/index.ts":["src/lib/components/ui/label/label.svelte"],"src/lib/components/ui/label/label.svelte":[],"src/lib/components/ui/progress/index.ts":["src/lib/components/ui/progress/progress.svelte"],"src/lib/components/ui/progress/progress.svelte":[],"src/lib/components/ui/separator/index.ts":["src/lib/components/ui/separator/separator.svelte"],"src/lib/components/ui/separator/separator.svelte":[],"src/lib/components/ui/skeleton/index.ts":["src/lib/components/ui/skeleton/skeleton.svelte"],"src/lib/components/ui/skeleton/skeleton.svelte":[],"src/lib/components/ui/sonner/index.ts":[],"src/lib/components/ui/sonner/sonner.svelte":[],"src/lib/components/ui/spinner/index.ts":[],"src/lib/components/ui/spinner/spinner.svelte":[],"src/lib/components/ui/switch/index.ts":["src/lib/components/ui/switch/switch.svelte"],"src/lib/components/ui/switch/switch.svelte":[],"src/lib/components/ui/textarea/index.ts":["src/lib/components/ui/textarea/textarea.svelte"],"src/lib/components/ui/textarea/textarea.svelte":[],"src/lib/components/ui/toggle/index.ts":["src/lib/components/ui/toggle/toggle.svelte"],"src/lib/components/ui/toggle/toggle.svelte":[],"src/lib/hooks/is-mobile.svelte.ts":[],"src/lib/ipc/bindings.ts":[],"src/lib/ipc/index.ts":["src/lib/ipc/bindings.ts"]}
+}

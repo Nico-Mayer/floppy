@@ -1,0 +1,18 @@
+{
+  "projectRoot": "/Users/nimayer/projects/personal/floppy",
+  "batchFiles": [
+    {"path": "src/lib/components/ui/drawer/drawer-close.svelte", "language": "svelte", "sizeLines": 7, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/drawer/drawer-content.svelte", "language": "svelte", "sizeLines": 33, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/drawer/drawer-description.svelte", "language": "svelte", "sizeLines": 17, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/drawer/drawer-footer.svelte", "language": "svelte", "sizeLines": 20, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/drawer/drawer-header.svelte", "language": "svelte", "sizeLines": 20, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/drawer/drawer-nested.svelte", "language": "svelte", "sizeLines": 12, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/drawer/drawer-overlay.svelte", "language": "svelte", "sizeLines": 17, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/drawer/drawer-portal.svelte", "language": "svelte", "sizeLines": 7, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/drawer/drawer-title.svelte", "language": "svelte", "sizeLines": 17, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/drawer/drawer-trigger.svelte", "language": "svelte", "sizeLines": 7, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/drawer/drawer.svelte", "language": "svelte", "sizeLines": 12, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/drawer/index.ts", "language": "typescript", "sizeLines": 38, "fileCategory": "code"}
+  ],
+  "batchImportData": {"src/lib/components/ui/drawer/drawer-close.svelte":[],"src/lib/components/ui/drawer/drawer-content.svelte":[],"src/lib/components/ui/drawer/drawer-description.svelte":[],"src/lib/components/ui/drawer/drawer-footer.svelte":[],"src/lib/components/ui/drawer/drawer-header.svelte":[],"src/lib/components/ui/drawer/drawer-nested.svelte":[],"src/lib/components/ui/drawer/drawer-overlay.svelte":[],"src/lib/components/ui/drawer/drawer-portal.svelte":[],"src/lib/components/ui/drawer/drawer-title.svelte":[],"src/lib/components/ui/drawer/drawer-trigger.svelte":[],"src/lib/components/ui/drawer/drawer.svelte":[],"src/lib/components/ui/drawer/index.ts":["src/lib/components/ui/drawer/drawer-close.svelte","src/lib/components/ui/drawer/drawer-content.svelte","src/lib/components/ui/drawer/drawer-description.svelte","src/lib/components/ui/drawer/drawer-footer.svelte","src/lib/components/ui/drawer/drawer-header.svelte","src/lib/components/ui/drawer/drawer-nested.svelte","src/lib/components/ui/drawer/drawer-overlay.svelte","src/lib/components/ui/drawer/drawer-portal.svelte","src/lib/components/ui/drawer/drawer-title.svelte","src/lib/components/ui/drawer/drawer-trigger.svelte","src/lib/components/ui/drawer/drawer.svelte"]}
+}

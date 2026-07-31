@@ -1,0 +1,10 @@
+{
+  "projectRoot": "/Users/nimayer/projects/personal/floppy",
+  "batchFiles": [
+    {"path": "openspec/changes/archive/2026-07-31-tauri-iroh-migration/.openspec.yaml", "language": "yaml", "sizeLines": 2, "fileCategory": "config"},
+    {"path": "openspec/changes/archive/2026-07-31-tauri-iroh-migration/design.md", "language": "markdown", "sizeLines": 118, "fileCategory": "docs"},
+    {"path": "openspec/changes/archive/2026-07-31-tauri-iroh-migration/proposal.md", "language": "markdown", "sizeLines": 44, "fileCategory": "docs"},
+    {"path": "openspec/changes/archive/2026-07-31-tauri-iroh-migration/tasks.md", "language": "markdown", "sizeLines": 61, "fileCategory": "docs"}
+  ],
+  "batchImportData": {"openspec/changes/archive/2026-07-31-tauri-iroh-migration/.openspec.yaml":[],"openspec/changes/archive/2026-07-31-tauri-iroh-migration/design.md":[],"openspec/changes/archive/2026-07-31-tauri-iroh-migration/proposal.md":[],"openspec/changes/archive/2026-07-31-tauri-iroh-migration/tasks.md":[]}
+}

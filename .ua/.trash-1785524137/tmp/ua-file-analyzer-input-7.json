@@ -1,0 +1,17 @@
+{
+  "projectRoot": "/Users/nimayer/projects/personal/floppy",
+  "batchFiles": [
+    {"path": "src/lib/components/ui/item/index.ts", "language": "typescript", "sizeLines": 34, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/item/item-actions.svelte", "language": "svelte", "sizeLines": 20, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/item/item-content.svelte", "language": "svelte", "sizeLines": 23, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/item/item-description.svelte", "language": "svelte", "sizeLines": 23, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/item/item-footer.svelte", "language": "svelte", "sizeLines": 20, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/item/item-group.svelte", "language": "svelte", "sizeLines": 21, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/item/item-header.svelte", "language": "svelte", "sizeLines": 20, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/item/item-media.svelte", "language": "svelte", "sizeLines": 42, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/item/item-separator.svelte", "language": "svelte", "sizeLines": 19, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/item/item-title.svelte", "language": "svelte", "sizeLines": 20, "fileCategory": "code"},
+    {"path": "src/lib/components/ui/item/item.svelte", "language": "svelte", "sizeLines": 61, "fileCategory": "code"}
+  ],
+  "batchImportData": {"src/lib/components/ui/item/index.ts":["src/lib/components/ui/item/item-actions.svelte","src/lib/components/ui/item/item-content.svelte","src/lib/components/ui/item/item-description.svelte","src/lib/components/ui/item/item-footer.svelte","src/lib/components/ui/item/item-group.svelte","src/lib/components/ui/item/item-header.svelte","src/lib/components/ui/item/item-media.svelte","src/lib/components/ui/item/item-separator.svelte","src/lib/components/ui/item/item-title.svelte","src/lib/components/ui/item/item.svelte"],"src/lib/components/ui/item/item-actions.svelte":[],"src/lib/components/ui/item/item-content.svelte":[],"src/lib/components/ui/item/item-description.svelte":[],"src/lib/components/ui/item/item-footer.svelte":[],"src/lib/components/ui/item/item-group.svelte":[],"src/lib/components/ui/item/item-header.svelte":[],"src/lib/components/ui/item/item-media.svelte":[],"src/lib/components/ui/item/item-separator.svelte":[],"src/lib/components/ui/item/item-title.svelte":[],"src/lib/components/ui/item/item.svelte":[]}
+}

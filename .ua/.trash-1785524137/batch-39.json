@@ -1,0 +1,43 @@
+{
+  "nodes": [
+    {
+      "id": "config:src-tauri/gen/android/app/src/main/res/values/colors.xml",
+      "type": "config",
+      "name": "colors.xml",
+      "filePath": "src-tauri/gen/android/app/src/main/res/values/colors.xml",
+      "summary": "Android color resource file defining the default Material palette (purple, teal, black, white) generated for the floppy Android app.",
+      "tags": ["android", "configuration", "resource", "theming"],
+      "complexity": "simple",
+      "languageNotes": "Standard Android res/values color resources using ARGB hex literals."
+    },
+    {
+      "id": "config:src-tauri/gen/android/app/src/main/res/values/ic_launcher_background.xml",
+      "type": "config",
+      "name": "ic_launcher_background.xml",
+      "filePath": "src-tauri/gen/android/app/src/main/res/values/ic_launcher_background.xml",
+      "summary": "Defines the white background color used by the adaptive launcher icon for the floppy Android app.",
+      "tags": ["android", "configuration", "resource", "launcher-icon"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:src-tauri/gen/android/app/src/main/res/values/strings.xml",
+      "type": "config",
+      "name": "strings.xml",
+      "filePath": "src-tauri/gen/android/app/src/main/res/values/strings.xml",
+      "summary": "Android string resources providing the app name and main activity title ('floppy') for the Android build.",
+      "tags": ["android", "configuration", "resource", "localization"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:src-tauri/gen/android/app/src/main/res/values/themes.xml",
+      "type": "config",
+      "name": "themes.xml",
+      "filePath": "src-tauri/gen/android/app/src/main/res/values/themes.xml",
+      "summary": "Defines the Theme.floppy Material DayNight base theme configuring edge-to-edge display with transparent system bars, light bar icons, and display-cutout drawing so the webview shell renders correctly from the first frame.",
+      "tags": ["android", "configuration", "theming", "edge-to-edge", "material-design"],
+      "complexity": "simple",
+      "languageNotes": "Uses Theme.MaterialComponents.DayNight.NoActionBar with edge-to-edge attributes (transparent status/navigation bars, disabled contrast enforcement, shortEdges cutout mode) set in XML so they apply before the Kotlin activity or webview initializes."
+    }
+  ],
+  "edges": []
+}
