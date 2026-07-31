@@ -46,7 +46,7 @@ export function sendBadge(
 		case 'cancelling':
 			return 'stopping'
 		case 'starting':
-			return target.kind === 'device' ? 'asked' : '…'
+			return target.kind === 'device' ? 'asked' : 'setting up'
 		case 'waiting':
 			return target.kind === 'device' ? 'accepted' : 'ready'
 		case 'sending':

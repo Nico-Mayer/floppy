@@ -1,8 +1,18 @@
 <script lang="ts" module>
 	import { tv, type VariantProps } from "tailwind-variants";
 
+	// PATCHED (not from the shadcn-svelte registry): `max-md:min-h-11` gives every
+	// navigation row a 44px touch target in the mobile drawer. It lives here rather
+	// than on the call site (it used to be `class="h-11 md:h-9"` in AppSidebar), so
+	// a new row cannot forget it.
+	//
+	// Width-scoped rather than `pointer-coarse:`, deliberately: at `md` and up this
+	// component collapses to a square `size-8!` icon rail, and a coarse-pointer
+	// minimum would stretch those tiles out of square on a touchscreen laptop. The
+	// drawer only exists below `md`, so scoping to `max-md` targets exactly the
+	// rows a finger can reach. Known gap: rail tiles stay 32px on a touch laptop.
 	export const sidebarMenuButtonVariants = tv({
-		base: "gap-2 rounded-xl px-3 py-2 text-left text-sm ring-sidebar-ring transition-[width,height,padding] group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground data-open:hover:bg-sidebar-accent data-open:hover:text-sidebar-accent-foreground data-active:bg-sidebar-accent data-active:font-medium data-active:text-sidebar-accent-foreground peer/menu-button group/menu-button flex w-full items-center overflow-hidden outline-hidden disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate",
+		base: "gap-2 rounded-xl px-3 py-2 text-left text-sm ring-sidebar-ring transition-[width,height,padding] max-md:min-h-11 group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground data-open:hover:bg-sidebar-accent data-open:hover:text-sidebar-accent-foreground data-active:bg-sidebar-accent data-active:font-medium data-active:text-sidebar-accent-foreground peer/menu-button group/menu-button flex w-full items-center overflow-hidden outline-hidden disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate",
 		variants: {
 			variant: {
 				default: "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",

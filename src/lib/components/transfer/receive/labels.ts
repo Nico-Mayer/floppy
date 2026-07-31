@@ -38,10 +38,10 @@ export function receiveBadge(status: ReceiveStatus, target: ReceiveTarget, progr
 		case 'cancelling':
 			return 'stopping'
 		case 'connecting':
-			return target.kind === 'device' ? 'accepted' : '…'
+			return target.kind === 'device' ? 'accepted' : 'looking'
 		case 'receiving':
 			// A receiver has no byte counts until the sender's manifest lands.
-			return progress === null ? '…' : `${progress}%`
+			return progress === null ? 'starting' : `${progress}%`
 		case 'done':
 			return 'done'
 		default:

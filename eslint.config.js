@@ -14,7 +14,7 @@ export default defineConfig(
 	{
 		// Generated (tauri-specta) and vendored (shadcn-svelte) code, and the
 		// Rust crate's build artifacts — not hand-written JS, so not linted.
-		ignores: ['src/lib/ipc/bindings.ts', 'src/lib/components/ui/**', 'src-tauri/**']
+		ignores: ['src/lib/ipc/bindings.ts', 'src/lib/components/ui/**', 'src-tauri/**', '.ua']
 	},
 	js.configs.recommended,
 	ts.configs.recommended,

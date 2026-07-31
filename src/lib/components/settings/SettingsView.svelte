@@ -8,9 +8,11 @@
 	import SunIcon from '@lucide/svelte/icons/sun'
 	import { setMode, userPrefersMode } from 'mode-watcher'
 
-	// UI stub — settings controls are local-only, wired to nothing yet.
+	// Preview: this switch is local-only, wired to nothing yet. It stays
+	// interactive on purpose, so its states can be reviewed — the page's own
+	// StubMark is what says the screen is not hooked up. Anything that would state
+	// a *wrong* value was deleted rather than marked; see the notes below.
 	let notifyOnComplete = $state(true)
-	let folderPerCode = $state(true)
 
 	// Theme is real: mode-watcher persists the preference and resolves `system`
 	// against the OS. userPrefersMode holds the stored choice, setMode writes it.
@@ -23,18 +25,13 @@
 	type Theme = (typeof themes)[number]['value']
 </script>
 
+<!-- There is no "Save files to" field here on purpose. It used to show a readonly
+     `~/Downloads`, which is wrong on every mobile target: the real root is
+     resolved per platform (desktop Downloads, Android public Downloads, iOS
+     Documents) and each transfer gets its own datetime folder inside it. A
+     preview marker does not make a wrong value right, so the field is gone until
+     it can read the real one. -->
 <Field.FieldGroup>
-	<Field.FieldSet>
-		<Field.FieldLegend>General</Field.FieldLegend>
-		<Field.Field>
-			<Field.FieldLabel for="download-dir">Save files to</Field.FieldLabel>
-			<Input id="download-dir" value="~/Downloads" readonly />
-			<Field.FieldDescription>This is where your files land.</Field.FieldDescription>
-		</Field.Field>
-	</Field.FieldSet>
-
-	<Field.FieldSeparator />
-
 	<Field.FieldSet>
 		<Field.FieldLegend>Appearance</Field.FieldLegend>
 		<Field.FieldDescription>Match your system, or pick one and stick with it.</Field.FieldDescription>
@@ -70,13 +67,9 @@
 			</Field.FieldContent>
 			<Switch id="notify" bind:checked={notifyOnComplete} />
 		</Field.Field>
-		<Field.Field orientation="horizontal">
-			<Field.FieldContent>
-				<Field.FieldLabel for="folder-per-code">Give each transfer its own folder</Field.FieldLabel>
-				<Field.FieldDescription>Keeps things tidy when you receive a lot.</Field.FieldDescription>
-			</Field.FieldContent>
-			<Switch id="folder-per-code" bind:checked={folderPerCode} />
-		</Field.Field>
+		<!-- No "give each transfer its own folder" switch. Every transfer already
+		     lands in its own datetime folder, unconditionally, so a switch would
+		     offer a choice that does not exist. -->
 	</Field.FieldSet>
 
 	<Field.FieldSeparator />
@@ -86,10 +79,11 @@
 		<Field.Field>
 			<Field.FieldLabel for="relay">Your own relay</Field.FieldLabel>
 			<!-- A host, not prose: no autocorrect, no autocapitalise, and a URL
-			     keyboard on touch. -->
+			     keyboard on touch. The placeholder describes the field rather than
+			     imitating a real hostname, which read as a live default. -->
 			<Input
 				id="relay"
-				placeholder="www.relay-floppy.com"
+				placeholder="Your relay's address"
 				inputmode="url"
 				autocomplete="off"
 				autocapitalize="none"

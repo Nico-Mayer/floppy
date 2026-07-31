@@ -4,7 +4,7 @@
 	import { useSidebar } from '$lib/components/ui/sidebar'
 	import { Window } from '$lib/ipc'
 	import { titleFor } from '$lib/nav-items'
-	import { isMac, isMobile, isWindows } from '$lib/platform'
+	import { isMac, isPhoneChrome, isWindows } from '$lib/platform'
 	import MenuIcon from '@lucide/svelte/icons/menu'
 	import MinusIcon from '@lucide/svelte/icons/minus'
 	import SquareIcon from '@lucide/svelte/icons/square'
@@ -33,13 +33,14 @@
 	</Button>
 {/snippet}
 
-{#if isMobile}
+{#if isPhoneChrome}
 	<!-- Plain app bar: paints under the status bar and pads itself down by the top
 	     inset so its background sits behind the clock and battery. --header-height
 	     carries that total, which is what overlays portaled onto <body> offset
-	     against. The mobile nav sheet is full height, so it covers this bar (and
-	     the menu button) while open — closing is by the scrim, a nav choice, or
-	     the back gesture. -->
+	     against. The nav drawer opens *below* this bar (AppSidebar offsets it), so
+	     the bar stays visible while the drawer is open; the menu button hides
+	     itself meanwhile. Closing is by dragging the drawer shut, the scrim, a nav
+	     choice, or the back gesture. -->
 	<header
 		class="sticky top-0 z-60 flex h-(--header-height) shrink-0 items-center gap-1 border-b bg-background pt-(--safe-top) pr-[calc(var(--safe-right)+(--spacing(2)))] pl-[calc(var(--safe-left)+(--spacing(2)))]"
 	>

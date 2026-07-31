@@ -1,11 +1,11 @@
-import { MediaQuery } from 'svelte/reactivity'
+import { isNarrow } from '$lib/platform'
 
-// One shared query for every ResponsiveDialog: a centered Dialog at/above the
-// app's `sm` breakpoint (640px), a bottom Drawer below it — matching the
-// max-sm mobile treatment used elsewhere (edge-to-edge sheet).
-const desktop = new MediaQuery('min-width: 640px')
+// A centered Dialog at or above the app's `sm` breakpoint, a bottom Drawer
+// below it — matching the `max-sm:` treatment used everywhere else. The
+// threshold is not defined here: it comes from `isNarrow` in $lib/platform, so
+// this and the stylesheets cannot drift apart.
 
-/** Reactive — read inside markup/`$derived` and it re-renders across the breakpoint. */
+/** Reactive — read inside markup or `$derived` and it re-renders across the breakpoint. */
 export function isDesktop() {
-	return desktop.current
+	return !isNarrow()
 }

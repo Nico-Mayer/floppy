@@ -3,7 +3,7 @@
 	import { Progress } from '$lib/components/ui/progress'
 	import { Spinner } from '$lib/components/ui/spinner'
 	import { normal } from '$lib/motion'
-	import { Tween } from 'svelte/motion'
+	import { Spring } from 'svelte/motion'
 	import { fade } from 'svelte/transition'
 	import { formatBytes, formatDuration, formatRate } from './format'
 
@@ -17,8 +17,17 @@
 		label: string
 	} = $props()
 
-	const tween = Tween.of(() => progress ?? 0, { duration: 1000 })
-	let shown = $derived(Math.round(tween.current))
+	// A spring, not a tween: a byte rate fluctuates, and linear interpolation over a
+	// fixed duration turns that into visible stepping. Tuned soft and well damped so
+	// it trails the real figure smoothly rather than chasing every wobble.
+	const eased = Spring.of(() => progress ?? 0, { stiffness: 0.08, damping: 0.9 })
+
+	// Clamped, because a spring can overshoot and a bar reading 101% is worse than a
+	// stiff one. No monotonic high-water mark on top of that: it would have to be
+	// reset when a transfer starts over, and at this damping any dip after the
+	// overshoot is well under a percent, which the rounding below hides anyway.
+	const value = $derived(Math.min(100, Math.max(0, eased.current)))
+	let shown = $derived(Math.round(value))
 
 	// "128 MB / 2.1 GB · 12 MB/s · 2m left" — rate and ETA only join in once
 	// croc has moved enough bytes for them to be measurable.
@@ -36,7 +45,7 @@
 		<p class="text-4xl font-bold tracking-tight tabular-nums">
 			{shown}<span class="text-xl">%</span>
 		</p>
-		<Progress value={tween.current} class="w-2/3 *:data-[slot=progress-indicator]:bg-(--tint)" />
+		<Progress {value} class="w-2/3 *:data-[slot=progress-indicator]:bg-(--tint)" />
 		{#if detail}
 			<p class="font-mono text-xs tabular-nums">{detail}</p>
 		{/if}

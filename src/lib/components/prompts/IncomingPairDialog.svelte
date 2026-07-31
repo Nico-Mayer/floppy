@@ -61,7 +61,10 @@
 			{/if}
 		</ResponsiveDialog.Body>
 
-		<ResponsiveDialog.Footer>
+		<!-- Same treatment as the incoming-transfer prompt: 16px between the two
+		     actions on a phone, where the footer stacks and decline would otherwise
+		     sit 8px from a trust decision. -->
+		<ResponsiveDialog.Footer class="max-sm:gap-4">
 			<Button variant="outline" onclick={() => pairing.dismissPair()}>
 				<XIcon data-icon="inline-start" />
 				Not now

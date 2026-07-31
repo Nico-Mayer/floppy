@@ -9,7 +9,7 @@
 	import { Toaster } from '$lib/components/ui/sonner'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import { app } from '$lib/transfer-app.svelte'
-	import { isMobile } from '$lib/platform'
+	import { isPhoneChrome } from '$lib/platform'
 	import { watchSafeArea } from '$lib/safe-area'
 	import { onBackButtonPress } from '@tauri-apps/api/app'
 	import { getCurrentWebview } from '@tauri-apps/api/webview'
@@ -49,7 +49,7 @@
 
 	// Mobile chrome sizes. Set on <html> because portaled overlays mount on
 	// <body>, outside the shell, and still have to clear the bars.
-	if (isMobile && typeof document !== 'undefined') {
+	if (isPhoneChrome && typeof document !== 'undefined') {
 		document.documentElement.dataset.mobile = ''
 	}
 
@@ -69,7 +69,7 @@
 		// leaves the app by closing the window, the finish the default would have
 		// done. No-op on desktop, where there is no hardware back.
 		let backListener: PluginListener | undefined
-		if (isMobile) {
+		if (isPhoneChrome) {
 			onBackButtonPress(() => {
 				// An open dialog or the nav drawer owns the gesture first: back should
 				// dismiss it, not quit the app out from under it. Escape is how each

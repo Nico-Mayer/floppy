@@ -11,6 +11,7 @@ import {
 	type ProgressEvent
 } from '$lib/ipc'
 import { describeError, type AppError } from './components/transfer/errors'
+import { haptics } from './haptics'
 import type { ReceiveStatus, ReceiveTarget, SendStatus, SendTarget } from './components/transfer/types'
 
 export type Mode = 'send' | 'receive'
@@ -45,6 +46,7 @@ class SendTransfer {
 
 	removeFile(path: string) {
 		this.files = this.files.filter((file) => file.path !== path)
+		void haptics.removed()
 	}
 
 	/** True while the native picker is open, so a second click is ignored. */
@@ -304,6 +306,9 @@ class TransferApp {
 			events.doneEvent.listen((e) => {
 				if (e.payload.kind === 'send') this.send.status = 'done'
 				else this.receive.complete(e.payload.dest)
+				// One success note, whichever direction finished. Fire and forget: a
+				// buzz must never hold up or fail a transfer's completion.
+				void haptics.transferDone()
 			}),
 			events.deepLink.listen((e) => {
 				// A floppy://receive?code=… link opened the app: switch to receive

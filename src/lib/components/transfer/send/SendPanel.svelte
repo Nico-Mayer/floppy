@@ -105,7 +105,7 @@
 		<TransferProgress
 			progress={send.progress}
 			stats={send.stats}
-			label="Encrypted · device to device · {currentFile(send.stats) || summary}"
+			label={currentFile(send.stats) || summary}
 		/>
 	{:else}
 		<SendComplete {summary} target={send.target} />
@@ -129,12 +129,14 @@
 			<!-- Cancelling an offer the peer has not answered yet only stops us
 			     waiting: recalling it needs a broker signal that does not exist, so
 			     an accept that lands afterwards still starts the transfer. -->
-			<Button variant="destructive" size="sm" class="@max-md:min-h-11" onclick={() => send.cancel()}>
+			<Button variant="destructive" size="sm" onclick={() => send.cancel()}>
 				<XIcon />
 				Cancel
 			</Button>
 		{:else if send.status === 'done'}
-			<Button variant="outline" size="sm" class="@max-md:min-h-11" onclick={() => send.reset()}>
+			<!-- touch="grow": this is the only way forward from the done state, so it is
+			     the surface's primary action, which the size alone cannot tell us. -->
+			<Button variant="outline" size="sm" touch="grow" onclick={() => send.reset()}>
 				Send something else
 			</Button>
 		{/if}

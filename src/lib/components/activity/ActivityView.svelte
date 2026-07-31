@@ -2,7 +2,7 @@
 	import { formatBytes } from '$lib/components/transfer/format'
 	import { Badge } from '$lib/components/ui/badge'
 	import * as Empty from '$lib/components/ui/empty'
-	import { Spinner } from '$lib/components/ui/spinner'
+	import { Skeleton } from '$lib/components/ui/skeleton'
 	import { cn } from '$lib/utils'
 	import CheckIcon from '@lucide/svelte/icons/check'
 	import Clock3Icon from '@lucide/svelte/icons/clock-3'
@@ -12,17 +12,12 @@
 	import SendIcon from '@lucide/svelte/icons/send'
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert'
 	import XIcon from '@lucide/svelte/icons/x'
-	import { onMount } from 'svelte'
-	import { formatTime, groupByDay, loadActivity, type ActivityEntry, type ActivityStatus } from './activity'
+	import { formatTime, groupByDay, type ActivityEntry, type ActivityStatus } from './activity'
 
-	let entries = $state<ActivityEntry[] | null>(null)
-
-	// Loaded on mount rather than at module scope so reopening the sheet shows
-	// what has happened since — the sheet destroys its body on close.
-	// `entries === null` is "still loading", distinct from an empty history.
-	onMount(async () => {
-		entries = await loadActivity()
-	})
+	// A renderer, nothing more: the route owns loading, so it can also own the
+	// pull-to-refresh that reloads. `entries === null` is "still loading", which is
+	// distinct from an empty history.
+	let { entries }: { entries: ActivityEntry[] | null } = $props()
 
 	let days = $derived(entries ? groupByDay(entries) : [])
 
@@ -58,9 +53,20 @@
 </script>
 
 {#if entries === null}
-	<div class="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
-		<Spinner />
-		Loading your transfers
+	<!-- Placeholders shaped like the rows they stand in for, rather than a spinner
+	     in the middle of an empty page: the layout does not jump when the real
+	     entries arrive, and the shape says what is coming. -->
+	<div class="flex flex-col gap-4" aria-busy="true" aria-label="Loading your transfers">
+		{#each { length: 3 }}
+			<div class="flex gap-3">
+				<Skeleton class="size-8 shrink-0 rounded-full" />
+				<div class="flex min-w-0 flex-1 flex-col gap-2 pt-1">
+					<Skeleton class="h-3.5 w-40 max-w-full" />
+					<Skeleton class="h-3 w-28 max-w-full" />
+					<Skeleton class="mt-1 h-5 w-20 rounded-xl" />
+				</div>
+			</div>
+		{/each}
 	</div>
 {:else if entries.length === 0}
 	<Empty.Root class="border border-dashed py-8">

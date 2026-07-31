@@ -1,5 +1,24 @@
 <script lang="ts">
-	import * as Sheet from "$lib/components/ui/sheet/index.js";
+	// PATCHED (not from the shadcn-svelte registry): the mobile branch below uses a
+	// vaul Drawer instead of a Sheet, so the navigation drawer can be dragged shut.
+	// A Sheet has no close gesture at all — only the scrim, a nav choice, or
+	// hardware back. `shadcn-svelte update sidebar` will overwrite this file; the
+	// recovery checklist is design decision D5 in the frontend-mobile-polish change.
+	//
+	// Four things here are load-bearing and easy to lose in a re-apply:
+	//   - data-slot="sidebar" AND data-mobile="true": the Android back handler in
+	//     +layout.svelte matches on both to decide the drawer owns the back press.
+	//   - shouldScaleBackground={false}: scaling the whole app behind a nav drawer
+	//     is the wrong effect (it is meant for bottom sheets).
+	//   - an sr-only Drawer.Title: vaul warns without one.
+	//   - the caller's class, which offsets the drawer below the app bar.
+	// Safe-area padding for this drawer lives in layout.css, keyed on
+	// [data-vaul-drawer-direction='left'].
+	//
+	// Opening is still a snap via the edge swipe, not a tracked drag: vaul's
+	// pointer handling only exists while the drawer is open, so there is no public
+	// way to hand it an in-flight opening gesture.
+	import * as Drawer from "$lib/components/ui/drawer/index.js";
 	import { cn, type WithElementRef } from "$lib/utils.js";
 	import { SIDEBAR_WIDTH_MOBILE } from "./constants.js";
 	import { useSidebar } from "./context.svelte.js";
@@ -34,28 +53,30 @@
 		{@render children?.()}
 	</div>
 {:else if sidebar.isMobile}
-	<Sheet.Root bind:open={() => sidebar.openMobile, (v) => sidebar.setOpenMobile(v)} {...restProps}>
-		<Sheet.Content
+	<Drawer.Root
+		direction={side}
+		shouldScaleBackground={false}
+		bind:open={() => sidebar.openMobile, (v) => sidebar.setOpenMobile(v)}
+		{...restProps}
+	>
+		<Drawer.Content
 			bind:ref
 			data-sidebar="sidebar"
 			data-slot="sidebar"
 			data-mobile="true"
 			class={cn(
-				"w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden",
+				"w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground",
 				className
 			)}
 			style="--sidebar-width: {SIDEBAR_WIDTH_MOBILE};"
-			{side}
 		>
-			<Sheet.Header class="sr-only">
-				<Sheet.Title>Sidebar</Sheet.Title>
-				<Sheet.Description>Displays the mobile sidebar.</Sheet.Description>
-			</Sheet.Header>
+			<Drawer.Title class="sr-only">Sidebar</Drawer.Title>
+			<Drawer.Description class="sr-only">Displays the mobile sidebar.</Drawer.Description>
 			<div class="flex h-full w-full flex-col">
 				{@render children?.()}
 			</div>
-		</Sheet.Content>
-	</Sheet.Root>
+		</Drawer.Content>
+	</Drawer.Root>
 {:else}
 	<div
 		bind:this={ref}

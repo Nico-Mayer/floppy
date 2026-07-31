@@ -144,10 +144,15 @@ html[data-mobile] {
 	--color-send-foreground: var(--send-foreground);
 	--color-receive: var(--receive);
 	--color-receive-foreground: var(--receive-foreground);
+	/* Three bespoke animations, and they stay bespoke: tw-animate-css (imported
+	   above) ships only `enter`/`exit` plus accordion and caret keyframes, so it
+	   has no shake, and its `zoom-in` has no overshoot. `pop` is the overshoot —
+	   scaling past 1 and settling back is the whole character of it — and `shake`
+	   has no equivalent at all. `bob` belongs to the Mascot.
+	   A fourth, `slidein`, was removed: nothing referenced it. */
 	--animate-bob: bob 5s ease-in-out infinite;
 	--animate-pop: pop 0.3s ease both;
 	--animate-shake: shake 0.4s ease both;
-	--animate-slidein: slidein 0.26s ease both;
 	--color-sidebar-ring: var(--sidebar-ring);
 	--color-sidebar-border: var(--sidebar-border);
 	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -197,16 +202,6 @@ html[data-mobile] {
 			transform: translateX(5px);
 		}
 	}
-	@keyframes slidein {
-		from {
-			transform: translateY(14px);
-			opacity: 0;
-		}
-		to {
-			transform: translateY(0);
-			opacity: 1;
-		}
-	}
 }
 
 @keyframes fade-in {
@@ -225,8 +220,7 @@ html[data-mobile] {
 	.animate-shake {
 		animation: none;
 	}
-	.animate-pop,
-	.animate-slidein {
+	.animate-pop {
 		animation: fade-in 0.3s ease both;
 	}
 }
@@ -263,8 +257,15 @@ html[data-mobile] {
 	   above them can pad them clear of the status or gesture bar. The shell's
 	   own edges are handled by AppHeader (top) and the content inset's
 	   --safe-bottom (mobile), and are 0 on desktop. */
+	/* Side surfaces that span the full screen height. The nav drawer is excluded
+	   by :not([data-mobile]) because it does not: AppSidebar offsets it to
+	   top: --header-height, and --header-height already contains --safe-top, so
+	   padding it again would leave a notch-sized gap above the first menu row.
+	   Its bottom inset comes from Sidebar.Footer's own pb-(--safe-bottom). */
 	[data-slot='sheet-content'][data-side='left'],
-	[data-slot='sheet-content'][data-side='right'] {
+	[data-slot='sheet-content'][data-side='right'],
+	[data-slot='drawer-content'][data-vaul-drawer-direction='left']:not([data-mobile]),
+	[data-slot='drawer-content'][data-vaul-drawer-direction='right']:not([data-mobile]) {
 		padding-top: var(--safe-top);
 		padding-bottom: var(--safe-bottom);
 	}

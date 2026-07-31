@@ -636,6 +636,13 @@ pub fn run() {
     #[cfg(target_os = "android")]
     let tauri_builder = tauri_builder.plugin(tauri_plugin_android_fs::init());
 
+    // Mobile only: haptic feedback for the handful of moments where something is
+    // handed to you or taken away (see `lib/haptics.ts` for the list). There is no
+    // desktop equivalent, and the frontend already gates every call on a coarse
+    // pointer, so a desktop build has nothing to call.
+    #[cfg(any(target_os = "android", target_os = "ios"))]
+    let tauri_builder = tauri_builder.plugin(tauri_plugin_haptics::init());
+
     tauri_builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_fs::init())

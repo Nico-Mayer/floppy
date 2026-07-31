@@ -3,9 +3,7 @@
 ## Purpose
 
 Define the responsive layout contract for the Send and Receive transfer panels: container-width-driven compact/regular layouts, touch-target minimums on coarse-pointer devices, mascot retention, and a stable two-zone (status/action) structure across all panel states.
-
 ## Requirements
-
 ### Requirement: Panels adapt to their container width
 
 The Send and Receive panels SHALL switch between a compact and a regular layout based on the width of their containing card (CSS container queries), not the viewport. The compact layout SHALL be fully usable — no clipped content, no horizontal scrolling — at the minimum window width of 500px.
@@ -24,25 +22,6 @@ The Send and Receive panels SHALL switch between a compact and a regular layout 
 
 - **WHEN** the send panel shows the code/QR waiting state in a compact-width card
 - **THEN** the QR code renders large and stacked above the code phrase; in regular width it recedes beside the phrase
-
-### Requirement: Touch devices get minimum 44px targets and 16px code text
-
-On coarse-pointer devices, every interactive control in the transfer panels SHALL have a hit area of at least 44×44 CSS pixels, and code entry/display text SHALL render at 16px or larger. Fine-pointer (desktop mouse/trackpad) densities SHALL remain unchanged.
-
-#### Scenario: Coarse pointer enlarges controls
-
-- **WHEN** the app runs on a coarse-pointer device (or devtools touch emulation)
-- **THEN** buttons, inputs, and icon controls in the panels measure at least 44px in each hit-area dimension
-
-#### Scenario: Fine pointer keeps desktop density
-
-- **WHEN** the app runs with a mouse/trackpad
-- **THEN** control sizes are unchanged from the current desktop sizing
-
-#### Scenario: Code input does not trigger mobile zoom
-
-- **WHEN** the receive code input is focused on a coarse-pointer device
-- **THEN** its text size is at least 16px
 
 ### Requirement: Mascot is retained in idle states
 
@@ -85,23 +64,33 @@ The restructured receive panel SHALL preserve the behaviors of the `receive-clip
 
 Below the `sm` breakpoint the Transfer screen SHALL present as one full-bleed surface
 rather than a floating card inside padding. The `TransferCard` SHALL drop its border,
-shadow, radius, and background so it becomes the page; the page SHALL drop its outer
-padding and max-width so content spans the full width; and the card header SHALL slim to
-remove desktop-density chrome (the monospace headline row). At `sm` and above the desktop
-card presentation SHALL be unchanged. Feature parity SHALL be preserved: the same
-send/receive tabs, states, action zone, and file-drop target remain.
+shadow, radius, background, and horizontal padding so it becomes the page; the page SHALL
+supply exactly one gutter and drop its max-width so content spans the available width; and
+the card header SHALL slim to remove desktop-density chrome (the monospace headline row). At
+`sm` and above the desktop card presentation SHALL be unchanged. Feature parity SHALL be
+preserved: the same send/receive tabs, states, action zone, and file-drop target remain.
+
+The two chrome treatments SHALL be named variants of the card, selected by name, rather than
+override classes applied at the call site, so neither treatment can partially drift. The page
+gutter itself belongs to the shared page container (see `app-shell`), not to this screen.
 
 #### Scenario: Mobile card is full-bleed
 
 - **WHEN** the Transfer screen renders below the `sm` breakpoint
-- **THEN** the transfer surface spans the full content width with no card border, shadow,
-  radius, or outer page padding, and no centered narrow column
+- **THEN** the transfer surface spans the content width with no card border, shadow,
+  radius, or horizontal card padding, with a single page gutter and no centered narrow column
 
 #### Scenario: Desktop card is unchanged
 
 - **WHEN** the Transfer screen renders at `sm` width or above
 - **THEN** the `TransferCard` retains its border, shadow, radius, background, and header
   as before
+
+#### Scenario: Chrome is selected by name
+
+- **WHEN** the transfer card renders in either treatment
+- **THEN** the treatment is chosen through a named variant of the card, and no call site
+  applies chrome-removal classes of its own
 
 #### Scenario: Full-bleed width triggers the roomy panel layouts
 
@@ -123,6 +112,11 @@ the bottom of the transfer column (thumb reach), without a floating shadow, so i
 part of the page rather than a second stacked card. On desktop the switcher SHALL stay at
 the top with its current styling.
 
+The switcher SHALL reflect the current mode however that mode was chosen, including by
+horizontal swipe across the transfer screen (see `swipe-gestures`). Tapping a segment and the
+keyboard shortcuts SHALL continue to work unchanged, and all three routes into a mode change
+SHALL produce the same state.
+
 #### Scenario: Mobile switcher is flush and bottom-anchored
 
 - **WHEN** the Transfer screen renders on a phone
@@ -133,3 +127,15 @@ the top with its current styling.
 
 - **WHEN** the Transfer screen renders on desktop
 - **THEN** the switcher stays at the top with its current styling
+
+#### Scenario: Switcher follows a swipe
+
+- **WHEN** the user changes mode by swiping across the transfer screen
+- **THEN** the switcher's selected segment updates to the new mode
+
+#### Scenario: Every route into a mode change agrees
+
+- **WHEN** the user reaches a mode by tapping a segment, by pressing its shortcut, or by
+  swiping
+- **THEN** the resulting panel state is identical in all three cases
+

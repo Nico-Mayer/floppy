@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { OpenPath } from '$lib/ipc'
 	import { Button } from '$lib/components/ui/button'
-	import { isMobile } from '$lib/platform'
+	import { isPhoneChrome } from '$lib/platform'
 	import { app } from '$lib/transfer-app.svelte'
 	import FolderOpenIcon from '@lucide/svelte/icons/folder-open'
 	import XIcon from '@lucide/svelte/icons/x'
@@ -59,17 +59,18 @@
 			     there is no reliable in-app intent to jump there, so the button is
 			     hidden and "Get more files" carries the flow. The path is still
 			     shown by ReceiveComplete. -->
-			{#if !isMobile}
-				<Button class="@max-md:min-h-11" onclick={() => OpenPath(receive.savedTo)}>
+			{#if !isPhoneChrome}
+				<Button onclick={() => OpenPath(receive.savedTo)}>
 					<FolderOpenIcon />
 					Open folder
 				</Button>
 			{/if}
-			<Button variant="outline" size="sm" class="@max-md:min-h-11" onclick={() => receive.reset()}>
-				Get more files
-			</Button>
+			<!-- touch="grow": on a phone this is the only way forward from the done
+			     state (Open folder is hidden there), so it is the primary action, which
+			     the size alone cannot tell us. -->
+			<Button variant="outline" size="sm" touch="grow" onclick={() => receive.reset()}>Get more files</Button>
 		{:else if receive.status === 'connecting' || receive.status === 'receiving'}
-			<Button variant="destructive" size="sm" class="@max-md:min-h-11" onclick={() => receive.cancel()}>
+			<Button variant="destructive" size="sm" onclick={() => receive.cancel()}>
 				<XIcon />
 				Cancel
 			</Button>

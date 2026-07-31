@@ -1,13 +1,27 @@
 <script lang="ts">
+	import { loadActivity, type ActivityEntry } from '$lib/components/activity/activity'
 	import ActivityView from '$lib/components/activity/ActivityView.svelte'
+	import PageHeader from '$lib/components/shell/PageHeader.svelte'
+	import PageShell from '$lib/components/shell/PageShell.svelte'
+	import { isStub } from '$lib/nav-items'
+	import { onMount } from 'svelte'
+
+	// Loading lives here rather than in the view so the pull-to-refresh gesture,
+	// which belongs to the shell's scroller, has something to call.
+	let entries = $state<ActivityEntry[] | null>(null)
+
+	async function load() {
+		entries = await loadActivity()
+	}
+
+	onMount(load)
 </script>
 
-<div class="h-full overflow-y-auto">
-	<div class="mx-auto flex w-full max-w-xl flex-col gap-6 p-4 sm:p-6">
-		<div class="flex flex-col gap-1">
-			<h1 class="text-2xl font-semibold tracking-tight">Activity</h1>
-			<p class="text-sm text-muted-foreground">A log of everything you've sent and received.</p>
-		</div>
-		<ActivityView />
-	</div>
-</div>
+<PageShell scroll onrefresh={load}>
+	<PageHeader
+		title="Activity"
+		description="A log of everything you've sent and received."
+		stub={isStub('/activity')}
+	/>
+	<ActivityView {entries} />
+</PageShell>

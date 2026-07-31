@@ -31,6 +31,14 @@
 		type = "button",
 		variant = "ghost",
 		size = "xs",
+		// PATCHED (not from the shadcn-svelte registry): forced to slop.
+		//
+		// This component sizes itself through `class`, not through Button's `size`,
+		// so the Button underneath always sees size="default" and would infer *grow*
+		// — a 44px minimum on a control living inside a 36px-tall field, which blows
+		// the field open. These are inline field controls, i.e. incidental by
+		// definition, so slop is the correct treatment anyway.
+		touch = "slop",
 		...restProps
 	}: Omit<ComponentProps<typeof Button>, "href" | "size"> & {
 		size?: InputGroupButtonSize;
@@ -42,6 +50,7 @@
 	{type}
 	data-size={size}
 	{variant}
+	{touch}
 	class={cn(inputGroupButtonVariants({ size }), className)}
 	{...restProps}
 >

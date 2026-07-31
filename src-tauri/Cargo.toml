@@ -69,8 +69,12 @@ tauri-build = { version = "2", features = [] }
 
 # iOS only, but the crate is a no-op elsewhere on mobile, so one target gate
 # covers both phones and keeps it out of every desktop build. See `run()`.
+#
+# Haptics is mobile-only too: the frontend gates every call on a coarse pointer
+# and swallows failures, so a desktop build simply has no plugin to call.
 [target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
 tauri-plugin-ios-webview-insets = "0.1"
+tauri-plugin-haptics = "2"
 
 # Android only: write received files into the public Downloads collection
 # (scoped storage has no plain path). Pinned — the API used (`public_storage`,

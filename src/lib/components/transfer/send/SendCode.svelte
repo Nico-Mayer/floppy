@@ -6,6 +6,7 @@
 	import { fast, motionOK, normal } from '$lib/motion'
 	import CheckIcon from '@lucide/svelte/icons/check'
 	import CopyIcon from '@lucide/svelte/icons/copy'
+	import { haptics } from '$lib/haptics'
 	import { Clipboard } from '$lib/ipc'
 	import { fade, scale } from 'svelte/transition'
 
@@ -23,6 +24,7 @@
 			await navigator.clipboard.writeText(code)
 		}
 		copied = true
+		void haptics.copied()
 		clearTimeout(copyResetTimer)
 		copyResetTimer = setTimeout(() => (copied = false), 2000)
 	}
@@ -35,7 +37,7 @@
 	<div class="flex flex-col items-center gap-1.5 text-center">
 		<p class="animate-pop text-lg font-bold tracking-tight">Ready to share</p>
 		<p class="max-w-64 text-xs text-muted-foreground">
-			Scan this on the other device, or just read the words out to them.
+			Scan this on the other device, or read the code out to them.
 		</p>
 	</div>
 

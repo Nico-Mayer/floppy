@@ -9,9 +9,14 @@ bun.lockb
 /static/
 src-tauri
 
-# Agent skill docs: snippets carry `+++` diff markers that no JS parser accepts
+# Agent tooling: skill docs carry `+++` diff markers that no JS parser accepts,
+# and skills-lock.json is generated.
 .claude/
+.agents/
+skills-lock.json
 openspec
+.ua
+.ua/
 
 # Generated (tauri-specta) and vendored (shadcn-svelte)
 src/lib/ipc/bindings.ts

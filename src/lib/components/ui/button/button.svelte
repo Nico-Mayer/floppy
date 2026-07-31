@@ -24,20 +24,76 @@
 				"icon-sm": "size-8",
 				"icon-lg": "size-10",
 			},
+			// PATCHED (not from the shadcn-svelte registry): coarse-pointer hit areas.
+			//
+			// Every control needs a 44px minimum hit area on a touch screen, and doing
+			// that per call site is what let it drift out of compliance before. So it
+			// is derived here from the size a call site already chose, because picking
+			// `icon-xs` for a clear button versus `default` for a submit button is
+			// already the role judgement. `auto` is the default; the compound rules
+			// below turn it into the right treatment. Pass `touch` explicitly to
+			// override.
+			touch: {
+				// Grow the visible box. For destructive, primary, and navigation
+				// controls: someone aiming at a destructive action has to be able to
+				// see the target they are hitting.
+				grow: "pointer-coarse:min-h-11 pointer-coarse:min-w-11",
+				// Keep the visible box, expand only what receives the pointer. A
+				// centered box that is at least 48px in each axis and never smaller
+				// than the button itself, so this works at any size without knowing
+				// which one it is — the reason it is not a negative inset, which would
+				// expand by a fixed amount and leave a 24px control at 36px.
+				slop:
+					"relative pointer-coarse:after:absolute pointer-coarse:after:top-1/2 pointer-coarse:after:left-1/2 pointer-coarse:after:h-full pointer-coarse:after:w-full pointer-coarse:after:min-h-12 pointer-coarse:after:min-w-12 pointer-coarse:after:-translate-x-1/2 pointer-coarse:after:-translate-y-1/2 pointer-coarse:after:content-['']",
+				auto: "",
+				none: "",
+			},
 		},
+		compoundVariants: [
+			// Sizes a call site picks for a primary or navigation control.
+			{
+				touch: "auto",
+				size: ["default", "lg", "icon", "icon-lg"],
+				class: "pointer-coarse:min-h-11 pointer-coarse:min-w-11",
+			},
+			// Destructive escalates to grow at every size. Listed before the slop rule
+			// and with the other variants enumerated there, so the two can never both
+			// apply to one button.
+			{
+				touch: "auto",
+				variant: "destructive",
+				class: "pointer-coarse:min-h-11 pointer-coarse:min-w-11",
+			},
+			// Sizes a call site picks for something incidental and reversible.
+			{
+				touch: "auto",
+				size: ["xs", "sm", "icon-xs", "icon-sm"],
+				variant: ["default", "outline", "secondary", "ghost", "link"],
+				class:
+					"relative pointer-coarse:after:absolute pointer-coarse:after:top-1/2 pointer-coarse:after:left-1/2 pointer-coarse:after:h-full pointer-coarse:after:w-full pointer-coarse:after:min-h-12 pointer-coarse:after:min-w-12 pointer-coarse:after:-translate-x-1/2 pointer-coarse:after:-translate-y-1/2 pointer-coarse:after:content-['']",
+			},
+		],
 		defaultVariants: {
 			variant: "default",
 			size: "default",
+			touch: "auto",
 		},
 	});
 
 	export type ButtonVariant = VariantProps<typeof buttonVariants>["variant"];
 	export type ButtonSize = VariantProps<typeof buttonVariants>["size"];
+	export type ButtonTouch = VariantProps<typeof buttonVariants>["touch"];
 
 	export type ButtonProps = WithElementRef<HTMLButtonAttributes> &
 		WithElementRef<HTMLAnchorAttributes> & {
 			variant?: ButtonVariant;
 			size?: ButtonSize;
+			/**
+			 * Overrides the hit-area treatment inferred from `size`/`variant`.
+			 * `grow` when a slopped control gains an interactive neighbour within 8px
+			 * or sits inside a clipping ancestor; `none` to opt out entirely.
+			 */
+			touch?: ButtonTouch;
 		};
 </script>
 
@@ -46,6 +102,7 @@
 		class: className,
 		variant = "default",
 		size = "default",
+		touch = "auto",
 		ref = $bindable(null),
 		href = undefined,
 		type = "button",
@@ -59,7 +116,7 @@
 	<a
 		bind:this={ref}
 		data-slot="button"
-		class={cn(buttonVariants({ variant, size }), className)}
+		class={cn(buttonVariants({ variant, size, touch }), className)}
 		href={disabled ? undefined : href}
 		aria-disabled={disabled}
 		role={disabled ? "link" : undefined}
@@ -72,7 +129,7 @@
 	<button
 		bind:this={ref}
 		data-slot="button"
-		class={cn(buttonVariants({ variant, size }), className)}
+		class={cn(buttonVariants({ variant, size, touch }), className)}
 		{type}
 		{disabled}
 		{...restProps}
