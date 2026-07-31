@@ -33,6 +33,20 @@
 		oncancel: () => void
 	} = $props()
 
+	// This only ever mounts in response to someone pressing Rename, so taking focus
+	// is finishing that gesture rather than stealing it, and the effect runs once:
+	// it reads the element and nothing that changes as you type.
+	//
+	// Selected rather than merely focused, because the field arrives holding the
+	// current name — the common edit is replacing it, and a caret parked at
+	// character zero makes the user clear it by hand first. Arrowing or clicking
+	// still drops the selection for the rarer tweak-a-few-letters edit.
+	let input = $state<HTMLInputElement | null>(null)
+	$effect(() => {
+		input?.focus()
+		input?.select()
+	})
+
 	function save() {
 		const name = value.trim()
 		if (!name) {
@@ -45,6 +59,7 @@
 
 <div class={cn('flex items-center gap-2', className)}>
 	<Input
+		bind:ref={input}
 		bind:value
 		aria-label={label}
 		{maxlength}

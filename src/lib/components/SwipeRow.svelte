@@ -32,6 +32,11 @@
 	// exactly the state-ownership trap that produces stale rows.
 	let open = $state(false)
 
+	// No drag gesture on a fine pointer, so the reveal is not merely unused there
+	// — it is unreachable. Render it only where it can be opened, rather than
+	// leaving a control behind the row that nothing can ever slide aside.
+	const touch = $derived(isTouch())
+
 	/** How much of the row slides aside, and so how wide the action is. */
 	const REVEAL = 88
 
@@ -64,31 +69,36 @@
 <div data-swipe-row class="relative isolate overflow-hidden rounded-2xl">
 	<!-- Behind the row, only reachable once it has slid aside. aria-hidden while
 	     closed so a screen reader is not offered a control nobody can see. -->
-	<div class="absolute inset-y-0 right-0 flex" aria-hidden={!open}>
-		<button
-			type="button"
-			class="flex w-(--reveal) items-center justify-center bg-destructive/15 text-destructive transition-colors hover:bg-destructive/25"
-			style="--reveal: {REVEAL}px"
-			aria-label={label}
-			tabindex={open ? 0 : -1}
-			onclick={() => {
-				settle(false)
-				onaction()
-			}}
-		>
-			{@render action()}
-		</button>
-	</div>
+	{#if touch}
+		<div class="absolute inset-y-0 right-0 flex" aria-hidden={!open}>
+			<button
+				type="button"
+				class="flex w-(--reveal) items-center justify-center bg-destructive/15 text-destructive transition-colors hover:bg-destructive/25"
+				style="--reveal: {REVEAL}px"
+				aria-label={label}
+				tabindex={open ? 0 : -1}
+				onclick={() => {
+					settle(false)
+					onaction()
+				}}
+			>
+				{@render action()}
+			</button>
+		</div>
+	{/if}
 
-	<!-- The row itself. No transition while the finger is down, so it tracks
-	     rather than lags; the transition comes back for the snap on release. -->
+	<!-- The row itself. Opaque, because the action sits behind it: a row whose
+	     children have no fill of their own would show the action through at rest,
+	     which reads as a second delete button rather than as something revealed.
+	     No transition while the finger is down, so it tracks rather than lags; the
+	     transition comes back for the snap on release. -->
 	<div
-		class="relative"
+		class="relative bg-background"
 		class:transition-transform={!dragging}
 		style="transform: translateX({offset}px); transition-duration: {fast()}ms"
 		use:horizontalSwipe={{
 			claim: notEdgeStrip,
-			enabled: isTouch(),
+			enabled: touch,
 			threshold: 0.25,
 			onProgress,
 			onCommit,

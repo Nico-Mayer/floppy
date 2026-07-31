@@ -118,10 +118,15 @@
 							<!-- One badge slot per row, so the device count and the preview dot share
 							     it rather than stacking on the same corner. No row has both today
 							     (Devices is not a preview), but the structure allows it.
-							     top-1/2! overrides the component's own `top-1.5`, which is tuned for
-							     a 36px row and sits high on the 44px touch row. -->
+							     The badge is pinned by a fixed top offset per row size — `top-1.5` for
+							     a default row — which centres a 20px badge on no row we have: it is
+							     2px high on the 36px desktop row and 6px high on the 44px touch one.
+							     Centring properly is height-agnostic, so it holds for both and for
+							     the icon rail. `!` because the component's offset is a variant rule,
+							     which an unprefixed `top-1/2` both loses to on specificity and fails
+							     to displace in the class merge. -->
 							{#if showCount(item) || item.stub}
-								<Sidebar.MenuBadge class="gap-1.5 max-md:top-1/2! max-md:-translate-y-1/2">
+								<Sidebar.MenuBadge class="top-1/2! -translate-y-1/2 gap-1.5">
 									{#if showCount(item)}
 										{pairing.devices.length}
 									{/if}
@@ -181,7 +186,7 @@
 						<span class="truncate font-medium">Not signed in</span>
 						<span class="truncate text-xs text-muted-foreground">Sync your devices</span>
 					</div>
-					<StubMark class="ml-auto" label="Planned" />
+					<StubMark />
 				</Sidebar.MenuButton>
 			</Sidebar.MenuItem>
 		</Sidebar.Menu>
@@ -196,7 +201,7 @@
 			     broker stays accountless. -->
 			<Dialog.Title class="flex items-center gap-2">
 				Sign in
-				<StubMark label="Planned" />
+				<StubMark />
 			</Dialog.Title>
 			<Dialog.Description>Keep your paired devices in sync across installs.</Dialog.Description>
 		</Dialog.Header>
