@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/mobile-schema.json",
+  "identifier": "mobile",
+  "description": "Haptic feedback on the few moments where something is handed to you or taken away: a code copied, a file removed, a transfer finished, an offer answered, a mode swipe committed. Phones only, because there is no desktop equivalent, and the frontend gates every call on a coarse pointer and swallows failures.",
+  "platforms": ["android", "iOS"],
+  "windows": ["main"],
+  "permissions": ["haptics:default"]
+}

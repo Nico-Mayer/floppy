@@ -1,0 +1,274 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn-svelte/tailwind.css';
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/geist-mono';
+@import '@fontsource-variable/inter';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+	--background: oklch(1 0 0);
+	--foreground: oklch(0.148 0.004 228.8);
+	--card: oklch(1 0 0);
+	--card-foreground: oklch(0.148 0.004 228.8);
+	--popover: oklch(1 0 0);
+	--popover-foreground: oklch(0.148 0.004 228.8);
+	--primary: oklch(0.218 0.008 223.9);
+	--primary-foreground: oklch(0.987 0.002 197.1);
+	--secondary: oklch(0.963 0.002 197.1);
+	--secondary-foreground: oklch(0.218 0.008 223.9);
+	--muted: oklch(0.963 0.002 197.1);
+	--muted-foreground: oklch(0.56 0.021 213.5);
+	--accent: oklch(0.963 0.002 197.1);
+	--accent-foreground: oklch(0.218 0.008 223.9);
+	--destructive: oklch(0.577 0.245 27.325);
+	--border: oklch(0.925 0.005 214.3);
+	--input: oklch(0.925 0.005 214.3);
+	--ring: oklch(0.723 0.014 214.4);
+	--radius: 0.625rem;
+	--send: #e3711c;
+	--send-foreground: #f79d3d;
+	--receive: #2c8be1;
+	--receive-foreground: #69b1f1;
+
+	/* Safe areas (status bar, notch, home indicator, gesture rails), one token
+	   per edge for every platform. iOS and desktop resolve through env(): the
+	   webview reports the truth there, and on desktop it is 0. Android's WebView
+	   does not report the system bars through env() at all, so MainActivity.kt
+	   measures them and sets --android-inset-* on <html> (see safe-area.ts) —
+	   which is why the native value comes first and env() is the fallback.
+	   Pairs with viewport-fit=cover in app.html. */
+	--safe-top: var(--android-inset-top, env(safe-area-inset-top, 0px));
+	--safe-right: var(--android-inset-right, env(safe-area-inset-right, 0px));
+	--safe-bottom: var(--android-inset-bottom, env(safe-area-inset-bottom, 0px));
+	--safe-left: var(--android-inset-left, env(safe-area-inset-left, 0px));
+
+	/* Desktop titlebar height, top inset included. Global (not just on the app
+	   wrapper) so portaled overlays — sheets and dialogs mount on <body> — can
+	   offset below the header and never cover the window controls / macOS traffic
+	   lights. Desktop only: mobile has no top app bar, and the surfaces that used
+	   to offset against this there use --safe-top directly. */
+	--bar-height: calc(var(--spacing) * 13);
+	--header-height: calc(var(--safe-top) + var(--bar-height));
+
+	--chart-1: oklch(0.855 0.138 181.071);
+	--chart-2: oklch(0.704 0.14 182.503);
+	--chart-3: oklch(0.6 0.118 184.704);
+	--chart-4: oklch(0.511 0.096 186.391);
+	--chart-5: oklch(0.437 0.078 188.216);
+	--sidebar: oklch(0.987 0.002 197.1);
+	--sidebar-foreground: oklch(0.148 0.004 228.8);
+	--sidebar-primary: oklch(0.218 0.008 223.9);
+	--sidebar-primary-foreground: oklch(0.987 0.002 197.1);
+	--sidebar-accent: oklch(0.963 0.002 197.1);
+	--sidebar-accent-foreground: oklch(0.218 0.008 223.9);
+	--sidebar-border: oklch(0.925 0.005 214.3);
+	--sidebar-ring: oklch(0.723 0.014 214.4);
+}
+
+.dark {
+	--background: oklch(0.148 0.004 228.8);
+	--foreground: oklch(0.987 0.002 197.1);
+	--card: oklch(0.218 0.008 223.9);
+	--card-foreground: oklch(0.987 0.002 197.1);
+	--popover: oklch(0.218 0.008 223.9);
+	--popover-foreground: oklch(0.987 0.002 197.1);
+	--primary: oklch(0.925 0.005 214.3);
+	--primary-foreground: oklch(0.218 0.008 223.9);
+	--secondary: oklch(0.275 0.011 216.9);
+	--secondary-foreground: oklch(0.987 0.002 197.1);
+	--muted: oklch(0.275 0.011 216.9);
+	--muted-foreground: oklch(0.723 0.014 214.4);
+	--accent: oklch(0.275 0.011 216.9);
+	--accent-foreground: oklch(0.987 0.002 197.1);
+	--destructive: oklch(0.704 0.191 22.216);
+	--border: oklch(1 0 0 / 10%);
+	--input: oklch(1 0 0 / 15%);
+	--ring: oklch(0.56 0.021 213.5);
+	/* Accent fills stay identical in dark mode; only the text-usable
+       variants lighten to hold contrast on dark surfaces. */
+	--send-foreground: #f79d3d;
+	--receive-foreground: #69b1f1;
+	--chart-1: oklch(0.855 0.138 181.071);
+	--chart-2: oklch(0.704 0.14 182.503);
+	--chart-3: oklch(0.6 0.118 184.704);
+	--chart-4: oklch(0.511 0.096 186.391);
+	--chart-5: oklch(0.437 0.078 188.216);
+	--sidebar: oklch(0.218 0.008 223.9);
+	--sidebar-foreground: oklch(0.987 0.002 197.1);
+	--sidebar-primary: oklch(0.488 0.243 264.376);
+	--sidebar-primary-foreground: oklch(0.987 0.002 197.1);
+	--sidebar-accent: oklch(0.275 0.011 216.9);
+	--sidebar-accent-foreground: oklch(0.987 0.002 197.1);
+	--sidebar-border: oklch(1 0 0 / 10%);
+	--sidebar-ring: oklch(0.56 0.021 213.5);
+}
+
+@theme inline {
+	--font-sans: 'Inter Variable', sans-serif;
+	--font-heading: 'Geist Variable', sans-serif;
+	--color-ring: var(--ring);
+	--color-input: var(--input);
+	--color-border: var(--border);
+	--color-destructive: var(--destructive);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-accent: var(--accent);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-muted: var(--muted);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-secondary: var(--secondary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-primary: var(--primary);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-popover: var(--popover);
+	--color-card-foreground: var(--card-foreground);
+	--color-card: var(--card);
+	--color-foreground: var(--foreground);
+	--color-background: var(--background);
+	--radius-sm: calc(var(--radius) * 0.6);
+	--radius-md: calc(var(--radius) * 0.8);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) * 1.4);
+	--radius-2xl: calc(var(--radius) * 1.8);
+	--radius-3xl: calc(var(--radius) * 2.2);
+	--radius-4xl: calc(var(--radius) * 2.6);
+	--color-send: var(--send);
+	--color-send-foreground: var(--send-foreground);
+	--color-receive: var(--receive);
+	--color-receive-foreground: var(--receive-foreground);
+	/* Three bespoke animations, and they stay bespoke: tw-animate-css (imported
+	   above) ships only `enter`/`exit` plus accordion and caret keyframes, so it
+	   has no shake, and its `zoom-in` has no overshoot. `pop` is the overshoot —
+	   scaling past 1 and settling back is the whole character of it — and `shake`
+	   has no equivalent at all. `bob` belongs to the Mascot.
+	   A fourth, `slidein`, was removed: nothing referenced it. */
+	--animate-bob: bob 5s ease-in-out infinite;
+	--animate-pop: pop 0.3s ease both;
+	--animate-shake: shake 0.4s ease both;
+	--color-sidebar-ring: var(--sidebar-ring);
+	--color-sidebar-border: var(--sidebar-border);
+	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+	--color-sidebar-accent: var(--sidebar-accent);
+	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+	--color-sidebar-primary: var(--sidebar-primary);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+	--color-sidebar: var(--sidebar);
+	--color-chart-5: var(--chart-5);
+	--color-chart-4: var(--chart-4);
+	--color-chart-3: var(--chart-3);
+	--color-chart-2: var(--chart-2);
+	--color-chart-1: var(--chart-1);
+	@keyframes bob {
+		0%,
+		100% {
+			transform: translateY(0) rotate(-2deg);
+		}
+		50% {
+			transform: translateY(-5px) rotate(1.5deg);
+		}
+	}
+	@keyframes pop {
+		0% {
+			transform: scale(0.7);
+			opacity: 0;
+		}
+		60% {
+			transform: scale(1.04);
+		}
+		100% {
+			transform: scale(1);
+			opacity: 1;
+		}
+	}
+	@keyframes shake {
+		0%,
+		100% {
+			transform: translateX(0);
+		}
+		20%,
+		60% {
+			transform: translateX(-5px);
+		}
+		40%,
+		80% {
+			transform: translateX(5px);
+		}
+	}
+}
+
+@keyframes fade-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+/* Loops stop, the pop becomes a fade, shake goes away entirely.
+   Progress width transitions stay — that is information, not decoration. */
+@media (prefers-reduced-motion: reduce) {
+	.animate-bob,
+	.animate-shake {
+		animation: none;
+	}
+	.animate-pop {
+		animation: fade-in 0.3s ease both;
+	}
+}
+
+@layer base {
+	* {
+		@apply border-border outline-ring/50;
+	}
+	body {
+		@apply bg-background text-foreground;
+	}
+	html {
+		overscroll-behavior: none;
+		@apply font-sans;
+	}
+	/* Touch chrome: no blue flash on tap, no 300ms wait for a double-tap that
+	   this app has no use for, and no text selection or magnifier when a press
+	   lands slightly long on a button. Text content opts back in below. */
+	html[data-mobile] {
+		-webkit-tap-highlight-color: transparent;
+		touch-action: manipulation;
+		-webkit-user-select: none;
+		user-select: none;
+	}
+	html[data-mobile] input,
+	html[data-mobile] textarea,
+	html[data-mobile] [contenteditable] {
+		-webkit-user-select: text;
+		user-select: text;
+	}
+
+	/* Safe areas for surfaces that are portaled onto <body>, outside the app
+	   shell: sheets and drawers reach the screen edge themselves, so nothing
+	   above them can pad them clear of the status or gesture bar. The shell's
+	   own edges are handled by the content inset (top) and the bottom bar
+	   (bottom) on mobile, and are 0 on desktop. */
+	/* Side surfaces that span the full screen height. Every one of them qualifies:
+	   the nav drawer that used to be excluded here — it sat below the app bar and
+	   so carried --safe-top already — no longer exists. */
+	[data-slot='sheet-content'][data-side='left'],
+	[data-slot='sheet-content'][data-side='right'],
+	[data-slot='drawer-content'][data-vaul-drawer-direction='left'],
+	[data-slot='drawer-content'][data-vaul-drawer-direction='right'] {
+		padding-top: var(--safe-top);
+		padding-bottom: var(--safe-bottom);
+	}
+	[data-slot='sheet-content'][data-side='top'] {
+		padding-top: var(--safe-top);
+	}
+	[data-slot='sheet-content'][data-side='bottom'],
+	[data-slot='drawer-content'][data-vaul-drawer-direction='bottom'] {
+		padding-bottom: calc(var(--safe-bottom) + --spacing(4));
+	}
+	/* A centred dialog only has to stay off the notch, not sit below it. */
+	[data-slot='dialog-content'] {
+		max-height: calc(100svh - var(--safe-top) - var(--safe-bottom) - --spacing(8));
+	}
+}

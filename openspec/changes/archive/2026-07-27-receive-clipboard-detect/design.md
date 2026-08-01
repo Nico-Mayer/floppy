@@ -32,9 +32,9 @@ Current state:
 
 Detection runs when (a) `app.mode` becomes `'receive'`, and (b) the window regains focus while the Receive tab is active. Implemented inside `ReceivePanel.svelte` with an `$effect` reading `app.mode` and a `<svelte:window onfocus>` handler, both funneling into one `checkClipboard()`.
 
-- *Why not `onMount`*: `Tabs.Content` keeps panels mounted; mount fires once per app run.
-- *Why not polling*: reading the clipboard on a timer is a privacy smell and wasted work; the two chosen moments cover "copied code, then opened/switched to Floppy" — the actual user flow.
-- *Why in `ReceivePanel` and not `transfer-app.svelte.ts`*: the store is UI-framework state around transfers; clipboard sniffing is presentation-adjacent behavior with no cross-component consumers. Keeping it in the panel keeps the store's surface unchanged. Local `$state` in the component holds `detected: string | null` and `dismissed: string | null`.
+- _Why not `onMount`_: `Tabs.Content` keeps panels mounted; mount fires once per app run.
+- _Why not polling_: reading the clipboard on a timer is a privacy smell and wasted work; the two chosen moments cover "copied code, then opened/switched to Floppy" — the actual user flow.
+- _Why in `ReceivePanel` and not `transfer-app.svelte.ts`_: the store is UI-framework state around transfers; clipboard sniffing is presentation-adjacent behavior with no cross-component consumers. Keeping it in the panel keeps the store's surface unchanged. Local `$state` in the component holds `detected: string | null` and `dismissed: string | null`.
 
 ### 2. Read via `Clipboard.Text()` from `@wailsio/runtime`, failures are silent
 
@@ -44,20 +44,20 @@ Same module the send side already imports. The call is wrapped in `try/catch`; a
 
 The croc default code shape (`1234-word-word-word`). Anchored so arbitrary clipboard text containing a code-like substring does not trigger — false positives cost more than false negatives here (chip showing someone's unrelated text pattern feels like surveillance). Matching happens locally in the component; the clipboard value is stored only when it matches, and non-matching text is dropped immediately.
 
-- *Why not reuse backend validation (`minCodeLen`/`normalizeCode`)*: that validation is deliberately loose (any ≥6 chars) to allow custom codes; the chip should only fire on high-confidence croc-shaped codes.
+- _Why not reuse backend validation (`minCodeLen`/`normalizeCode`)_: that validation is deliberately loose (any ≥6 chars) to allow custom codes; the chip should only fire on high-confidence croc-shaped codes.
 
 ### 4. Auto-fill with visible provenance, not an offer chip
 
-*(Supersedes the earlier chip design after UX review — the chip still cost a click and floated awkwardly above the input.)*
+_(Supersedes the earlier chip design after UX review — the chip still cost a click and floated awkwardly above the input.)_
 
-A detected code is written straight into the code input. Fill happens only when: `status === 'idle'` ∧ pattern match ∧ value ≠ `dismissed` ∧ (input empty ∨ input still equals the previous unmodified auto-fill). User-typed text is never overwritten; a *newer* clipboard code may replace an *unmodified older* auto-fill.
+A detected code is written straight into the code input. Fill happens only when: `status === 'idle'` ∧ pattern match ∧ value ≠ `dismissed` ∧ (input empty ∨ input still equals the previous unmodified auto-fill). User-typed text is never overwritten; a _newer_ clipboard code may replace an _unmodified older_ auto-fill.
 
 - **Provenance hint**: while the input value equals the auto-filled value, a small row below the input shows a clipboard icon + "from clipboard" and a ghost ✕ clear button. The user must be able to see the value did not come from their own hands — silent injection into a field that starts a network action would be spooky and error-prone.
-- **Clear (✕)** → empties the input and sets `dismissed` to that value; the same clipboard value is never re-filled this session, a *new* code re-arms auto-fill. Typing over the fill just edits normally — the hint disappears because the value no longer equals the fill.
+- **Clear (✕)** → empties the input and sets `dismissed` to that value; the same clipboard value is never re-filled this session, a _new_ code re-arms auto-fill. Typing over the fill just edits normally — the hint disappears because the value no longer equals the fill.
 - **No auto-start** — the user still presses Receive/Enter. Auto-fill removes the transcription step, not the consent step.
 - State: `filled: string | null` (last auto-filled value), `dismissed: string | null` — both local `$state` in `ReceivePanel`. Hint condition: `filled !== null ∧ receive.code === filled`.
 - UI: hint row uses `text-muted-foreground` text + `IconClipboard`, ghost icon-button ✕; enters/leaves with the app's existing `fly` motion (`$lib/motion` `normal`/`shift`), matching the error alert in `App.svelte:86`.
-- *Why not the chip / inline InputGroup addon / toast*: all three still require a click to move the code into the input, and the chip additionally shifts layout. Auto-fill is the only option that fulfills the proposal's "removes the most common interaction entirely"; the guard conditions plus visible provenance remove the surprise factor that usually argues against auto-fill.
+- _Why not the chip / inline InputGroup addon / toast_: all three still require a click to move the code into the input, and the chip additionally shifts layout. Auto-fill is the only option that fulfills the proposal's "removes the most common interaction entirely"; the guard conditions plus visible provenance remove the surprise factor that usually argues against auto-fill.
 
 ## Risks / Trade-offs
 

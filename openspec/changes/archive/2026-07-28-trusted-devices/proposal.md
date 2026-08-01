@@ -26,7 +26,7 @@ the pairing.
 - **Pairing (one time, out-of-band)**: QR scan + short-authentication-string (SAS) compare to
   exchange and confirm public keys with MITM protection. Result stored in a local trust store
   (`{pubkey, display name}` per trusted device).
-- **Codeless send**: to send to a trusted device the sender signs an *offer*
+- **Codeless send**: to send to a trusted device the sender signs an _offer_
   (`{from, transferId, ts}`), the receiver is woken, and — on accept — both derive the same
   croc code via `HKDF(shared_secret, transferId)`. The existing `transfer.Manager` runs the
   transfer unchanged.
@@ -59,7 +59,7 @@ the pairing.
   sign/verify, croc-code derivation. Fully unit-testable with `go test -race`, no network, no
   broker, no mobile. The de-risking wedge.
 - **New broker service** (separate deploy, own repo): device registration (`pubkey → push
-  token`, signed), signed-offer relay, one push provider to start (FCM). Real infra + secrets
+token`, signed), signed-offer relay, one push provider to start (FCM). Real infra + secrets
   (APNs certs, FCM project).
 - `internal/services/`: new `PairingService` adapter + `pairing:*` events; reuses the OS
   notifications service introduced by the `transfer-complete-notifications` change (interactive
@@ -79,5 +79,5 @@ the pairing.
 - Builds on `transfer-complete-notifications` — reuses its Wails notifications service, extended
   to interactive Accept/Decline actions.
 - Sibling to `deep-link-receive` — both remove code-typing from the receive flow. Deep-link
-  carries the code in a *link* (still one manual click); trusted-devices carries authorization
-  in a *device identity* (the notification replaces the link). They can coexist.
+  carries the code in a _link_ (still one manual click); trusted-devices carries authorization
+  in a _device identity_ (the notification replaces the link). They can coexist.

@@ -1,47 +1,120 @@
-[tools]
-go = "1.26.5"
-"go:github.com/wailsapp/wails/v3/cmd/wails3" = "3.0.0-alpha2.119"
-gotestsum = "1.13.0"
-node = "26.5.0"
-"npm:@fission-ai/openspec" = "1.6.0"
-
 [shell_alias]
 mr = "mise run"
 
+# https://v2.tauri.app/de/start/prerequisites/
+[env]
+# FLOPPY_BROKER=local points quick share at `mise run broker`.
+FLOPPY_BROKER_URL = "{% if env.FLOPPY_BROKER | default(value='remote') == 'local' %}ws://127.0.0.1:8787/ws{% else %}wss://floppy-broker.up.railway.app/ws{% endif %}"
+FLOPPY_BROKER_ADDR = ":8787"
+FLOPPY_TEST_BROKER = "{{ env.FLOPPY_BROKER_URL }}"
+
+[tools]
+node = "26.5.0"
+java = { version = "temurin-21", os = ["macos", "linux"] }
+ruby = { version = "4.0.6", os = ["macos"] }
+cocoapods = { version = "latest", os = ["macos"] }
+rust = { version = "latest", profile = "default", postinstall = 'rustup default "$RUSTUP_TOOLCHAIN"' }
+"npm:@fission-ai/openspec" = "1.6.0"
+go = "latest"
+
+# --- dev ---
+
 [tasks.dev]
-run = "wails3 dev"
+description = "Tauri desktop dev (Vite on :1420)"
+run = "npm run tauri dev"
+
+[tasks."dev:android"]
+description = "Tauri Android dev on a connected device/emulator"
+run = "npm run tauri android dev"
+
+[tasks."dev:ios"]
+description = "Tauri iOS dev on a connected device/simulator"
+run = "npm run tauri ios dev"
+
+# --- emulator (no Android Studio needed) ---
+
+[tasks."avd:list"]
+description = "List the Android AVDs this machine has"
+run = "emulator -list-avds"
+
+[tasks."avd:start"]
+description = "Boot an AVD (default Pixel_9_Pro; append -no-window for headless)"
+run = "emulator @{{arg(name='avd', default='Pixel_9_Pro')}}"
+
+[tasks."avd:stop"]
+description = "Kill the running emulator"
+run = "adb emu kill"
+
+[tasks."avd:create"]
+description = "Create the Pixel_9_Pro AVD from the installed API-37 system image"
+run = "avdmanager create avd --force -n {{arg(name='avd', default='Pixel_9_Pro')}} -d pixel_9_pro -k 'system-images;android-37.1;google_apis_playstore_ps16k;arm64-v8a'"
+
+[tasks.broker]
+description = "Run the Go rendezvous broker locally (pair with FLOPPY_BROKER=local)"
+dir = "broker"
+run = "go run ."
 
 [tasks."kill-port"]
-run = "lsof -ti tcp:9245 | xargs kill -9"
-run_windows = "Stop-Process -Id (Get-NetTCPConnection -LocalPort 9245 -State Listen).OwningProcess -Force"
+description = "Free the Vite dev port when a dev run leaks it"
+run = "lsof -ti tcp:1420 | xargs kill -9"
+run_windows = "Stop-Process -Id (Get-NetTCPConnection -LocalPort 1420 -State Listen).OwningProcess -Force"
+
+# --- build ---
+
+[tasks.build]
+description = "Bundle the desktop app for this OS"
+run = "npm run tauri build"
+
+[tasks."build:android"]
+description = "Build the Android APK/AAB"
+run = "npm run tauri android build"
+
+[tasks."build:ios"]
+description = "Build the iOS app"
+run = "npm run tauri ios build"
+
+# --- check ---
+
+[tasks.lint]
+description = "Prettier check + ESLint + clippy"
+run = [
+  "npm run lint",
+  "cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets"
+]
+
+[tasks.check]
+description = "svelte-check against tsconfig"
+run = "npm run check"
+
+[tasks.bindings]
+description = "Regenerate src/lib/ipc/bindings.ts from the Rust command/event surface"
+dir = "src-tauri"
+run = "cargo test export_bindings"
+
+# --- test ---
+
+[tasks."test:rust"]
+description = "Rust unit + hermetic transport tests"
+dir = "src-tauri"
+run = "cargo test"
+
+[tasks."test:go"]
+description = "Broker tests"
+dir = "broker"
+run = "go test -race ./..."
 
 [tasks.test]
-run = "gotestsum ./internal/..."
+description = "Full offline gate: Rust + broker"
+depends = ["test:rust", "test:go"]
 
-[tasks."frontend:fmt"]
-run = """
-cd frontend
-npm run format
-"""
+[tasks."test:live"]
+description = "Live cross-language E2E against FLOPPY_TEST_BROKER"
+dir = "src-tauri"
+run = "cargo test -- --ignored"
 
-[tasks."frontend:lint"]
-run = """
-cd frontend
-npm run lint
-"""
+# --- toolchain ---
 
-[tasks."frontend:check"]
-run = """
-cd frontend
-npm run check
-"""
-
-[tasks.install]
-run = """
-case "$(uname -s)" in
-  Darwin) ./scripts/install-macos.sh ;;
-  Linux) ./scripts/install-linux.sh ;;
-  *) echo "unsupported platform: $(uname -s)" >&2; exit 1 ;;
-esac
-"""
-run_windows = "pwsh -NoProfile -File ./scripts/install-windows.ps1"
+[tasks.doctor]
+description = "Verify the Tauri dev toolchain for this OS"
+run = "./scripts/doctor-macos.sh"
+run_windows = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/doctor-windows.ps1"
