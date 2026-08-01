@@ -102,7 +102,7 @@
 	     reaches past the viewport on purpose, and clipping it would leave the camera
 	     bright in the corners. -->
 	<div
-		class="fixed inset-0 z-70 flex flex-col"
+		class="fixed inset-0 z-(--z-scanner) flex flex-col"
 		transition:fade={{ duration: normal() }}
 		onoutrostart={shellBack}
 	>

@@ -53,6 +53,22 @@ class PairingApp {
 		return this.identity !== ''
 	}
 
+	/**
+	 * A prompt the app raised on its own is on screen and owns it.
+	 *
+	 * The shell's rule is that such a prompt never shares the screen with a panel
+	 * the user opened, so a panel reads this and closes. Stated once here rather
+	 * than as "request or incoming" at each panel: the two events are one idea, and
+	 * a third would otherwise have to be remembered at every call site.
+	 *
+	 * Ordering alone (see the scale in layout.css) puts the prompt in front, but on a
+	 * phone both are bottom sheets, and a correct stack is still two dims and two
+	 * panels with the lower one's edge showing.
+	 */
+	get prompting() {
+		return this.request !== null || this.incoming !== null
+	}
+
 	/** Subscribe to pairing events; returns the cleanup for onMount. */
 	async init() {
 		try {

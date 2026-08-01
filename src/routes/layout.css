@@ -52,6 +52,33 @@
 	--bar-height: calc(var(--spacing) * 13);
 	--header-height: calc(var(--safe-top) + var(--bar-height));
 
+	/* The one stacking scale, back to front. Every surface that paints over the
+	   page names its layer from here rather than picking a number locally — which
+	   is what the four scattered values these replace were.
+
+	   It has to be a scale rather than DOM order because portal order is not open
+	   order: bits-ui mounts a dialog's portal node into <body> when the component
+	   mounts, and the routed page remounts on every navigation, so which of two
+	   z-50 surfaces paints on top depended on route history.
+
+	   --z-header   the app bar. Above page content, below every overlay: it used
+	                to sit above them and stayed bright over a dialog's dim.
+	   --z-panel    dialogs, drawers, sheets, selects, tooltips. The value shadcn
+	                already hard-codes, kept so no vendored component has to be
+	                patched — an unnamed surface is already on this layer. Named
+	                here so a future surface can say so without one.
+	   --z-scanner  the camera's own chrome (ScanSheet).
+	   --z-prompt   what the app raises unasked: an incoming pairing request, an
+	                incoming transfer offer. Above the camera, so an offer during a
+	                scan is seen without cancelling the scan.
+
+	   Toasts are above all four and are not in the scale: sonner ships its own
+	   z-index (999999999) and nothing here needs to argue with it. */
+	--z-header: 40;
+	--z-panel: 50;
+	--z-scanner: 60;
+	--z-prompt: 70;
+
 	--chart-1: oklch(0.855 0.138 181.071);
 	--chart-2: oklch(0.704 0.14 182.503);
 	--chart-3: oklch(0.6 0.118 184.704);
@@ -309,6 +336,31 @@ html[data-scanning] [data-slot='sidebar-wrapper'] {
 	[data-slot='sidebar-wrapper'] {
 		transition: none;
 	}
+}
+
+/* A surface names its layer with `data-layer`, and this maps the name to the scale.
+
+   Unlayered, for the same reason the safe-area rules above are: the z-50 it has to
+   beat is a utility on the vendored content element, and a utility beats @layer base.
+
+   An attribute rather than a class on purpose. A class would go through cn() and
+   tailwind-merge at the call site and would have to out-prefix the vendored one to
+   win — the trap that has already produced defects in the sidebar. An attribute
+   selector is not a utility and does not enter that argument.
+
+   The overlay is reached by adjacency because there is no other way to reach it: both
+   dialog-content.svelte and drawer-content.svelte hard-code <Overlay /> with no class
+   hook, and the portal renders its children straight into <body> with no wrapping
+   element to group them. What is guaranteed is that the overlay is the content's
+   immediately preceding sibling, in both.
+
+   Where :has() is missing the two content selectors still match, so the prompt still
+   paints above the panel and only its own dim stays behind. Cosmetic, not the bug. */
+[data-slot='dialog-content'][data-layer='prompt'],
+[data-slot='drawer-content'][data-layer='prompt'],
+[data-slot='dialog-overlay']:has(+ [data-layer='prompt']),
+[data-slot='drawer-overlay']:has(+ [data-layer='prompt']) {
+	z-index: var(--z-prompt);
 }
 
 /* A centred dialog only has to stay off the notch, not sit below it. */

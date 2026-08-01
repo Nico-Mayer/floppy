@@ -33,7 +33,9 @@
 </script>
 
 <ResponsiveDialog.Root {open} {onOpenChange}>
-	<ResponsiveDialog.Content class="sm:max-w-sm">
+	<!-- data-layer: this arrives unasked and has to be seen over whatever the user
+	     had open, whichever mounted its portal first. See the scale in layout.css. -->
+	<ResponsiveDialog.Content class="sm:max-w-sm" data-layer="prompt">
 		<ResponsiveDialog.Header>
 			<ResponsiveDialog.Title>Add this device?</ResponsiveDialog.Title>
 			<ResponsiveDialog.Description>

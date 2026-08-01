@@ -39,9 +39,13 @@
 	     sees no drag region and the window cannot be dragged, and the Windows
 	     min/max/close buttons stop responding too.
 	     data-tauri-drag-region: only the element the mousedown hits drags, so it
-	     goes on the empty zones (spacers), never on the buttons. -->
+	     goes on the empty zones (spacers), never on the buttons.
+	     --z-header sits below the overlay layer: the header only has to beat page
+	     content, and nothing between it and <body> makes a stacking context, so the
+	     number it used to carry genuinely won against dialogs and left the titlebar
+	     lit over their dim. See the scale in layout.css. -->
 	<header
-		class="pointer-events-auto sticky top-0 z-60 flex w-full items-center border-b bg-background"
+		class="pointer-events-auto sticky top-0 z-(--z-header) flex w-full items-center border-b bg-background"
 		data-tauri-drag-region
 	>
 		<div class="flex h-(--header-height) w-full items-center gap-2 pr-2 pl-3" data-tauri-drag-region>

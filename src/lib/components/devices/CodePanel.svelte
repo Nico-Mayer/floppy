@@ -20,6 +20,11 @@
 	// sat on the page whether or not anyone wanted it there; opening a panel is that
 	// intent, so covering the contents of a surface the user just opened is a tap
 	// that protects nothing.
+	//
+	// A redeemed code does not get a state here. Learning the code was used is the
+	// same moment the confirm prompt appears, and the page closes this panel for it
+	// (the shell rule, see pairing.prompting) — so the only spent case left is the
+	// clock running out with nobody having redeemed it.
 
 	let { open = $bindable(false) }: { open?: boolean } = $props()
 
@@ -28,17 +33,14 @@
 	let copied = $state(false)
 	/** Whole seconds since this code was shown, ticked by the interval below. */
 	let elapsed = $state(0)
-	/** The other device redeemed this code, so it is gone whatever the clock says. */
-	let used = $state(false)
 
 	const remaining = $derived(code ? Math.max(0, code.seconds - elapsed) : 0)
-	const spent = $derived(code !== null && (used || remaining === 0))
+	const spent = $derived(code !== null && remaining === 0)
 	const clock = $derived(`${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`)
 
 	async function showCode() {
 		making = true
 		copied = false
-		used = false
 		elapsed = 0
 		try {
 			code = await pairing.showCode()
@@ -51,7 +53,8 @@
 
 	// One code as the panel opens, and nothing left behind when it closes: a code
 	// costs a live session at the broker for as long as it lasts, so a visit that
-	// never opens this pays nothing.
+	// never opens this pays nothing. Clearing on close is also what makes reopening
+	// after a redeem show a fresh code rather than the burned one.
 	//
 	// `tried` is a plain flag, not state: a failed attempt must not re-run this
 	// effect, and `making` flipping back to false would otherwise do exactly that,
@@ -61,7 +64,6 @@
 		if (!open) {
 			tried = false
 			code = null
-			used = false
 			elapsed = 0
 			return
 		}
@@ -82,13 +84,9 @@
 		return () => clearInterval(id)
 	})
 
-	// A request against the code we are showing means it has been used. The confirm
-	// prompt is someone else's job; this only has to stop offering a dead code.
-	$effect(() => {
-		if (code && pairing.request) used = true
-	})
-
-	// A completed pairing is the reason this panel was open.
+	// A completed pairing is the reason this panel was open. Only reached when this
+	// device was the one redeeming: on the side showing the code the panel is already
+	// closed by then, by the page's rule about prompts.
 	let seenPaired = $state(pairing.paired)
 	$effect(() => {
 		if (pairing.paired === seenPaired) return
@@ -127,15 +125,13 @@
 
 		<ResponsiveDialog.Body class="flex flex-col gap-3">
 			<!-- Fixed height, not content height: the same box while a code is on its
-			     way, once it is showing, and after it has been spent, so nothing in the
-			     panel moves when a code is minted, replaced, or used up. -->
+			     way, once it is showing, and after it has run out, so nothing in the
+			     panel moves when a code is minted or replaced. -->
 			<div class="relative flex h-64 items-center justify-center">
 				{#if spent}
 					<!-- The dead code is gone rather than dimmed. What to do about it is the
 					     row below, which is the same row that was there a second ago. -->
-					<p class="text-sm text-muted-foreground">
-						{used ? 'That code has been used.' : 'That code has run out.'}
-					</p>
+					<p class="text-sm text-muted-foreground">That code has run out.</p>
 				{:else}
 					<!-- No card around this. The panel is already a surface with its own edge,
 					     and a card inside it was a second border saying the same thing.
@@ -175,8 +171,7 @@
 			</div>
 
 			<!-- One row, always here, whatever state the code is in: it holds its place
-			     while a code is on its way, while one is live, and after one has been
-			     used up.
+			     while a code is on its way, while one is live, and after one has run out.
 			     Live, there is one thing to do: copy it. Replacing a code that still
 			     works is not worth a control of its own, since the panel replaces it the
 			     moment it runs out. -->
