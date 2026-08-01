@@ -95,9 +95,11 @@
 			</div>
 			{title}
 		</Card.Title>
-		<!-- The mono status line is desktop density; on a phone the mode switcher
-		     above and the badge already say where you are, so it is hidden. -->
-		<Card.Description class="font-mono text-[10px] tracking-widest uppercase max-sm:hidden">
+		<!-- The mono status line, at every width. It used to be hidden below `sm`
+		     because the mode switcher above it and the app bar already said where
+		     you were; both are gone, and this is the only sentence describing what
+		     is currently happening — the badge beside it is a token, not a state. -->
+		<Card.Description class="font-mono text-[10px] tracking-widest uppercase">
 			{headline}
 		</Card.Description>
 		<Card.Action class="flex items-center gap-1.5">

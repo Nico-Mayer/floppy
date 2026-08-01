@@ -1,19 +1,17 @@
 <script lang="ts">
 	import { asset, resolve } from '$app/paths'
 	import { page } from '$app/state'
-	import LoginView from '$lib/components/auth/LoginView.svelte'
 	import StubMark from '$lib/components/shell/StubMark.svelte'
 	import * as Avatar from '$lib/components/ui/avatar'
-	import * as Dialog from '$lib/components/ui/dialog'
 	import * as Sidebar from '$lib/components/ui/sidebar'
-	import { useSidebar } from '$lib/components/ui/sidebar'
 	import { navItems as items, type NavItem } from '$lib/nav-items'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import UserIcon from '@lucide/svelte/icons/user'
 
-	// The app's one navigation surface: a fixed sidebar on desktop (collapsible to
-	// an icon rail) and the same thing as a left drawer on a phone. Destinations
-	// live in nav-items.ts so there is a single source of truth.
+	// Desktop navigation: a fixed sidebar, collapsible to an icon rail. Mounted
+	// only at or above the navigation threshold — below it the bottom bar is the
+	// navigation and this never renders. Destinations live in nav-items.ts so there
+	// is a single source of truth.
 	//
 	// Structure follows the shadcn-svelte sidebar contract so the icon rail renders
 	// correctly: brand and account rows are `size="lg"` menu buttons (they collapse
@@ -32,29 +30,14 @@
 	// Exact match — every route is a leaf, so no prefix ambiguity to resolve.
 	const pathname = $derived(page.url.pathname)
 
-	let signInOpen = $state(false)
-
-	const sidebar = useSidebar()
-
-	// On mobile the sidebar is a drawer; collapse it once a destination is chosen
-	// so navigation is one tap, not two. Unconditional: openMobile only drives the
-	// mobile Sheet, so closing it is a no-op on desktop (the rail stays put).
-	function afterNavigate() {
-		sidebar.setOpenMobile(false)
-	}
-
 	/** The paired-device count, shown on the Devices row once there is one. */
 	function showCount(item: NavItem) {
 		return item.href === '/devices' && pairing.available && pairing.devices.length > 0
 	}
 </script>
 
-<!-- Fixed below the app header on desktop (collapsible to an icon rail); a vaul
-     Drawer on mobile, which can be dragged shut. The offset keeps the drawer
-     below the header on every size, so the app bar stays visible above it instead
-     of being covered — and it is why layout.css excludes this drawer from the
-     safe-top padding it gives other side surfaces (--header-height already
-     includes that inset). -->
+<!-- Fixed below the titlebar and collapsible to an icon rail. The offset keeps it
+     clear of the header, which is sticky above it at every desktop size. -->
 <Sidebar.Root collapsible="icon" class="top-(--header-height)! h-[calc(100svh-var(--header-height))]!">
 	<Sidebar.Header>
 		<Sidebar.Menu>
@@ -93,14 +76,9 @@
 					{#each items as item (item.href)}
 						{@const active = pathname === item.href}
 						<Sidebar.MenuItem>
-							<!-- The 44px touch target on the mobile drawer now comes from
-							     Sidebar.MenuButton itself, so a new row cannot forget it. The rail
-							     still overrides to a square size-8 at md and up. -->
 							<Sidebar.MenuButton isActive={active} tooltipContent={item.label}>
 								{#snippet child({ props })}
-									<!-- onclick after the spread so it wins over any handler the menu
-									     button / tooltip trigger passes in, and always runs.
-									     A preview destination says so in its accessible name rather than
+									<!-- A preview destination says so in its accessible name rather than
 									     via an extra element: the row must stay
 									     `<a><icon/><span>label</span></a>` with exactly one span, or the
 									     component's own icon-rail rules cannot hide the label. -->
@@ -108,7 +86,6 @@
 										href={resolve(item.href)}
 										{...props}
 										aria-label={item.stub ? `${item.label}, preview` : undefined}
-										onclick={afterNavigate}
 									>
 										<item.icon />
 										<span>{item.label}</span>
@@ -157,9 +134,7 @@
 	     only consumer, and sidebar.svelte is already patch site enough. -->
 	<Sidebar.Separator class="group-data-[collapsible=icon]:mx-1 data-[orientation=horizontal]:w-auto" />
 
-	<!-- Clear the home indicator / gesture bar on mobile (0 on desktop). The
-	     drawer sheet uses data-slot="sidebar", so the generic sheet safe-area rule
-	     in layout.css doesn't reach it.
+	<!-- Clear the gesture rail on a desktop OS that reports one (0 almost always).
 	     Additive, and it has to be: a bare `pb-(--safe-bottom)` outranks the
 	     component's own `p-2` for the bottom side (tailwind-merge treats the
 	     caller's `pb-*` as the more specific of the two), so on desktop, where the
@@ -171,40 +146,35 @@
 				<!-- Signing in is a planned feature, not dead scaffolding, so the entry
 				     point stays and says it is a preview instead of being removed. Lives
 				     in the footer so it's out of the main nav.
+				     It navigates to Settings, where the Account section actually is,
+				     rather than opening a dialog: one place the account is presented and
+				     one way to reach it. Deliberately no `isActive` — on /settings the
+				     destination row above is the one that reads as active, and two rows
+				     lighting at once would say this is a second entry in the list.
 				     The wording stays limited to syncing devices between installs: the
 				     rendezvous broker is accountless and stateless, and nothing here
-				     changes that. -->
-				<Sidebar.MenuButton size="lg" tooltipContent="Sign in" onclick={() => (signInOpen = true)}>
-					<!-- No avatar image while signed out. A face would misrepresent the
-					     empty account, and fetching one from a third party is at odds with
-					     the app's peer-to-peer, no-cloud promise, so there is no `src` to
-					     fetch: the icon fallback is the whole avatar. -->
-					<Avatar.Root class="size-8 rounded-lg">
-						<Avatar.Fallback class="rounded-lg"><UserIcon class="size-4" /></Avatar.Fallback>
-					</Avatar.Root>
-					<div class="flex min-w-0 flex-col leading-tight">
-						<span class="truncate font-medium">Not signed in</span>
-						<span class="truncate text-xs text-muted-foreground">Sync your devices</span>
-					</div>
-					<StubMark />
+				     changes that. Status is in text for the same reason there is no
+				     account item in the bottom bar: the avatar has no image to fetch, so
+				     signed in and signed out would render the same glyph. -->
+				<Sidebar.MenuButton size="lg" tooltipContent="Sign in">
+					{#snippet child({ props })}
+						<a href={resolve('/settings')} {...props}>
+							<!-- No avatar image while signed out. A face would misrepresent the
+							     empty account, and fetching one from a third party is at odds
+							     with the app's peer-to-peer, no-cloud promise, so there is no
+							     `src` to fetch: the icon fallback is the whole avatar. -->
+							<Avatar.Root class="size-8 rounded-lg">
+								<Avatar.Fallback class="rounded-lg"><UserIcon class="size-4" /></Avatar.Fallback>
+							</Avatar.Root>
+							<div class="flex min-w-0 flex-col leading-tight">
+								<span class="truncate font-medium">Not signed in</span>
+								<span class="truncate text-xs text-muted-foreground">Sync your devices</span>
+							</div>
+							<StubMark />
+						</a>
+					{/snippet}
 				</Sidebar.MenuButton>
 			</Sidebar.MenuItem>
 		</Sidebar.Menu>
 	</Sidebar.Footer>
 </Sidebar.Root>
-
-<Dialog.Root bind:open={signInOpen}>
-	<Dialog.Content class="sm:max-w-sm">
-		<Dialog.Header>
-			<!-- Marked in the title, same as a preview route's page header. Signing in
-			     would sync your paired devices between installs, and nothing more: the
-			     broker stays accountless. -->
-			<Dialog.Title class="flex items-center gap-2">
-				Sign in
-				<StubMark />
-			</Dialog.Title>
-			<Dialog.Description>Keep your paired devices in sync across installs.</Dialog.Description>
-		</Dialog.Header>
-		<LoginView />
-	</Dialog.Content>
-</Dialog.Root>

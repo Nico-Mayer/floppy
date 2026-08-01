@@ -1,4 +1,6 @@
 <script lang="ts">
+	import LoginView from '$lib/components/auth/LoginView.svelte'
+	import StubMark from '$lib/components/shell/StubMark.svelte'
 	import * as Field from '$lib/components/ui/field'
 	import { Input } from '$lib/components/ui/input'
 	import { Switch } from '$lib/components/ui/switch'
@@ -32,6 +34,23 @@
      preview marker does not make a wrong value right, so the field is gone until
      it can read the real one. -->
 <Field.FieldGroup>
+	<!-- Signing in lives here rather than behind a dialog: there is one place the
+	     account is presented, and one way to reach it (the sidebar's account row
+	     links here, and on mobile Settings is a bar destination). Marked as a
+	     preview in its own legend the same way a preview route's header is —
+	     the broker is accountless, and signing in would only sync your paired
+	     devices between installs. -->
+	<Field.FieldSet>
+		<Field.FieldLegend class="flex items-center">
+			Account
+			<StubMark />
+		</Field.FieldLegend>
+		<Field.FieldDescription>Keep your paired devices in sync across installs.</Field.FieldDescription>
+		<LoginView />
+	</Field.FieldSet>
+
+	<Field.FieldSeparator />
+
 	<Field.FieldSet>
 		<Field.FieldLegend>Appearance</Field.FieldLegend>
 		<Field.FieldDescription>Match your system, or pick one and stick with it.</Field.FieldDescription>

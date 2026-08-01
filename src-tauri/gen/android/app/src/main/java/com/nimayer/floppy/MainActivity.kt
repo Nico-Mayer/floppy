@@ -28,19 +28,21 @@ class MainActivity : TauriActivity() {
     // so the page asks for the current values itself once it has mounted.
     webView.addJavascriptInterface(SafeAreaBridge(), "__floppySafeArea")
 
-    // Push, for everything after: rotation, gesture bar vs. button bar, and the
-    // keyboard opening over the navigation bar.
+    // Push, for everything after: rotation, and gesture bar vs. button bar.
     ViewCompat.setOnApplyWindowInsetsListener(webView) { view, windowInsets ->
       val bars = windowInsets.getInsets(
         WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
       )
-      val ime = windowInsets.getInsets(WindowInsetsCompat.Type.ime())
       val density = view.resources.displayMetrics.density
-      // The keyboard covers the navigation bar rather than stacking on top of
-      // it, so the bottom inset is the taller of the two, not their sum.
-      val bottom = maxOf(bars.bottom, ime.bottom) / density
+      // System bars only. The keyboard is deliberately *not* folded in here: it
+      // is a transient surface that slides over the app (see
+      // interactive-widget=overlays-content in app.html), not a permanent edge
+      // the layout has to stay clear of. Reporting it as a safe area grew the
+      // bottom bar's padding by the keyboard's height, which pushed the whole
+      // app up and left the bar floating above the keys — the one thing neither
+      // platform's keyboard does.
       insets = """{"top":${bars.top / density},"right":${bars.right / density},""" +
-        """"bottom":$bottom,"left":${bars.left / density}}"""
+        """"bottom":${bars.bottom / density},"left":${bars.left / density}}"""
       (view as WebView).evaluateJavascript(
         "window.dispatchEvent(new CustomEvent('floppy:safe-area',{detail:$insets}))",
         null

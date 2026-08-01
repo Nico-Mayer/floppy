@@ -1,53 +1,37 @@
 <script lang="ts">
-	import { page } from '$app/state'
 	import { Button } from '$lib/components/ui/button/index.js'
 	import { useSidebar } from '$lib/components/ui/sidebar'
 	import { Window } from '$lib/ipc'
-	import { titleFor } from '$lib/nav-items'
 	import { isMac, isPhoneChrome, isWindows } from '$lib/platform'
 	import MenuIcon from '@lucide/svelte/icons/menu'
 	import MinusIcon from '@lucide/svelte/icons/minus'
 	import SquareIcon from '@lucide/svelte/icons/square'
 	import XIcon from '@lucide/svelte/icons/x'
 
-	// The one header for every platform. It has no window to drag on a phone and
-	// no in-app back anywhere (navigation is flat), so the only shared control is
-	// the menu button that toggles the sidebar — a rail on desktop, a drawer on a
-	// phone. Everything else is per-platform chrome: a status-bar-safe app bar on
-	// mobile, the macOS traffic-light spacer + drag region, or the Windows
-	// min/max/close cluster on a frameless window.
+	// Platform chrome, not navigation. It exists to control a window, so on iOS and
+	// Android — where there is no window to drag, minimise or close, and the bottom
+	// bar already names the destination — it renders nothing at all: the routed
+	// content runs to the top safe-area inset and each screen's own heading is the
+	// title. Everything below is the macOS traffic-light spacer + drag region, or
+	// the Windows min/max/close cluster on a frameless window.
 	const sidebar = useSidebar()
-	const title = $derived(titleFor(page.url.pathname))
+
+	// The menu button toggles the sidebar between expanded and rail, so it is only
+	// shown where the sidebar is: below the navigation threshold the bottom bar is
+	// the navigation and there is nothing to toggle. Read off the sidebar context
+	// so it is the same threshold instance the layout mounts against.
+	const showMenu = $derived(!sidebar.isMobile)
 </script>
 
 {#snippet menuToggle()}
-	<Button
-		variant="ghost"
-		size="icon"
-		class="size-8"
-		aria-label="Menu"
-		onclick={() => sidebar.toggle()}
-		hidden={sidebar.openMobile}
-	>
-		<MenuIcon />
-	</Button>
+	{#if showMenu}
+		<Button variant="ghost" size="icon" class="size-8" aria-label="Menu" onclick={() => sidebar.toggle()}>
+			<MenuIcon />
+		</Button>
+	{/if}
 {/snippet}
 
-{#if isPhoneChrome}
-	<!-- Plain app bar: paints under the status bar and pads itself down by the top
-	     inset so its background sits behind the clock and battery. --header-height
-	     carries that total, which is what overlays portaled onto <body> offset
-	     against. The nav drawer opens *below* this bar (AppSidebar offsets it), so
-	     the bar stays visible while the drawer is open; the menu button hides
-	     itself meanwhile. Closing is by dragging the drawer shut, the scrim, a nav
-	     choice, or the back gesture. -->
-	<header
-		class="sticky top-0 z-60 flex h-(--header-height) shrink-0 items-center gap-1 border-b bg-background pt-(--safe-top) pr-[calc(var(--safe-right)+(--spacing(2)))] pl-[calc(var(--safe-left)+(--spacing(2)))]"
-	>
-		{@render menuToggle()}
-		<h1 class="truncate px-1 font-heading text-lg font-bold tracking-tight">{title}</h1>
-	</header>
-{:else}
+{#if !isPhoneChrome}
 	<!-- pointer-events-auto: an open modal locks body scroll, which also sets
 	     `pointer-events: none` on <body> and re-enables it only on the overlay and
 	     the panel. The window frame has to opt back in, or the titlebar goes dead

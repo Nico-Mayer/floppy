@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { horizontalSwipe, notEdgeStrip } from '$lib/actions/horizontal-swipe.svelte'
+	import { horizontalSwipe } from '$lib/actions/horizontal-swipe.svelte'
 	import { fast } from '$lib/motion'
 	import { isTouch } from '$lib/platform'
 	import type { Snippet } from 'svelte'
@@ -64,8 +64,11 @@
 	}
 </script>
 
-<!-- data-swipe-row is what the shared arbitration looks for to know a gesture
-     starting here belongs to the row rather than to a pager. -->
+<!-- data-swipe-row marks this subtree as owning horizontal touches inside it, the
+     declaration the shared arbitration order is written around.
+     No `claim`: the row takes a horizontal touch anywhere across its full width,
+     including the left edge, which used to be reserved for the navigation
+     drawer's opening gesture. There is no drawer and no reserved strip now. -->
 <div data-swipe-row class="relative isolate overflow-hidden rounded-2xl">
 	<!-- Behind the row, only reachable once it has slid aside. aria-hidden while
 	     closed so a screen reader is not offered a control nobody can see. -->
@@ -97,7 +100,6 @@
 		class:transition-transform={!dragging}
 		style="transform: translateX({offset}px); transition-duration: {fast()}ms"
 		use:horizontalSwipe={{
-			claim: notEdgeStrip,
 			enabled: touch,
 			threshold: 0.25,
 			onProgress,

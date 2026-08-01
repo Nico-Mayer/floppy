@@ -57,13 +57,12 @@ class PairingApp {
 			events.pairingOfferEvent.listen((e) => (this.incoming = e.payload)),
 			events.pairingAccepted.listen(() => {
 				// Move the send panel off "waiting for a yes" into the accepted state;
-				// progress events then carry it to sending/done. Route to the transfer
-				// panel so the progress it drives is actually on screen. Also clear any
-				// lingering incoming prompt. The panel visibly progressing is the "yes";
-				// no toast.
+				// progress events then carry it to sending/done. Route to Send so the
+				// progress it drives is actually on screen. Also clear any lingering
+				// incoming prompt. The panel visibly progressing is the "yes"; no toast.
 				app.send.accepted()
 				this.incoming = null
-				void goto(resolve('/'))
+				void goto(resolve('/send'))
 			}),
 			events.pairingDeclined.listen((e) => {
 				this.#resetPendingSend()
@@ -128,12 +127,11 @@ class PairingApp {
 		if (!this.incoming) return
 		const offer = this.incoming
 		this.incoming = null
-		// Switch to the receive view and show it connecting — the transfer's
-		// progress and completion land there once the sender starts. Route to the
-		// transfer panel too, since the prompt can be accepted from any page. The
-		// offer travels with it so the panel can say who is sending, and what.
-		app.mode = 'receive'
-		void goto(resolve('/'))
+		// Go to Receive and show it connecting — the transfer's progress and
+		// completion land there once the sender starts, and the prompt can be
+		// accepted from any page. The offer travels with it so the panel can say
+		// who is sending, and what.
+		void goto(resolve('/receive'))
 		app.receive.beginTrusted({
 			name: offer.fromName,
 			fileCount: offer.fileCount,
@@ -169,8 +167,7 @@ class PairingApp {
 		// device could be un-trusted mid-transfer and the list would forget it.
 		const device = this.devices.find((d) => d.fingerprint === fingerprint)
 		if (!device) return
-		app.error = null
-		app.mode = 'send'
+		app.send.error = null
 		app.send.beginTrusted({ fingerprint, name: device.name })
 		try {
 			// No toast here — the send panel already shows the connecting/waiting state.

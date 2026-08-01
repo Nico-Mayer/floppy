@@ -9,12 +9,12 @@
 //                   revealed by hover, and whether haptics fire.
 //   isNarrow()      viewport width below Tailwind's `sm`. Full-bleed content
 //                   and whether a transient surface is a dialog or a drawer.
-//   isPhoneChrome   platform form factor. The mobile app bar vs the desktop
-//                   titlebar, the `data-mobile` document flag, and hiding
-//                   actions the platform cannot perform at all.
+//   isPhoneChrome   platform form factor. Whether a window titlebar exists at
+//                   all, the `data-mobile` document flag, and hiding actions the
+//                   platform cannot perform at all.
 //
 // A fourth threshold lives in `hooks/is-mobile.svelte.ts` and stays there: it
-// is the navigation's own drawer-vs-rail question, which is not this file's
+// is the navigation's own bar-vs-rail question, which is not this file's
 // business. See the note in that file for why it is 768 and not 640.
 //
 // The pointer and width signals are functions, not constants, because they are
@@ -40,9 +40,10 @@ export const isWindows = /win/i.test(platform)
 // `userAgentData.platform` reports the OS, so the user agent is what tells us
 // this is a phone or tablet build.
 //
-// Use it only for things that are true of the *platform*: the app bar instead
-// of a window titlebar, the `data-mobile` flag on `<html>`, and hiding an
-// action the OS cannot honour (revealing a folder in a file manager). For
+// Use it only for things that are true of the *platform*: whether there is a
+// window titlebar at all (there is none on a phone — the header renders
+// nothing), the `data-mobile` flag on `<html>`, and hiding an action the OS
+// cannot honour (revealing a folder in a file manager). For
 // anything about how big the window is use `isNarrow()`; for anything about
 // fingers use `isTouch()`.
 const userAgent = typeof navigator === 'undefined' ? '' : navigator.userAgent

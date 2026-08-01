@@ -4,8 +4,17 @@
 		<meta charset="utf-8" />
 		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
 		<!-- viewport-fit=cover lets the webview extend under the notch/status bar;
-		     the shell reclaims that space with safe-area insets (layout.css). -->
-		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+		     the shell reclaims that space with safe-area insets (layout.css).
+		     interactive-widget=overlays-content: the keyboard slides over the app
+		     instead of resizing it, which is what iOS does and what Android apps look
+		     like under edge-to-edge. Stated rather than left to the default so the two
+		     platforms cannot disagree: the layout viewport stays the full screen, the
+		     bottom bar is simply covered while typing, and the browser scrolls the
+		     focused field into view by moving the visual viewport. -->
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=overlays-content"
+		/>
 		<title>Floppy</title>
 		%sveltekit.head%
 	</head>

@@ -1,11 +1,17 @@
 <script lang="ts">
+	import { goto } from '$app/navigation'
+	import { resolve } from '$app/paths'
+	import { page } from '$app/state'
 	import IncomingOfferDialog from '$lib/components/prompts/IncomingOfferDialog.svelte'
 	import IncomingPairDialog from '$lib/components/prompts/IncomingPairDialog.svelte'
 	import AppHeader from '$lib/components/shell/AppHeader.svelte'
 	import AppSidebar from '$lib/components/shell/AppSidebar.svelte'
-	import NavEdgeSwipe from '$lib/components/shell/NavEdgeSwipe.svelte'
+	import BottomNav from '$lib/components/shell/BottomNav.svelte'
 	import * as Sidebar from '$lib/components/ui/sidebar'
 	import { Toaster } from '$lib/components/ui/sonner'
+	import { IsMobile } from '$lib/hooks/is-mobile.svelte'
+	import { fast, shift } from '$lib/motion'
+	import { navItems } from '$lib/nav-items'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import { isPhoneChrome } from '$lib/platform'
 	import { watchSafeArea } from '$lib/safe-area'
@@ -16,14 +22,49 @@
 	import { getCurrentWindow } from '@tauri-apps/api/window'
 	import { ModeWatcher } from 'mode-watcher'
 	import { onMount } from 'svelte'
+	import { fly } from 'svelte/transition'
 	import './layout.css'
 
 	const { children } = $props()
 
-	// Sidebar open state on desktop: starts expanded, and the header's menu button
-	// collapses it to an icon rail. On a phone the sidebar is a drawer and tracks
-	// its own `openMobile` state instead, so this only drives desktop.
+	// Sidebar open state: starts expanded, and the header's menu button collapses
+	// it to an icon rail. Desktop-only by construction — below the navigation
+	// threshold the sidebar is not mounted at all.
 	let sidebarOpen = $state(true)
+
+	// Which navigation surface renders. The same threshold the sidebar reads
+	// internally, instantiated here because the layout sits outside the provider's
+	// context. Width-driven, so a narrow desktop window gets the bar too — and
+	// that is what makes the sidebar's mobile branch genuinely unreachable.
+	const isMobile = new IsMobile()
+
+	// Route changes animate in the direction of travel, derived from position in
+	// the destination list rather than from whatever control caused the change —
+	// so a bar tap, a sidebar click, ⌘2, and an accepted transfer all move the same
+	// way. Only the arriving screen animates: the two would otherwise both be in
+	// the flex column at once and the layout would jump.
+	// Seeded on first run rather than at declaration: a route outside the list
+	// (there is none today) leaves the direction as it was.
+	let enterDir = $state(1)
+	let previousIndex: number | null = null
+	$effect(() => {
+		const index = navItems.findIndex((item) => item.href === page.url.pathname)
+		if (index === -1) return
+		if (previousIndex !== null && index !== previousIndex) enterDir = index > previousIndex ? 1 : -1
+		previousIndex = index
+	})
+
+	// ⌘1-⌘4 (Ctrl elsewhere) over the destination list, in the layout so they work
+	// from every route and cannot drift from what the bar and sidebar show.
+	function handleShortcuts(e: KeyboardEvent) {
+		if (!(e.metaKey || e.ctrlKey)) return
+		const slot = Number(e.key)
+		if (!Number.isInteger(slot)) return
+		const item = navItems[slot - 1]
+		if (!item) return
+		e.preventDefault()
+		void goto(resolve(item.href))
+	}
 
 	// Native file drag-drop. OS drops never reach the DOM's drag events (the
 	// native window layer takes them first), so Tauri reports enter/over/leave/
@@ -65,18 +106,19 @@
 		// Android hardware back: registering a handler suppresses the default
 		// (which finishes the activity). Navigation is flat — every destination
 		// stands on its own, so there is no in-app back to offer. Back only has to
-		// dismiss an open overlay (a dialog, or the nav drawer); with none open it
-		// leaves the app by closing the window, the finish the default would have
-		// done. No-op on desktop, where there is no hardware back.
+		// dismiss an open overlay; with none open it leaves the app by closing the
+		// window, the finish the default would have done. No-op on desktop, where
+		// there is no hardware back.
 		let backListener: PluginListener | undefined
 		if (isPhoneChrome) {
 			onBackButtonPress(() => {
-				// An open dialog or the nav drawer owns the gesture first: back should
-				// dismiss it, not quit the app out from under it. Escape is how each
-				// layer already closes, so we hand it that — a prompt that refuses to
-				// be dismissed still refuses.
+				// An open overlay owns the gesture first: back should dismiss it, not
+				// quit the app out from under it. Escape is how each layer already
+				// closes, so we hand it that — a prompt that refuses to be dismissed
+				// still refuses. No navigation surface is listed: navigation is a bar
+				// in the layout flow, so there is nothing of its own to close.
 				const overlay = document.querySelector(
-					'[data-slot="dialog-content"],[data-slot="sheet-content"],[data-slot="drawer-content"],[data-slot="sidebar"][data-mobile="true"]'
+					'[data-slot="dialog-content"],[data-slot="sheet-content"],[data-slot="drawer-content"]'
 				)
 				if (overlay) {
 					document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
@@ -124,23 +166,51 @@
 	}
 </script>
 
+<svelte:window onkeydown={handleShortcuts} />
+
 <ModeWatcher />
 
-<!-- One shell for every platform and width. The header adapts its chrome to the
-     platform (macOS traffic-light spacer, Windows controls, or a phone's
-     status-bar-safe app bar); the sidebar adapts to the width (a fixed icon rail
-     on desktop, a Sheet drawer on a phone, opened by the menu button or a
-     left-edge swipe via NavEdgeSwipe). Safe-area insets on the content clear the
-     notch, gesture rails and home indicator; they resolve to 0 on desktop. -->
+<!-- One shell for every platform and width. The header is platform chrome (macOS
+     traffic-light spacer, Windows controls, nothing at all on a phone); width
+     picks exactly one navigation surface — the icon-rail sidebar at or above the
+     threshold, the bottom bar below it. The bar is a flex sibling rather than a
+     fixed overlay, so it takes no z-index and no scroll region has to pad around
+     it. Safe-area insets clear the notch, gesture rails and home indicator: the
+     content owns the top (there is no app bar to own it), the bar owns the
+     bottom. All of them resolve to 0 on desktop. -->
 <Sidebar.Provider bind:open={sidebarOpen} class="h-svh min-h-0! flex-col">
 	<AppHeader />
-	<NavEdgeSwipe />
 	<div class="flex min-h-0 w-full flex-1">
-		<AppSidebar />
-		<Sidebar.Inset class="min-h-0 bg-background pr-(--safe-right) pb-(--safe-bottom) pl-(--safe-left)">
-			{@render children()}
+		{#if !isMobile.current}
+			<AppSidebar />
+		{/if}
+		<!-- overflow-clip contains the route transition below. The arriving screen
+		     starts translated sideways, which without this pokes out of the inset and
+		     the overflow travels all the way up to <body>: a horizontal scrollbar
+		     appears for the length of the animation, and the height it steals brings a
+		     vertical one with it. Every route either sizes itself to the viewport or
+		     brings its own scroller (see PageShell), so there is nothing here that was
+		     relying on an ancestor to scroll for it. `clip` rather than `hidden`: no
+		     scroll container, so nothing can end up scrolled to a stray offset. -->
+		<Sidebar.Inset
+			class="min-h-0 overflow-clip bg-background pt-(--safe-top) pr-(--safe-right) pl-(--safe-left)"
+		>
+			<!-- Keyed so the arriving screen actually mounts and its transition runs.
+			     fast()/shift() collapse to 0 under prefers-reduced-motion, which is
+			     what turns this back into a plain swap there. -->
+			{#key page.url.pathname}
+				<div
+					class="flex min-h-0 w-full flex-1 flex-col"
+					in:fly={{ x: enterDir * shift() * 3, duration: fast() }}
+				>
+					{@render children()}
+				</div>
+			{/key}
 		</Sidebar.Inset>
 	</div>
+	{#if isMobile.current}
+		<BottomNav />
+	{/if}
 </Sidebar.Provider>
 
 <!-- Trusted-device incoming prompts and toasts are global: they can arrive on
@@ -149,12 +219,14 @@
 <IncomingPairDialog />
 
 <!-- The offset clears the titlebar: sonner's default 24px lands a toast on the
-     window frame (drag region, and on Windows the min/max/close buttons). No
-     richColors: type is carried by the icon (see ui/sonner). -->
+     window frame (drag region, and on Windows the min/max/close buttons). On
+     mobile there is no header to clear, only the status bar, so the mobile offset
+     is the top inset rather than --header-height. No richColors: type is carried
+     by the icon (see ui/sonner). -->
 <Toaster
 	position="top-center"
 	richColors={true}
 	offset={{ top: 'calc(var(--header-height) + var(--spacing) * 2)' }}
-	mobileOffset={{ top: 'calc(var(--header-height) + var(--spacing) * 2)' }}
+	mobileOffset={{ top: 'calc(var(--safe-top) + var(--spacing) * 2)' }}
 	closeButton
 />

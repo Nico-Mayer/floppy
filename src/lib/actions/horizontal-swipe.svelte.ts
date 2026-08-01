@@ -1,39 +1,26 @@
 // One horizontal-swipe engine for the whole app, and one fixed order deciding
 // which gesture owns a touch.
 //
-// Several surfaces want a horizontal drag: the navigation drawer's left-edge
-// open, paging between Send and Receive, and swiping a device row to reveal
-// Remove. If each bound its own listeners, which one won would come down to
-// mount order, which is not something anyone can reason about. So they all use
-// this, and each declares what it refuses through `claim`.
+// Only `SwipeRow` uses it today — the navigation drawer's edge-open and the
+// Send/Receive pager are both gone, navigation being a bottom bar with no
+// gesture of its own. The engine stays the single definition of the order
+// anyway, so the next horizontal gesture declares what it refuses through
+// `claim` rather than registering a competing set of listeners and letting
+// mount order decide the winner.
 //
 // The order, evaluated on pointerdown and again over the first few pixels:
 //
 //   1. not a touch pointer          -> ignore. mice do not drag.
-//   2. `claim` says no              -> ignore. this is where the reserved left
-//                                      edge strip is enforced (see notEdgeStrip).
+//   2. `claim` says no              -> ignore. nothing refuses anything today:
+//                                      no region of the screen is reserved.
 //   3. vertical travel wins         -> release to scrolling, permanently for
 //                                      this touch.
 //   4. otherwise                    -> ours; follow the finger until release,
 //                                      then commit on distance or velocity.
 //
-// Rule 3 is the one that makes a pager safe over a scrollable list, and
+// Rule 3 is the one that makes a row swipe safe inside a scrollable list, and
 // "permanently" is load-bearing: re-claiming a touch after it has been released
 // to scrolling is what makes a gesture feel like it is fighting you.
-
-/** How close to the left edge belongs to the navigation drawer, in CSS px. */
-export const EDGE_STRIP = 24
-
-/**
- * True unless the touch started in the drawer's reserved left strip.
- *
- * Every horizontal gesture other than the drawer's own opener passes this from
- * its `claim`, so the reservation is defined once and cannot drift between
- * screens.
- */
-export function notEdgeStrip(event: PointerEvent): boolean {
-	return event.clientX > EDGE_STRIP
-}
 
 export type HorizontalSwipeParams = {
 	/**
@@ -52,9 +39,9 @@ export type HorizontalSwipeParams = {
 	/**
 	 * Absolute commit distance in CSS px, used instead of `threshold`.
 	 *
-	 * For a gesture whose node has no size of its own to measure against — the
-	 * edge swipe hangs off a zero-size element — or one that is about the finger
-	 * travelling a fixed distance rather than crossing a share of a surface.
+	 * For a gesture whose node has no size of its own to measure against, or one
+	 * that is about the finger travelling a fixed distance rather than crossing a
+	 * share of a surface.
 	 */
 	distance?: number
 	/** Release speed that commits regardless of distance, in px/ms. */
@@ -64,16 +51,15 @@ export type HorizontalSwipeParams = {
 	 * lift.
 	 *
 	 * For a gesture whose result cannot follow the finger anyway, so waiting for
-	 * release is pure latency: the drawer snaps open, it does not slide with the
+	 * release is pure latency — a surface that snaps rather than sliding with the
 	 * drag. A gesture that *does* track the finger must leave this off, or it would
 	 * commit while the user can still change their mind by dragging back.
 	 */
 	commitOnCross?: boolean
 	/**
 	 * Where `pointerdown` is listened for. `node` claims only gestures starting
-	 * inside the element, which is what a pager or a swipeable row wants. `window`
-	 * claims them anywhere, for a gesture anchored to the screen rather than to a
-	 * box — the edge swipe, whose node is hidden and unhittable.
+	 * inside the element, which is what a swipeable row wants. `window` claims them
+	 * anywhere, for a gesture anchored to the screen rather than to a box.
 	 */
 	surface?: 'node' | 'window'
 	/** Off switch, e.g. only on touch devices. */
@@ -191,8 +177,7 @@ export function horizontalSwipe(node: HTMLElement, params: HorizontalSwipeParams
 	// Move and release always come from the window: a drag that starts in the node
 	// routinely continues outside it, and a node-scoped pointermove would stop
 	// tracking the moment the finger left. Only `pointerdown` is scoped, and that
-	// is what `surface` chooses — see the prop's note for why the edge swipe needs
-	// the window there.
+	// is what `surface` chooses.
 	const start: HTMLElement | Window = params.surface === 'window' ? window : node
 
 	start.addEventListener('pointerdown', down as EventListener, { passive: true })

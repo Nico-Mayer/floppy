@@ -1,3 +1,5 @@
+import { goto } from '$app/navigation'
+import { resolve } from '$app/paths'
 import { open } from '@tauri-apps/plugin-dialog'
 import {
 	CancelReceive,
@@ -14,10 +16,22 @@ import { describeError, type AppError } from './components/transfer/errors'
 import { haptics } from './haptics'
 import type { ReceiveStatus, ReceiveTarget, SendStatus, SendTarget } from './components/transfer/types'
 
+/**
+ * Which side of a transfer something belongs to. The transfer *kind*, carried by
+ * every event payload and by `describeError` — not a mode the app is in: which
+ * panel is on screen is the route's business and nothing else's.
+ */
 export type Mode = 'send' | 'receive'
 
 class SendTransfer {
 	status = $state<SendStatus>('idle')
+	/**
+	 * This side's failure, owned here rather than app-wide: Send and Receive are
+	 * separate routes, so a shared field would render a send failure on whichever
+	 * screen the user happened to be looking at, and the two sides can fail
+	 * independently.
+	 */
+	error = $state<AppError | null>(null)
 	files = $state<FileEntry[]>([])
 	/** croc's phrase for this send. Only ever shown for a `code` target. */
 	code = $state('')
@@ -75,7 +89,7 @@ class SendTransfer {
 	}
 
 	async start() {
-		app.error = null
+		this.error = null
 		this.target = { kind: 'code' }
 		this.progress = 0
 		this.stats = null
@@ -85,7 +99,7 @@ class SendTransfer {
 			// PAKE'd exchange over the broker; the phrase arrives as the code event.
 			await QuickShare(this.files.map((file) => file.path))
 		} catch (e) {
-			app.error = describeError(String(e), 'send')
+			this.error = describeError(String(e), 'send')
 			this.status = 'idle'
 		}
 	}
@@ -154,6 +168,8 @@ const MISTYPED_CODE_HINT_DELAY = 15_000
 
 class ReceiveTransfer {
 	status = $state<ReceiveStatus>('idle')
+	/** This side's failure. See the note on SendTransfer.error. */
+	error = $state<AppError | null>(null)
 	code = $state('')
 	savedTo = $state('')
 	progress = $state<number | null>(null)
@@ -169,7 +185,7 @@ class ReceiveTransfer {
 	}
 
 	async start() {
-		app.error = null
+		this.error = null
 		this.target = { kind: 'code' }
 		this.progress = null
 		this.stats = null
@@ -179,7 +195,7 @@ class ReceiveTransfer {
 		try {
 			await Receive(this.code)
 		} catch (e) {
-			app.error = describeError(String(e), 'receive')
+			this.error = describeError(String(e), 'receive')
 			this.stop()
 		}
 	}
@@ -192,7 +208,7 @@ class ReceiveTransfer {
 	 * before a single byte has landed.
 	 */
 	beginTrusted(offer: { name: string; fileCount: number; totalBytes: number }) {
-		app.error = null
+		this.error = null
 		this.target = { kind: 'device', ...offer }
 		this.savedTo = ''
 		this.progress = null
@@ -258,8 +274,6 @@ class ReceiveTransfer {
 }
 
 class TransferApp {
-	mode = $state<Mode>('send')
-	error = $state<AppError | null>(null)
 	send = new SendTransfer()
 	receive = new ReceiveTransfer()
 
@@ -311,21 +325,25 @@ class TransferApp {
 				void haptics.transferDone()
 			}),
 			events.deepLink.listen((e) => {
-				// A floppy://receive?code=… link opened the app: switch to receive
-				// and prefill the code, but never auto-start (drive-by risk).
-				this.mode = 'receive'
+				// A floppy://receive?code=… link opened the app: go to Receive and
+				// prefill the code, but never auto-start (drive-by risk). The
+				// navigation is the whole point — the link can arrive on any route,
+				// and prefilling a screen the user is not looking at arms a panel
+				// silently.
 				this.receive.code = e.payload.code
+				void goto(resolve('/receive'))
 			}),
 			events.errorEvent.listen((e) => {
 				// The core reports which side failed and a machine-readable code;
-				// the raw message still needs translating for the user.
-				this.error = describeError(e.payload.message, e.payload.kind)
-				// Only the side that actually failed resets: a send and a receive
-				// can run at once, and one failing must not wipe the other's panel.
+				// the raw message still needs translating for the user. Only the side
+				// that actually failed is touched: a send and a receive can run at
+				// once, and one failing must not wipe the other's panel or its error.
 				if (e.payload.kind === 'send') {
+					this.send.error = describeError(e.payload.message, 'send')
 					if (this.send.status !== 'done') this.send.status = 'idle'
-				} else if (this.receive.status !== 'done') {
-					this.receive.stop()
+				} else {
+					this.receive.error = describeError(e.payload.message, 'receive')
+					if (this.receive.status !== 'done') this.receive.stop()
 				}
 			})
 		]

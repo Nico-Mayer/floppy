@@ -44,10 +44,11 @@
 	--safe-bottom: var(--android-inset-bottom, env(safe-area-inset-bottom, 0px));
 	--safe-left: var(--android-inset-left, env(safe-area-inset-left, 0px));
 
-	/* Chrome heights, insets included. Global (not just on the app wrapper) so
-	   portaled overlays — sheets and dialogs mount on <body> — can offset below
-	   the header and never cover the window controls / macOS traffic lights or,
-	   on a phone, the status bar. */
+	/* Desktop titlebar height, top inset included. Global (not just on the app
+	   wrapper) so portaled overlays — sheets and dialogs mount on <body> — can
+	   offset below the header and never cover the window controls / macOS traffic
+	   lights. Desktop only: mobile has no top app bar, and the surfaces that used
+	   to offset against this there use --safe-top directly. */
 	--bar-height: calc(var(--spacing) * 13);
 	--header-height: calc(var(--safe-top) + var(--bar-height));
 
@@ -64,14 +65,6 @@
 	--sidebar-accent-foreground: oklch(0.218 0.008 223.9);
 	--sidebar-border: oklch(0.925 0.005 214.3);
 	--sidebar-ring: oklch(0.723 0.014 214.4);
-}
-
-/* Phone chrome size: a 56dp app bar (not the desktop titlebar's 52). Set from
-   the layout, since form factor is not a media query. The gesture bar and home
-   indicator at the bottom are cleared by the shell's --safe-bottom padding on
-   the content inset, so no per-route clearance class is needed. */
-html[data-mobile] {
-	--bar-height: calc(var(--spacing) * 14);
 }
 
 .dark {
@@ -255,17 +248,15 @@ html[data-mobile] {
 	/* Safe areas for surfaces that are portaled onto <body>, outside the app
 	   shell: sheets and drawers reach the screen edge themselves, so nothing
 	   above them can pad them clear of the status or gesture bar. The shell's
-	   own edges are handled by AppHeader (top) and the content inset's
-	   --safe-bottom (mobile), and are 0 on desktop. */
-	/* Side surfaces that span the full screen height. The nav drawer is excluded
-	   by :not([data-mobile]) because it does not: AppSidebar offsets it to
-	   top: --header-height, and --header-height already contains --safe-top, so
-	   padding it again would leave a notch-sized gap above the first menu row.
-	   Its bottom inset comes from Sidebar.Footer's own pb-(--safe-bottom). */
+	   own edges are handled by the content inset (top) and the bottom bar
+	   (bottom) on mobile, and are 0 on desktop. */
+	/* Side surfaces that span the full screen height. Every one of them qualifies:
+	   the nav drawer that used to be excluded here — it sat below the app bar and
+	   so carried --safe-top already — no longer exists. */
 	[data-slot='sheet-content'][data-side='left'],
 	[data-slot='sheet-content'][data-side='right'],
-	[data-slot='drawer-content'][data-vaul-drawer-direction='left']:not([data-mobile]),
-	[data-slot='drawer-content'][data-vaul-drawer-direction='right']:not([data-mobile]) {
+	[data-slot='drawer-content'][data-vaul-drawer-direction='left'],
+	[data-slot='drawer-content'][data-vaul-drawer-direction='right'] {
 		padding-top: var(--safe-top);
 		padding-bottom: var(--safe-bottom);
 	}

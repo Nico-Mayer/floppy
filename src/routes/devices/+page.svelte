@@ -124,6 +124,24 @@
 
 	// --- Remove a paired device (confirm first) ---------------------------------
 	let removing = $state<DeviceInfo | null>(null)
+
+	// --- Pull to refresh --------------------------------------------------------
+	/**
+	 * A pull means "reload this screen", so the screen's transient state goes with
+	 * the data: a half-typed code and an open inline rename are both stale by then,
+	 * and leaving them sitting there is what makes the gesture look like it did
+	 * nothing.
+	 *
+	 * The displayed pairing code deliberately survives. It is live — the other
+	 * device may be part-way through typing it — and a stray pull must not
+	 * invalidate a pairing in progress. "New code" is the button for that.
+	 */
+	async function refresh() {
+		typed = ''
+		editing = null
+		editingSelf = false
+		await pairing.refresh()
+	}
 	async function confirmRemove() {
 		const device = removing
 		removing = null
@@ -131,7 +149,10 @@
 	}
 </script>
 
-<PageShell scroll>
+<!-- Pull down at the top of the list to reload it from the trust store. The list
+     is the one screen in the app with a real reload to perform: the store can be
+     changed by the other side of a pairing while this page is open. -->
+<PageShell scroll onrefresh={refresh}>
 	<PageHeader title="Devices" description="Add a device to send without a code." />
 
 	{#if !pairing.available}
