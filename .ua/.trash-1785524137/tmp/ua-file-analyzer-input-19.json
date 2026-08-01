@@ -1,9 +1,0 @@
-{
-  "projectRoot": "/Users/nimayer/projects/personal/floppy",
-  "batchFiles": [
-    {"path": "src/lib/components/ui/kbd/index.ts", "language": "typescript", "sizeLines": 10, "fileCategory": "code"},
-    {"path": "src/lib/components/ui/kbd/kbd-group.svelte", "language": "svelte", "sizeLines": 20, "fileCategory": "code"},
-    {"path": "src/lib/components/ui/kbd/kbd.svelte", "language": "svelte", "sizeLines": 23, "fileCategory": "code"}
-  ],
-  "batchImportData": {"src/lib/components/ui/kbd/index.ts":["src/lib/components/ui/kbd/kbd-group.svelte","src/lib/components/ui/kbd/kbd.svelte"],"src/lib/components/ui/kbd/kbd-group.svelte":[],"src/lib/components/ui/kbd/kbd.svelte":[]}
-}
