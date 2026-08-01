@@ -4,6 +4,7 @@
 
 Give each install a long-lived cryptographic identity and a local trust store of paired devices, so trusted peers can transfer files with no human-entered code: transfer codes and a short authentication string are derived deterministically from an ECDH shared secret, and offers/responses exchanged between devices are signed and verified against the trust store.
 ## Requirements
+
 ### Requirement: Per-device identity keypair
 
 Each install SHALL own a long-lived cryptographic identity consisting of an Ed25519 signing keypair (identity + signatures) and an X25519 keypair (ECDH). The identity SHALL be generated on first run and persisted so it is stable across restarts. The private material SHALL be stored with owner-only file permissions. The storage directory SHALL be injectable so multiple instances can run side by side with distinct identities.
@@ -372,3 +373,30 @@ When two devices offer to each other at the same time — each receives an offer
 - **WHEN** the device is offering to one peer and receives an offer from a different peer
 - **THEN** that offer is busy-declined normally, without applying the glare tiebreaker
 
+### Requirement: A shown code reports its lifetime
+
+The command that shows a pairing code SHALL return, with the code, how long that code
+will work, in whole seconds. The value SHALL be the same bound the core enforces on the
+pairing session, so the UI can count a code down without duplicating the timeout.
+
+The lifetime SHALL be derived from the single constant the core times the session out
+with; there SHALL NOT be a second copy of that duration anywhere, in Rust or in the
+frontend.
+
+A code SHALL keep behaving exactly as before once shown: single-use, expiring quietly
+on the bound with no error raised to the shower.
+
+#### Scenario: Showing a code returns its lifetime
+
+- **WHEN** the frontend asks the core to show a pairing code
+- **THEN** it receives the code and a positive number of seconds the code lasts
+
+#### Scenario: The reported lifetime matches the enforced one
+
+- **WHEN** the reported lifetime is compared with the timeout the pairing session is bounded by
+- **THEN** they are the same value, read from one constant
+
+#### Scenario: Reporting the lifetime changes nothing else
+
+- **WHEN** a code is shown and left unredeemed past its lifetime
+- **THEN** it stops working with no error surfaced to the shower, as before

@@ -13,4 +13,4 @@ pub mod service;
 pub mod signal;
 pub mod trust;
 
-pub use service::{PairingEmitter, PairingEvent, PairingService};
+pub use service::{PairCode, PairingEmitter, PairingEvent, PairingService};

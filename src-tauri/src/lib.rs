@@ -23,7 +23,7 @@ use tauri_plugin_log::log;
 use events::{CodeEvent, DeepLink, DoneEvent, ErrorEvent, PairingAccepted, PairingDeclined,
     PairingError, PairingOfferEvent, PairingPaired, PairingRequest, ProgressEvent, TransferKind};
 use specta_typescript::Number;
-use pairing::{PairingEmitter, PairingEvent, PairingService};
+use pairing::{PairCode, PairingEmitter, PairingEvent, PairingService};
 use tauri::{AppHandle, Manager as _, State};
 use tauri_specta::{collect_commands, collect_events, Builder, Event as _};
 use transport::{Config, Kind, Manager, RelayConfig};
@@ -370,9 +370,11 @@ async fn trusted_devices(pairing: State<'_, PairingService>) -> Result<Vec<Devic
 
 /// Show a pairing code on this device (also rendered as a QR). Another device
 /// redeems it to pair; this device confirms the request before trust is written.
+/// Comes back with how long the code lasts, so the UI can count it down rather
+/// than keep its own copy of the timeout.
 #[tauri::command]
 #[specta::specta]
-async fn show_pair_code(pairing: State<'_, PairingService>) -> Result<String, CommandError> {
+async fn show_pair_code(pairing: State<'_, PairingService>) -> Result<PairCode, CommandError> {
     Ok(pairing.show_pair_code()?)
 }
 

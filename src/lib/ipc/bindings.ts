@@ -46,8 +46,10 @@ export const commands = {
 	/**
 	 *  Show a pairing code on this device (also rendered as a QR). Another device
 	 *  redeems it to pair; this device confirms the request before trust is written.
+	 *  Comes back with how long the code lasts, so the UI can count it down rather
+	 *  than keep its own copy of the timeout.
 	 */
-	showPairCode: () => typedError<string, CommandError>(__TAURI_INVOKE("show_pair_code")),
+	showPairCode: () => typedError<PairCode, CommandError>(__TAURI_INVOKE("show_pair_code")),
 	/**
 	 *  Redeem a pairing code shown on another device. `via` is "qr" when scanned or
 	 *  "code" when typed, so the other device knows whether to show an SAS.
@@ -127,6 +129,19 @@ export type FileEntry = {
 	name: string,
 	size: number,
 	isDir: boolean,
+};
+
+/**
+ *  A pairing code and how long it lasts, so the UI can count it down instead of
+ *  keeping its own copy of `PAIR_TIMEOUT` and silently disagreeing with us.
+ */
+export type PairCode = {
+	code: string,
+	/**
+	 *  Seconds this code works for. Read from `PAIR_TIMEOUT`, which is the same
+	 *  bound the session below is timed out with.
+	 */
+	seconds: number,
 };
 
 /**  The peer accepted a trusted-device offer. */

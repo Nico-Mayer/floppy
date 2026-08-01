@@ -41,7 +41,7 @@
 	     the broker is accountless, and signing in would only sync your paired
 	     devices between installs. -->
 	<Field.FieldSet>
-		<Field.FieldLegend class="flex items-center">
+		<Field.FieldLegend class="flex items-center gap-2">
 			Account
 			<StubMark />
 		</Field.FieldLegend>

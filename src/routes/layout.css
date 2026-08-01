@@ -244,31 +244,41 @@
 		-webkit-user-select: text;
 		user-select: text;
 	}
+}
 
-	/* Safe areas for surfaces that are portaled onto <body>, outside the app
-	   shell: sheets and drawers reach the screen edge themselves, so nothing
-	   above them can pad them clear of the status or gesture bar. The shell's
-	   own edges are handled by the content inset (top) and the bottom bar
-	   (bottom) on mobile, and are 0 on desktop. */
-	/* Side surfaces that span the full screen height. Every one of them qualifies:
-	   the nav drawer that used to be excluded here — it sat below the app bar and
-	   so carried --safe-top already — no longer exists. */
-	[data-slot='sheet-content'][data-side='left'],
-	[data-slot='sheet-content'][data-side='right'],
-	[data-slot='drawer-content'][data-vaul-drawer-direction='left'],
-	[data-slot='drawer-content'][data-vaul-drawer-direction='right'] {
-		padding-top: var(--safe-top);
-		padding-bottom: var(--safe-bottom);
-	}
-	[data-slot='sheet-content'][data-side='top'] {
-		padding-top: var(--safe-top);
-	}
-	[data-slot='sheet-content'][data-side='bottom'],
-	[data-slot='drawer-content'][data-vaul-drawer-direction='bottom'] {
-		padding-bottom: calc(var(--safe-bottom) + --spacing(4));
-	}
-	/* A centred dialog only has to stay off the notch, not sit below it. */
-	[data-slot='dialog-content'] {
-		max-height: calc(100svh - var(--safe-top) - var(--safe-bottom) - --spacing(8));
-	}
+/* Safe areas for surfaces that are portaled onto <body>, outside the app shell:
+   sheets and drawers reach the screen edge themselves, so nothing above them can
+   pad them clear of the status or gesture bar. The shell's own edges are handled
+   by the content inset (top) and the bottom bar (bottom) on mobile, and are 0 on
+   desktop.
+
+   Unlayered on purpose. These used to sit in `@layer base`, where the drawer's own
+   `p-4` — a utility, and utilities come after base — quietly won, so on a phone the
+   panel sat on the gesture bar with 16px of padding and no inset. Unlayered rules
+   beat every layer, which is the right level for an inset nobody should be
+   overriding from a call site. */
+/* Side surfaces that span the full screen height. Every one of them qualifies:
+   the nav drawer that used to be excluded here — it sat below the app bar and
+   so carried --safe-top already — no longer exists. */
+[data-slot='sheet-content'][data-side='left'],
+[data-slot='sheet-content'][data-side='right'],
+[data-slot='drawer-content'][data-vaul-drawer-direction='left'],
+[data-slot='drawer-content'][data-vaul-drawer-direction='right'] {
+	padding-top: var(--safe-top);
+	padding-bottom: var(--safe-bottom);
+}
+[data-slot='sheet-content'][data-side='top'] {
+	padding-top: var(--safe-top);
+}
+/* max(), not a sum: the inset and the surface's own padding are answers to the same
+   question — how far the last control sits from the bottom edge — and adding them
+   put ~50px under a drawer on a phone with a home indicator. Whichever is larger
+   wins, so iOS clears the indicator and a device with no inset still gets 16px. */
+[data-slot='sheet-content'][data-side='bottom'],
+[data-slot='drawer-content'][data-vaul-drawer-direction='bottom'] {
+	padding-bottom: max(var(--safe-bottom), --spacing(4));
+}
+/* A centred dialog only has to stay off the notch, not sit below it. */
+[data-slot='dialog-content'] {
+	max-height: calc(100svh - var(--safe-top) - var(--safe-bottom) - --spacing(8));
 }

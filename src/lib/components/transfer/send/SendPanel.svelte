@@ -21,16 +21,13 @@
 
 	const send = app.send
 
-	// What the picker points at — 'code' or a fingerprint. It outlives a transfer
-	// on purpose (send twice to the same laptop without re-choosing); send.target
-	// is the snapshot of it that the in-flight transfer belongs to.
-	let picked = $state('code')
-
 	// Un-trusting the chosen device falls the picker back to the code send. Derived
-	// rather than corrected in an $effect, so there is no moment where `picked`
-	// names a device that is no longer there.
+	// rather than corrected in an $effect, so there is no moment where the picked
+	// value names a device that is no longer there.
 	const selection = $derived(
-		picked !== 'code' && !pairing.devices.some((d) => d.fingerprint === picked) ? 'code' : picked
+		send.picked !== 'code' && !pairing.devices.some((d) => d.fingerprint === send.picked)
+			? 'code'
+			: send.picked
 	)
 
 	const summary = $derived(send.files.length === 1 ? send.files[0].name : `${send.files.length} files`)
@@ -124,7 +121,7 @@
 			     here either — that moved into the queue grid itself (SendQueue's
 			     last tile). -->
 			<div class="flex items-center gap-2">
-				<SendTargetPicker bind:value={() => selection, (next) => (picked = next)} />
+				<SendTargetPicker bind:value={() => selection, (next) => (send.picked = next)} />
 				<Button onclick={dispatchSend}>
 					<SendIcon />
 					Send

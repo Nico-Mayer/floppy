@@ -6,9 +6,9 @@
 	import XIcon from '@lucide/svelte/icons/x'
 
 	// A name field with cancel and save beside it, used wherever a name is edited
-	// in place. Enter saves, Escape cancels, and an empty name is treated as a
-	// cancel rather than saved: blanking a device's label would leave something
-	// unidentifiable in the list.
+	// in place. Enter saves, Escape cancels, clicking away saves, and an empty name
+	// is treated as a cancel rather than saved: blanking a device's label would
+	// leave something unidentifiable in the list.
 	//
 	// The two controls are `size="icon"`, so they grow to 44px on a coarse pointer
 	// rather than slop — they sit next to each other, and overlapping hit areas on
@@ -55,9 +55,22 @@
 		}
 		onsave(name)
 	}
+
+	// Clicking or tabbing away commits, the way renaming a file does. Leaving the
+	// field open behind a click somewhere else is the thing this fixes: an editor
+	// nobody is looking at any more, still holding the row hostage.
+	//
+	// A focus move to Cancel or Save is not "away" — those two are inside, so they
+	// get to say what happens instead.
+	let root = $state<HTMLElement | null>(null)
+	function onFocusOut(event: FocusEvent) {
+		const next = event.relatedTarget
+		if (next instanceof Node && root?.contains(next)) return
+		save()
+	}
 </script>
 
-<div class={cn('flex items-center gap-2', className)}>
+<div bind:this={root} class={cn('flex items-center gap-2', className)} onfocusout={onFocusOut}>
 	<Input
 		bind:ref={input}
 		bind:value

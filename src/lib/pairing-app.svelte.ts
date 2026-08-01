@@ -14,6 +14,7 @@ import {
 	Untrust,
 	events,
 	type DeviceInfo,
+	type PairCode,
 	type PairingOfferEvent,
 	type PairingRequest
 } from '$lib/ipc'
@@ -39,6 +40,13 @@ class PairingApp {
 	incoming = $state<PairingOfferEvent | null>(null)
 	/** A device that redeemed a code we are showing, awaiting our confirm. */
 	request = $state<PairingRequest | null>(null)
+	/**
+	 * How many pairings have completed on this device this session. Only ever read
+	 * as a signal that one just did — a count rather than a flag so a surface can
+	 * tell "another one happened" from "the same one is still the latest", which a
+	 * boolean cannot say without someone having to reset it.
+	 */
+	paired = $state(0)
 
 	/** Whether the pairing backend came up (broker reachable, identity loaded). */
 	get available() {
@@ -83,6 +91,7 @@ class PairingApp {
 			// Devices page, where the new device now appears in the list — that
 			// arrival is the confirmation, so no toast.
 			events.pairingPaired.listen(() => {
+				this.paired += 1
 				void this.refresh()
 				void goto(resolve('/devices'))
 			})
@@ -96,9 +105,11 @@ class PairingApp {
 
 	/**
 	 * Show a pairing code (also rendered as a QR) for another device to redeem.
-	 * A fresh call shows a new code; the old one expires on its own.
+	 * A fresh call shows a new code; the old one expires on its own. The core
+	 * returns how long the code lasts with it, so the UI counts down the same
+	 * number the core enforces rather than a copy of it.
 	 */
-	showCode(): Promise<string> {
+	showCode(): Promise<PairCode> {
 		return ShowPairCode()
 	}
 

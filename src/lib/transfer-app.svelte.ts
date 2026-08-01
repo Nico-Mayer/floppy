@@ -39,6 +39,16 @@ class SendTransfer {
 	stats = $state<ProgressEvent | null>(null)
 	/** Where this send is going; set by start()/beginTrusted(), read by the UI. */
 	target = $state<SendTarget>({ kind: 'code' })
+	/**
+	 * What the target picker points at: 'code' or a trusted device's fingerprint.
+	 *
+	 * Lives here rather than in the Send panel because it outlives both a transfer
+	 * (send twice to the same laptop without re-choosing) and the panel itself, so
+	 * leaving Send and coming back does not silently reset who the files were going
+	 * to. `target` is the different thing — the snapshot the in-flight transfer
+	 * belongs to.
+	 */
+	picked = $state('code')
 
 	get busy() {
 		return this.status !== 'idle' && this.status !== 'done'

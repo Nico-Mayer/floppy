@@ -15,11 +15,6 @@
 		modules: QRModules
 	}
 
-	interface CirclePoint {
-		cx: number
-		cy: number
-	}
-
 	interface Props extends SVGAttributes<SVGSVGElement> {
 		value: string
 		size?: number
@@ -71,25 +66,30 @@
 	let innerWhiteSize = $derived(5 * moduleSize)
 	let innerBlackSize = $derived(3 * moduleSize)
 
-	let circles = $derived.by(() => {
+	// Every data module as one path rather than one <circle> each. A code this size
+	// is ~300 modules, and 300 SVG nodes are ~300 nodes the browser has to lay out
+	// while whatever surface holds the code is still animating open — which is what
+	// made the Devices dialog hitch. Same picture, one node.
+	let dots = $derived.by(() => {
 		if (!qrData) {
-			return [] as CirclePoint[]
+			return ''
 		}
 
-		const nextCircles: CirclePoint[] = []
+		const r = circleRadius
+		let path = ''
 
 		for (let row = 0; row < moduleCount; row++) {
 			for (let col = 0; col < moduleCount; col++) {
 				if (qrData.modules.get(row, col) && !isInFinderPattern(row, col, moduleCount)) {
-					nextCircles.push({
-						cx: (col + 0.5) * moduleSize,
-						cy: (row + 0.5) * moduleSize
-					})
+					const cx = (col + 0.5) * moduleSize
+					const cy = (row + 0.5) * moduleSize
+					// Two half-arcs: the path equivalent of <circle cx cy r>.
+					path += `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${r * 2} 0a${r} ${r} 0 1 0 ${-r * 2} 0`
 				}
 			}
 		}
 
-		return nextCircles
+		return path
 	})
 </script>
 
@@ -132,8 +132,6 @@
 			</g>
 		{/each}
 
-		{#each circles as { cx, cy }, index (`${cx}-${cy}-${index}`)}
-			<circle {cx} {cy} r={circleRadius} fill={fgColor} />
-		{/each}
+		<path d={dots} fill={fgColor} />
 	</svg>
 {/if}

@@ -30,6 +30,16 @@ use crate::transport::Manager;
 /// not an error). Also bounds how long a redeemer waits for the other side.
 const PAIR_TIMEOUT: Duration = Duration::from_secs(120);
 
+/// A pairing code and how long it lasts, so the UI can count it down instead of
+/// keeping its own copy of `PAIR_TIMEOUT` and silently disagreeing with us.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+pub struct PairCode {
+    pub code: String,
+    /// Seconds this code works for. Read from `PAIR_TIMEOUT`, which is the same
+    /// bound the session below is timed out with.
+    pub seconds: u32,
+}
+
 /// Pairings shown on this device awaiting the user's confirm: fingerprint → the
 /// channel the mailbox task blocks on. `Some(name)` confirms and trusts the peer
 /// under `name`; `None` declines. Trust is written only on confirm.
@@ -182,8 +192,9 @@ impl PairingService {
     /// identity, raises a confirm request, and — once the user confirms — seals
     /// this device's identity back so both sides end up trusting each other.
     /// Single-use, and bounded by `PAIR_TIMEOUT`; an unredeemed code expires
-    /// quietly with no error to the UI.
-    pub fn show_pair_code(&self) -> Result<String, String> {
+    /// quietly with no error to the UI. That bound is returned alongside the
+    /// code so the UI can show what it has left.
+    pub fn show_pair_code(&self) -> Result<PairCode, String> {
         let phrase = code::generate();
         let room = code::room(&phrase).ok_or("could not derive a room from the code")?;
         let task = ShowTask {
@@ -209,7 +220,7 @@ impl PairingService {
                 tracing::debug!(error = %e, "pairing: show-code session ended");
             }
         });
-        Ok(phrase)
+        Ok(PairCode { code: phrase, seconds: PAIR_TIMEOUT.as_secs() as u32 })
     }
 
     /// Whether `normalized_code` is one this device is showing right now.
@@ -983,7 +994,7 @@ mod tests {
 
         // A shows a code; B redeems it (typed). Redeem blocks until A confirms,
         // so it runs in a task while the test drives A's side.
-        let code = a.show_pair_code().unwrap();
+        let code = a.show_pair_code().unwrap().code;
         let b2 = b.clone();
         let redeem = tokio::spawn(async move { b2.redeem_pair_code(&code, "code").await });
 
@@ -1005,7 +1016,7 @@ mod tests {
         assert!(b_ev.tags().iter().any(|t| t.starts_with("paired")), "B emits paired");
 
         // Decline path: a fresh request can be dropped, and the redeemer is told.
-        let code2 = a.show_pair_code().unwrap();
+        let code2 = a.show_pair_code().unwrap().code;
         let b3 = b.clone();
         let redeem2 = tokio::spawn(async move { b3.redeem_pair_code(&code2, "code").await });
         wait_until(Duration::from_secs(10), || a.pending_confirms.lock().unwrap().contains_key(&b_fp)).await;
@@ -1029,6 +1040,22 @@ mod tests {
         PairingService::new(id_dir, mgr, fp.to_string(), mailbox.to_string(), Arc::new(ev)).unwrap()
     }
 
+    /// A shown code reports the same lifetime the session is bounded by, so the
+    /// UI can count it down without a second copy of the number.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn a_shown_code_reports_its_lifetime() {
+        let tmp = tempfile::tempdir().unwrap();
+        let fp = mock_fp_broker().await;
+        let mailbox = mock_mailbox_broker().await;
+        let a = pair_svc(tmp.path(), "la", &tmp.path().join("id-a"), &fp, &mailbox, PairCollector::default()).await;
+
+        let shown = a.show_pair_code().unwrap();
+
+        assert_eq!(shown.seconds as u64, PAIR_TIMEOUT.as_secs(), "the reported lifetime is the enforced one");
+        // Still an ordinary code: normalizes and picks a room like any other.
+        assert!(code::room(&code::normalize(&shown.code)).is_some(), "not a usable code: {}", shown.code);
+    }
+
     /// Showing a code and then redeeming it on the same install used to pair the
     /// device with itself: SPAKE2 agrees (one password) and the SAS matches (an
     /// ECDH against your own key is still deterministic), so nothing failed on
@@ -1041,7 +1068,7 @@ mod tests {
         let ev = PairCollector::default();
         let a = pair_svc(tmp.path(), "sa", &tmp.path().join("id-a"), &fp, &mailbox, ev.clone()).await;
 
-        let code = a.show_pair_code().unwrap();
+        let code = a.show_pair_code().unwrap().code;
         let err = a.redeem_pair_code(&code, "code").await.expect_err("self-pair is refused");
 
         assert!(err.contains("this device's own code"), "wrong message: {err}");
@@ -1069,7 +1096,7 @@ mod tests {
         let b = pair_svc(tmp.path(), "cb", &shared, &fp, &mailbox, PairCollector::default()).await;
         assert_eq!(a.identity(), b.identity(), "the point of this test");
 
-        let code = a.show_pair_code().unwrap();
+        let code = a.show_pair_code().unwrap().code;
         let err = b.redeem_pair_code(&code, "code").await.expect_err("shared identity is refused");
 
         assert!(err.contains("same identity"), "wrong message: {err}");
@@ -1090,7 +1117,7 @@ mod tests {
         let ev = PairCollector::default();
         let a = pair_svc(tmp.path(), "ra", &tmp.path().join("id-a"), &fp, &mailbox, ev.clone()).await;
 
-        let phrase = a.show_pair_code().unwrap();
+        let phrase = a.show_pair_code().unwrap().code;
         let normalized = code::normalize(&phrase);
         let room = code::room(&normalized).unwrap();
 

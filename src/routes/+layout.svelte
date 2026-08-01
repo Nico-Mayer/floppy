@@ -14,6 +14,7 @@
 	import { navItems } from '$lib/nav-items'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import { isPhoneChrome } from '$lib/platform'
+	import { keepFocusVisible } from '$lib/keyboard'
 	import { watchSafeArea } from '$lib/safe-area'
 	import { app } from '$lib/transfer-app.svelte'
 	import { onBackButtonPress } from '@tauri-apps/api/app'
@@ -103,6 +104,10 @@
 		// them from env() and this is a no-op there.
 		const stopSafeArea = watchSafeArea()
 
+		// The keyboard overlays the app rather than resizing it (see app.html), so
+		// keeping a focused field above it is ours to do. No-op off a phone build.
+		const stopFocusScroll = keepFocusVisible()
+
 		// Android hardware back: registering a handler suppresses the default
 		// (which finishes the activity). Navigation is flat — every destination
 		// stands on its own, so there is no in-app back to offer. Back only has to
@@ -154,6 +159,7 @@
 			stopPairing?.()
 			stopDrag?.()
 			stopSafeArea()
+			stopFocusScroll()
 			void backListener?.unregister()
 			document.removeEventListener('contextmenu', noContextMenu)
 		}

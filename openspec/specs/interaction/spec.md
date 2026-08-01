@@ -191,38 +191,6 @@ NOT commit on release alone.
 - **WHEN** a gesture is in progress
 - **THEN** the affected surface moves with the finger rather than waiting for release
 
-### Requirement: A paired device row reveals its destructive action by swipe on touch
-
-On a coarse pointer, a paired device row SHALL reveal its remove action by horizontal swipe
-instead of showing a destructive button in the row, because a thumb aiming at rename should
-not be able to land on a destructive control beside it. On a fine pointer the destructive
-button SHALL remain: a mouse hits a small target precisely, and a drag gesture is not
-available there, so removing must not become unreachable.
-
-Rename SHALL remain an always-visible control in the row on both, because one revealed
-action per row is easier to discover than two and rename is the reversible one. What removal
-then does — confirm, then revoke trust — belongs to `device-management`.
-
-#### Scenario: Swipe reveals remove on touch
-
-- **WHEN** the user swipes a paired device row on a coarse-pointer device
-- **THEN** a remove action is revealed for that row
-
-#### Scenario: No destructive button beside rename on touch
-
-- **WHEN** a paired device row renders on a coarse-pointer device
-- **THEN** it shows no destructive control adjacent to rename
-
-#### Scenario: Removal stays reachable with a mouse
-
-- **WHEN** a paired device row renders on a fine-pointer device
-- **THEN** the destructive control is present and removal does not depend on a gesture
-
-#### Scenario: Rename stays visible in the row
-
-- **WHEN** a paired device row renders on either pointer type
-- **THEN** its rename control is visible without any gesture
-
 ### Requirement: The device list refreshes by pull
 
 The paired-device list SHALL reload by a downward pull gesture. The gesture SHALL only start
@@ -414,3 +382,32 @@ SHALL continue. This applies to animation driven from script as well as from sty
 
 - **WHEN** the user prefers reduced motion and drags a swipeable surface
 - **THEN** the surface still follows the finger, because the movement is the interaction
+
+### Requirement: A paired device row's actions are visible buttons on every pointer type
+
+Rename and remove SHALL both be visible controls in a paired device row, on a coarse pointer and a
+fine one alike, reachable without a gesture and without a hover.
+
+Because they sit next to each other, both SHALL meet the minimum by growing rather than by hit
+slop, so neither one's hit area extends over the other's visible box. A person aiming at rename
+must be able to see that they are not aiming at remove.
+
+What protects an accidental press is the confirmation, not the control's obscurity: removal SHALL
+still ask before trust is revoked, which `device-management` requires however the action is
+reached.
+
+#### Scenario: Both actions are present on touch
+
+- **WHEN** a paired device row renders on a coarse-pointer device
+- **THEN** rename and remove are both visible controls, and neither needs a gesture to reach
+
+#### Scenario: Adjacent actions both grow
+
+- **WHEN** a paired device row renders on a coarse-pointer device
+- **THEN** both controls measure at least 44 CSS pixels in each dimension, and neither relies on hit
+  slop over its neighbour
+
+#### Scenario: An accidental press is still recoverable
+
+- **WHEN** the user presses remove
+- **THEN** a confirmation appears and trust is revoked only once it is confirmed

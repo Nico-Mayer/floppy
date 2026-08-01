@@ -170,7 +170,7 @@
 								<span class="truncate font-medium">Not signed in</span>
 								<span class="truncate text-xs text-muted-foreground">Sync your devices</span>
 							</div>
-							<StubMark />
+							<StubMark class="ml-auto" />
 						</a>
 					{/snippet}
 				</Sidebar.MenuButton>
