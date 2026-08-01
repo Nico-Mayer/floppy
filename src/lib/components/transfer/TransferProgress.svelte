@@ -30,7 +30,7 @@
 	let shown = $derived(Math.round(value))
 
 	// "128 MB / 2.1 GB · 12 MB/s · 2m left" — rate and ETA only join in once
-	// croc has moved enough bytes for them to be measurable.
+	// enough bytes have moved for them to be measurable.
 	let detail = $derived.by(() => {
 		if (!stats) return ''
 		const parts = [`${formatBytes(stats.sent)} / ${formatBytes(stats.total)}`]

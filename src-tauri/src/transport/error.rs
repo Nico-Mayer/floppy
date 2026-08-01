@@ -1,14 +1,16 @@
 // Transfer error taxonomy. Two audiences:
 //
-//   - Command errors are returned from the `send`/`receive` Tauri commands and
-//     surface via the frontend's `describeError` mapper. Their `Display` text is
-//     a frontend contract (errors.ts matches on it) — keep it stable.
-//   - Runtime failures happen mid-transfer and are emitted as an ErrorEvent
-//     carrying a machine-readable `code` and a user-facing `message`.
+//   - `StartError` is returned when a transfer refuses to start. The command
+//     layer maps it to `CommandError` (see `crate::error`), which the frontend
+//     branches on by variant — the `Display` text is for logs, not the UI.
+//   - `TransferError` is a failure mid-transfer, emitted as an `ErrorEvent`
+//     carrying a `TransferErrorCode` and a user-facing `message`.
 //
-// croc is gone, so floppy now owns every message; they are written to be
-// actionable rather than to echo a transport library's wording.
+// floppy owns every message; they are written to be actionable rather than to
+// echo a transport library's wording.
 
+use serde::{Deserialize, Serialize};
+use specta::Type;
 use std::fmt;
 
 /// Errors returned synchronously when starting or cancelling a transfer.
@@ -28,7 +30,6 @@ pub enum StartError {
 
 impl fmt::Display for StartError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // Text is contract — errors.ts keys off these substrings.
         let msg = match self {
             StartError::Busy => "transfer already running",
             StartError::Unwinding => "previous transfer still stopping",
@@ -52,8 +53,15 @@ pub struct TransferError {
 /// Machine-readable classification of a runtime transfer failure. Some variants
 /// are situational (a bad ticket is caught earlier as a `StartError`); the enum
 /// is kept complete as the classification contract.
+///
+/// Derives `Type` so `ErrorEvent.code` exports as a TypeScript union rather than
+/// a bare `string` the frontend has to know the spellings of. specta is a
+/// serialization concern, not a Tauri one, so this stays consistent with the
+/// core's no-Tauri-imports rule — and it means the taxonomy cannot drift from
+/// the copy of it the frontend branches on, because there is no copy.
 #[allow(dead_code)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "snake_case")]
 pub enum TransferErrorCode {
     /// Could not reach the peer or relay to establish a connection.
     Connect,
@@ -70,6 +78,8 @@ pub enum TransferErrorCode {
 }
 
 impl TransferErrorCode {
+    /// The wire spelling, for `Display` and logs. Must match what serde emits;
+    /// `slug_matches_serde` below holds the two together.
     pub fn slug(&self) -> &'static str {
         match self {
             TransferErrorCode::Connect => "connect",
@@ -121,3 +131,25 @@ impl fmt::Display for TransferError {
 }
 
 impl std::error::Error for TransferError {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// `slug()` is what logs and `Display` use; serde is what the frontend
+    /// branches on. They have to agree, so assert it rather than hope.
+    #[test]
+    fn slug_matches_serde() {
+        for code in [
+            TransferErrorCode::Connect,
+            TransferErrorCode::Disconnected,
+            TransferErrorCode::Timeout,
+            TransferErrorCode::BadTicket,
+            TransferErrorCode::Storage,
+            TransferErrorCode::Other,
+        ] {
+            let wire = serde_json::to_string(&code).unwrap();
+            assert_eq!(wire, format!("\"{}\"", code.slug()));
+        }
+    }
+}

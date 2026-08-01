@@ -2,7 +2,7 @@
 name = "floppy"
 version = "0.1.0"
 edition = "2021"
-description = "A Tauri App"
+description = "Send files straight to another device."
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -49,16 +49,25 @@ tauri-plugin-clipboard-manager = "2"
 tauri-plugin-deep-link = "2.4.9"
 tauri-plugin-dialog = "2.7.2"
 tauri-plugin-fs = "2.5.1"
+tauri-plugin-log = "2.9.0"
 tauri-plugin-notification = "2.3.3"
 tauri-plugin-opener = "2"
 tauri-specta = { version = "2.0.0-rc", features = ["derive", "typescript"] }
-tokio = { version = "1.53.1", features = ["full"] }
+# Only what floppy uses: the multi-thread runtime, `spawn`/`select!`/`join!`,
+# TCP for the broker socket, and timeouts. `full` also pulls process, signal and
+# fs drivers into every mobile binary for nothing.
+tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros", "net", "sync", "time"] }
 tokio-tungstenite = {
   version = "0.30.0",
   features = ["rustls-tls-webpki-roots"]
 }
 tokio-util = "0.7.19"
-tracing = "0.1.44"
+# `log` makes every `tracing::` macro fall back to emitting a `log` record when
+# no tracing Subscriber is installed — which is how they reach the log plugin's
+# sinks (stdout/logcat/oslog + a log file). Deliberately no Subscriber: adding
+# one would capture the events and silence the fallback. Cargo unifies the
+# feature, so iroh's tracing output arrives the same way.
+tracing = { version = "0.1.44", features = ["log"] }
 x25519-dalek = { version = "3.0.0", features = ["static_secrets"] }
 
 [dev-dependencies]
@@ -82,3 +91,11 @@ tauri-plugin-haptics = "2"
 # moves fast. See `android_publish` in `lib.rs`.
 [target.'cfg(target_os = "android")'.dependencies]
 tauri-plugin-android-fs = "=29.0.0"
+
+# Desktop only: a phone has one instance by construction. Without this, opening
+# a `floppy://` link on Windows/Linux starts a *second* process — the URL goes to
+# a new window while the one in front shows nothing, and the new process fights
+# the first for the blob store in app data. The `deep-link` feature hands the URL
+# to the running instance instead of dropping it. See `run()`.
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-single-instance = { version = "2.4.3", features = ["deep-link"] }

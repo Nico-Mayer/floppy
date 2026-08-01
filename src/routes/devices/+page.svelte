@@ -15,6 +15,7 @@
 	import * as ResponsiveDialog from '$lib/components/ui/responsive-dialog'
 	import { Separator } from '$lib/components/ui/separator'
 	import { Spinner } from '$lib/components/ui/spinner'
+	import { errorText } from '$lib/errors'
 	import { haptics } from '$lib/haptics'
 	import { Clipboard, type DeviceInfo } from '$lib/ipc'
 	import { pairing } from '$lib/pairing-app.svelte'
@@ -97,7 +98,7 @@
 		try {
 			await pairing.redeemCode(value, 'code')
 		} catch (e) {
-			toast.error(`${e}`.replace(/^Error:\s*/, ''))
+			toast.error(errorText(e))
 		} finally {
 			// Clear either way. A code is single-use and short-lived, so once a
 			// try has failed the other device has to show a new one. Leaving the

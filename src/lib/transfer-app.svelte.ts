@@ -12,7 +12,7 @@ import {
 	type FileEntry,
 	type ProgressEvent
 } from '$lib/ipc'
-import { describeError, type AppError } from './components/transfer/errors'
+import { describeError, describeTransferError, type AppError } from './errors'
 import { haptics } from './haptics'
 import type { ReceiveStatus, ReceiveTarget, SendStatus, SendTarget } from './components/transfer/types'
 
@@ -33,7 +33,7 @@ class SendTransfer {
 	 */
 	error = $state<AppError | null>(null)
 	files = $state<FileEntry[]>([])
-	/** croc's phrase for this send. Only ever shown for a `code` target. */
+	/** The code phrase for this send. Only ever shown for a `code` target. */
 	code = $state('')
 	progress = $state(0)
 	stats = $state<ProgressEvent | null>(null)
@@ -99,17 +99,17 @@ class SendTransfer {
 			// PAKE'd exchange over the broker; the phrase arrives as the code event.
 			await QuickShare(this.files.map((file) => file.path))
 		} catch (e) {
-			this.error = describeError(String(e), 'send')
+			this.error = describeError(e, 'send')
 			this.status = 'idle'
 		}
 	}
 
 	/**
 	 * Enter the connecting state for a trusted-device send. Unlike start() this
-	 * does not call croc — the pairing layer offers the files and the real send
-	 * begins only when the peer accepts, arriving as the usual croc:code event.
+	 * serves nothing yet: the pairing layer offers the files and the real send
+	 * begins only when the peer accepts, arriving as the usual code event.
 	 * So for this target 'starting' means "waiting for them to accept" and
-	 * 'waiting' means "accepted, croc is connecting"; the panel says as much
+	 * 'waiting' means "accepted, the transfer is connecting"; the panel says as much
 	 * instead of showing a code phrase nobody needs to read.
 	 */
 	beginTrusted(device: { fingerprint: string; name: string }) {
@@ -130,9 +130,9 @@ class SendTransfer {
 	}
 
 	async cancel() {
-		// CancelSend resolves as soon as croc has been told to stop, not once
-		// it has finished unwinding — so the button never appears to hang.
-		// Any leftover unwinding is absorbed by the next Send on the Go side.
+		// CancelSend resolves as soon as the core has been told to stop, not once
+		// it has finished unwinding — so the button never appears to hang. Any
+		// leftover unwinding is absorbed by the next Send (StartError::Unwinding).
 		this.status = 'cancelling'
 		try {
 			await CancelSend()
@@ -162,7 +162,7 @@ class SendTransfer {
 
 /**
  * How long a receive may sit unconnected before the UI suggests the code might
- * be wrong. croc waits for its peer forever, so nothing else ever says so.
+ * be wrong. A receive waits for its peer forever, so nothing else ever says so.
  */
 const MISTYPED_CODE_HINT_DELAY = 15_000
 
@@ -195,14 +195,14 @@ class ReceiveTransfer {
 		try {
 			await Receive(this.code)
 		} catch (e) {
-			this.error = describeError(String(e), 'receive')
+			this.error = describeError(e, 'receive')
 			this.stop()
 		}
 	}
 
 	/**
 	 * Enter the connecting state for an accepted trusted-device transfer. The
-	 * sender starts first; croc:recv:progress flips this to receiving once bytes
+	 * sender starts first; the first receive progress event flips this to receiving once bytes
 	 * arrive. No mistyped-code hint — there was no code to mistype. The offer is
 	 * kept as the target so the panel can name the sender and what it is bringing
 	 * before a single byte has landed.
@@ -334,15 +334,15 @@ class TransferApp {
 				void goto(resolve('/receive'))
 			}),
 			events.errorEvent.listen((e) => {
-				// The core reports which side failed and a machine-readable code;
-				// the raw message still needs translating for the user. Only the side
+				// The core reports which side failed, the class of failure, and the
+				// sentence to show. Only the side
 				// that actually failed is touched: a send and a receive can run at
 				// once, and one failing must not wipe the other's panel or its error.
 				if (e.payload.kind === 'send') {
-					this.send.error = describeError(e.payload.message, 'send')
+					this.send.error = describeTransferError(e.payload.code, e.payload.message, 'send')
 					if (this.send.status !== 'done') this.send.status = 'idle'
 				} else {
-					this.receive.error = describeError(e.payload.message, 'receive')
+					this.receive.error = describeTransferError(e.payload.code, e.payload.message, 'receive')
 					if (this.receive.status !== 'done') this.receive.stop()
 				}
 			})

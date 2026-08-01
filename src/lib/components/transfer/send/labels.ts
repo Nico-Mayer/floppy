@@ -4,14 +4,14 @@ import { formatBytes } from '../format'
 /**
  * The send panel's state table, in one place.
  *
- * Every screen is a cell of (status × target): the statuses come from croc and
+ * Every screen is a cell of (status × target): the statuses come from the core and
  * the pairing layer, and the target decides what two of them *mean* — see
  * SendTarget. Reading the flows top to bottom:
  *
- *   code:   idle → starting (croc booting) → waiting (phrase is up, anyone may
+ *   code:   idle → starting (core serving) → waiting (phrase is up, anyone may
  *           bring it) → sending → done
  *   device: idle → starting (offered, peer has not answered) → waiting (peer
- *           accepted, croc connecting) → sending → done
+ *           accepted, transfer connecting) → sending → done
  *
  * Cancelling can interrupt any of the middle three and lands back on idle with
  * the queue intact.

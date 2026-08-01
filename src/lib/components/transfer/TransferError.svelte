@@ -5,7 +5,7 @@
 	import CircleAlertIcon from '@lucide/svelte/icons/circle-alert'
 	import XIcon from '@lucide/svelte/icons/x'
 	import { fly } from 'svelte/transition'
-	import type { AppError } from './errors'
+	import type { AppError } from '$lib/errors'
 
 	// One side's failure, on that side's own screen. Send and Receive each own an
 	// error, so this renders per route rather than once for the app — and one

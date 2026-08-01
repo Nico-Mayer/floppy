@@ -11,6 +11,8 @@ use specta::Type;
 use specta_typescript::Number;
 use tauri_specta::Event;
 
+use crate::transport::error::TransferErrorCode;
+
 // `u64`/`i64` are BigInt-forbidden by specta's TS exporter; `#[specta(type =
 // Number)]` emits plain JS `number` (floppy's counts stay well under 2^53).
 
@@ -66,13 +68,14 @@ pub struct DoneEvent {
     pub dest: String,
 }
 
-/// Transfer failed. `message` is human text; `code` is machine-readable.
+/// Transfer failed. `code` is the machine-readable class the UI branches on;
+/// `message` is the sentence to show when there is nothing better to say.
 #[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
 #[serde(rename_all = "camelCase")]
 pub struct ErrorEvent {
     pub id: String,
     pub kind: TransferKind,
-    pub code: String,
+    pub code: TransferErrorCode,
     pub message: String,
 }
 

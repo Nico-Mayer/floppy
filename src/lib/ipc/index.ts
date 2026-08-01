@@ -2,17 +2,24 @@
 // hand-edited); it carries the whole typed contract — `commands`, `events`, and
 // every shared type. This module re-exports it, adds the runtime shims, and
 // wraps each command so a failed `Result` throws (the UI is written around
-// try/catch and `describeError(String(e))`) instead of returning a status union.
+// try/catch and `describeError(e)`) instead of returning a status union.
 
-import { commands } from './bindings'
+import { CommandFailure } from '../errors'
+import { commands, type CommandError } from './bindings'
 
 export * from './bindings'
 export { Clipboard, Window } from './runtime'
 
-/** Unwrap a tauri-specta `Result`: return the data, or throw the error string. */
-async function ok<T>(p: Promise<{ status: 'ok'; data: T } | { status: 'error'; error: string }>): Promise<T> {
+/**
+ * Unwrap a tauri-specta `Result`: return the data, or throw the typed failure.
+ * The thrown value keeps the `CommandError` variant, so a caller can tell "the
+ * device is busy" from "the disk is full" without reading the message.
+ */
+async function ok<T>(
+	p: Promise<{ status: 'ok'; data: T } | { status: 'error'; error: CommandError }>
+): Promise<T> {
 	const r = await p
-	if (r.status === 'error') throw new Error(r.error)
+	if (r.status === 'error') throw new CommandFailure(r.error)
 	return r.data
 }
 

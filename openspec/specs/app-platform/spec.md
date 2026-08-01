@@ -26,6 +26,52 @@ Tauri event system.
 - **WHEN** the frontend calls a bound command (e.g. send, receive, cancel) via `invoke()`
 - **THEN** the Rust core executes it and resolves the promise with the result or a typed error
 
+### Requirement: One instance owns the app data
+
+On desktop the application SHALL run as a single instance. A second launch SHALL surface
+the running window rather than start a second core, and anything the second launch carried
+(such as a deep link) SHALL be delivered to the instance already running.
+
+#### Scenario: A deep link arrives while the app is open
+
+- **WHEN** a `floppy://` link is opened on a platform that launches a new process for it
+- **THEN** the running window is surfaced and receives the link, and no second core,
+  transfer endpoint, or blob store is opened
+
+### Requirement: The webview runs under a content security policy
+
+The webview SHALL be served with a content security policy that confines it to app-local
+resources: no remote script, style, image, font, or network destination. The policy SHALL
+admit the core's own preview protocol and the IPC channel, and the development policy MAY
+additionally admit the local dev server so hot reload works.
+
+#### Scenario: Remote content is refused
+
+- **WHEN** the loaded page attempts to fetch a script or connect to a host that is not the
+  app itself or the IPC channel
+- **THEN** the request is blocked by the policy
+
+#### Scenario: Previews and IPC still work under the policy
+
+- **WHEN** the app runs a normal transfer with queued image previews
+- **THEN** previews render and every command and event works, in both a dev and a bundled build
+
+### Requirement: Capabilities grant only what the webview uses
+
+Capability files SHALL grant the webview only permissions it actually exercises, SHALL be
+listed explicitly in the app configuration, and SHALL be constrained to the platforms where
+they mean something. A plugin used only from Rust SHALL NOT be granted to the webview.
+
+#### Scenario: A Rust-only plugin is not exposed
+
+- **WHEN** a plugin's API is called only from Rust
+- **THEN** no capability grants its commands to the webview, and the app still works
+
+#### Scenario: Desktop-only permissions are not granted on a phone
+
+- **WHEN** the app is built for Android or iOS
+- **THEN** window-control permissions are absent from the granted capabilities
+
 ### Requirement: SvelteKit static-SPA frontend
 
 The frontend SHALL be a SvelteKit application built with the static adapter as a
@@ -95,13 +141,15 @@ A cancelled transfer SHALL emit no terminal event of any kind.
 - **WHEN** a transfer is cancelled
 - **THEN** no done and no error event is emitted for it
 
-### Requirement: Mid-transfer failures carry a machine-readable code
+### Requirement: Every failure carries a machine-readable code
+
+No failure that reaches the frontend SHALL require matching on message text.
 
 An error event raised for a running transfer SHALL carry both a machine-readable error
-code and user-facing text, so the frontend can branch on the cause without matching on a
-message. A start that is refused before a transfer begins SHALL instead fail its command
-with a stable sentinel message, which the frontend matches on; those sentinel strings are
-part of the contract and SHALL remain stable.
+code and the user-facing text to show. A command that fails SHALL fail with a typed error
+whose variant identifies the cause; the variants known to the frontend SHALL be part of the
+generated IPC contract. Error message wording on either side SHALL be free to change
+without breaking the frontend.
 
 #### Scenario: A failure is classifiable
 
@@ -110,16 +158,31 @@ part of the contract and SHALL remain stable.
 
 #### Scenario: A refused start is distinguishable
 
-- **WHEN** a start is refused because the device is busy, no files were selected, or the code
-  was invalid
-- **THEN** the command fails with the stable sentinel text for that case rather than emitting
-  a transfer error event
+- **WHEN** a start is refused because the device is busy, the previous transfer is still
+  stopping, no files were selected, or the code was invalid
+- **THEN** the command fails with the typed variant for that case rather than emitting a
+  transfer error event
+
+#### Scenario: A refused start reaches the frontend the same way on every path
+
+- **WHEN** a start is refused for a send to a trusted device, or for accepting an offer
+- **THEN** the command fails with the same typed variant a code-phrase start would produce,
+  not with prose describing it
+
+#### Scenario: Copy is not contract
+
+- **WHEN** the wording of an error message is changed in the core or in the frontend
+- **THEN** no failure is misclassified as a result
 
 ### Requirement: Plugin-backed platform services
 
 The shell SHALL use Tauri plugins for OS integration rather than bespoke implementations:
-notifications, deep links, file dialog, filesystem access, opening paths, and haptic
-feedback.
+notifications, deep links, file dialog, filesystem access, opening paths, logging,
+single-instance ownership, and haptic feedback.
+
+Diagnostics SHALL reach the platform's log sink on every target: the core's tracing calls
+SHALL be delivered to a real sink rather than dropped, and a build SHALL NOT be able to
+silently lose them.
 
 Haptic feedback SHALL be requested through the haptics plugin, with the capability
 permissions the plugin needs on each mobile platform. It SHALL be attempted only on
@@ -145,6 +208,11 @@ native webview events; neither SHALL be an app command or event.
 
 - **WHEN** the app is opened via a registered deep link carrying a transfer code
 - **THEN** the deep-link plugin delivers it to the core and the code is surfaced for a receive
+
+#### Scenario: A core log line is visible on the platform
+
+- **WHEN** the core logs at info level on desktop, Android, or iOS
+- **THEN** the line appears in that platform's log output
 
 #### Scenario: Haptic feedback on a phone
 

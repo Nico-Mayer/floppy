@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::oneshot;
 use tokio::time::timeout;
 
+use crate::error::CommandError;
 use crate::pairing::broker::{connect, FpClient, Incoming};
 use crate::pairing::identity::{Identity, PublicKey};
 use crate::pairing::offer::{DeclineReason, Offer, VerifyError};
@@ -339,16 +340,23 @@ impl PairingService {
     /// Offer files to a trusted device. Serves the files, signs an offer with
     /// the resulting ticket, and routes it by fingerprint. The transfer starts
     /// when the peer accepts (it fetches the ticket); a decline cancels it.
-    pub async fn send_to(&self, fingerprint: &str, paths: Vec<PathBuf>) -> Result<String, String> {
+    ///
+    /// Returns `CommandError` rather than a string so a refusal to start (the
+    /// device is already busy) reaches the UI as the same variant a code send
+    /// would produce, instead of prose the frontend has to recognise.
+    pub async fn send_to(
+        &self,
+        fingerprint: &str,
+        paths: Vec<PathBuf>,
+    ) -> Result<String, CommandError> {
         if self.trust.get(fingerprint).is_none() {
-            return Err("not a trusted device".into());
+            return Err(CommandError::other("not a trusted device"));
         }
         let total_bytes: u64 =
             paths.iter().filter_map(|p| std::fs::metadata(p).ok()).map(|m| m.len()).sum();
         let file_count = paths.len() as u64;
 
-        let (id, ticket, _served) =
-            self.manager.start_send(paths).await.map_err(|e| e.to_string())?;
+        let (id, ticket, _served) = self.manager.start_send(paths).await?;
         let ts = now_unix();
         let offer =
             self.identity.sign_offer(&id, ts, file_count, total_bytes, &ticket, &self.self_name.get());
@@ -362,14 +370,15 @@ impl PairingService {
     }
 
     /// Accept a pending offer: sign a response, tell the sender, and fetch the
-    /// offer's ticket (dialing the verified NodeId).
-    pub async fn accept(&self, transfer_id: &str) -> Result<String, String> {
+    /// offer's ticket (dialing the verified NodeId). Typed error for the same
+    /// reason as `send_to`: a busy device must stay recognisable as busy.
+    pub async fn accept(&self, transfer_id: &str) -> Result<String, CommandError> {
         let offer = self
             .pending
             .lock()
             .unwrap()
             .remove(transfer_id)
-            .ok_or("no such incoming offer")?;
+            .ok_or_else(|| CommandError::other("no such incoming offer"))?;
         let resp = self.identity.sign_response(transfer_id, true, None);
         let fingerprint = offer.from.fingerprint();
         self.broker.send(&fingerprint, &Signal::Response(resp));
@@ -382,12 +391,12 @@ impl PairingService {
         let identity = self.identity.clone();
         let target = fingerprint.clone();
         let tid = transfer_id.to_string();
-        self.manager
+        Ok(self
+            .manager
             .receive_from_notify(offer.ticket, &peer, move || {
                 broker.send(&target, &Signal::Completed(identity.sign_completion(&tid)));
             })
-            .await
-            .map_err(|e| e.to_string())
+            .await?)
     }
 
     /// Decline a pending offer: tell the sender so it can stop serving.

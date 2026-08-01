@@ -17,7 +17,7 @@
 
 	async function copyCode() {
 		try {
-			// Native clipboard via the Go side — reliable in every webview,
+			// Native clipboard via the core — reliable in every webview,
 			// unlike navigator.clipboard (secure-context/permission quirks).
 			await Clipboard.SetText(code)
 		} catch {

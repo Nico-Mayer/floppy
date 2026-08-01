@@ -1,19 +1,14 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Capability for the main window",
+  "description": "What the main window may ask for on every platform: open a received folder, pick files, copy a code, raise a notification, and be handed a floppy:// link. Window controls are desktop-only and live in the `desktop` capability. The file-system plugin is absent on purpose: it is only ever called from Rust (see `fileinput`), and Rust does not go through the ACL.",
   "windows": ["main"],
   "permissions": [
     "core:default",
-    "core:window:allow-start-dragging",
-    "core:window:allow-minimize",
-    "core:window:allow-toggle-maximize",
-    "core:window:allow-close",
     "opener:default",
     "dialog:default",
     "clipboard-manager:allow-write-text",
     "notification:default",
-    "deep-link:default",
-    "fs:default"
+    "deep-link:default"
   ]
 }

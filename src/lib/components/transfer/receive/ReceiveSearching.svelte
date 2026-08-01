@@ -7,7 +7,7 @@
 	const receive = app.receive
 </script>
 
-<!-- 'connecting' for a code target: croc waits for its peer forever, so a wrong
+<!-- 'connecting' for a code target: a receive waits for its peer forever, so a wrong
      code looks exactly like a peer that has not shown up yet. -->
 <TransferProgress label="Looking for the sender…" />
 {#if receive.tooSlow}

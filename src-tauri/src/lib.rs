@@ -4,6 +4,7 @@
 // event types are exported to TypeScript by tauri-specta, so the frontend never
 // hand-writes the contract — `src/lib/ipc/bindings.ts` is generated.
 
+mod error;
 mod events;
 mod fileinput;
 mod pairing;
@@ -17,6 +18,8 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
+use error::CommandError;
+use tauri_plugin_log::log;
 use events::{CodeEvent, DeepLink, DoneEvent, ErrorEvent, PairingAccepted, PairingDeclined,
     PairingError, PairingOfferEvent, PairingPaired, PairingRequest, ProgressEvent, TransferKind};
 use specta_typescript::Number;
@@ -165,13 +168,10 @@ impl transport::Emitter for TauriEmitter {
                 self.notify_done(kind, &dest);
                 emitted
             }
-            E::Failed { id, kind, error } => ErrorEvent {
-                id,
-                kind: kind_to_ts(kind),
-                code: error.code.slug().to_string(),
-                message: error.message,
+            E::Failed { id, kind, error } => {
+                ErrorEvent { id, kind: kind_to_ts(kind), code: error.code, message: error.message }
+                    .emit(app)
             }
-            .emit(app),
         };
     }
 }
@@ -265,45 +265,45 @@ fn format_bytes(bytes: u64) -> String {
 /// pass through; a `content://` URI is materialized into the app cache. Shared
 /// by every command that hands paths to the transport, so the transport and
 /// preview code only ever see real paths.
-fn resolve_all(app: &AppHandle, paths: Vec<String>) -> Result<Vec<PathBuf>, String> {
-    paths.iter().map(|p| fileinput::resolve_input_path(app, p)).collect()
+fn resolve_all(app: &AppHandle, paths: Vec<String>) -> Result<Vec<PathBuf>, CommandError> {
+    paths
+        .iter()
+        .map(|p| fileinput::resolve_input_path(app, p).map_err(CommandError::other))
+        .collect()
 }
 
 #[tauri::command]
 #[specta::specta]
-async fn send(app: AppHandle, manager: State<'_, Manager>, paths: Vec<String>) -> Result<(), String> {
+async fn send(app: AppHandle, manager: State<'_, Manager>, paths: Vec<String>) -> Result<(), CommandError> {
     // The transfer id is tracked internally; the UI keys off the code/progress
     // events, so the command just reports start success/failure.
-    manager
-        .send(resolve_all(&app, paths)?)
-        .await
-        .map(|_| ())
-        .map_err(|e| e.to_string())
+    manager.send(resolve_all(&app, paths)?).await?;
+    Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
-async fn receive(manager: State<'_, Manager>, code: String) -> Result<(), String> {
+async fn receive(manager: State<'_, Manager>, code: String) -> Result<(), CommandError> {
     // A human code phrase runs the quick-share PAKE; anything else is treated
     // as a raw iroh ticket (the copy/paste path).
-    let started = if rendezvous::code::looks_like_code(&code) {
-        manager.quick_receive(&code).await
+    if rendezvous::code::looks_like_code(&code) {
+        manager.quick_receive(&code).await?;
     } else {
-        manager.receive(code).await
-    };
-    started.map(|_| ()).map_err(|e| e.to_string())
+        manager.receive(code).await?;
+    }
+    Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
-async fn cancel_send(manager: State<'_, Manager>) -> Result<(), String> {
+async fn cancel_send(manager: State<'_, Manager>) -> Result<(), CommandError> {
     manager.cancel(Kind::Send);
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
-async fn cancel_receive(manager: State<'_, Manager>) -> Result<(), String> {
+async fn cancel_receive(manager: State<'_, Manager>) -> Result<(), CommandError> {
     manager.cancel(Kind::Receive);
     Ok(())
 }
@@ -311,19 +311,20 @@ async fn cancel_receive(manager: State<'_, Manager>) -> Result<(), String> {
 /// Quick one-off share over a human code phrase (code-phrase-share).
 #[tauri::command]
 #[specta::specta]
-async fn quick_share(app: AppHandle, manager: State<'_, Manager>, paths: Vec<String>) -> Result<(), String> {
-    manager
-        .quick_share(resolve_all(&app, paths)?)
-        .await
-        .map(|_| ())
-        .map_err(|e| e.to_string())
+async fn quick_share(
+    app: AppHandle,
+    manager: State<'_, Manager>,
+    paths: Vec<String>,
+) -> Result<(), CommandError> {
+    manager.quick_share(resolve_all(&app, paths)?).await?;
+    Ok(())
 }
 
 // ---- file commands ----
 
 #[tauri::command]
 #[specta::specta]
-async fn describe(app: AppHandle, paths: Vec<String>) -> Result<Vec<FileEntry>, String> {
+async fn describe(app: AppHandle, paths: Vec<String>) -> Result<Vec<FileEntry>, CommandError> {
     // A `content://` pick is materialized here so the queue shows its real
     // display name and size; a plain path is stat'd in place. Unreadable picks
     // are skipped, as before.
@@ -334,8 +335,8 @@ async fn describe(app: AppHandle, paths: Vec<String>) -> Result<Vec<FileEntry>, 
 /// nothing is copied). The frontend calls this when the queue is cleared.
 #[tauri::command]
 #[specta::specta]
-async fn clear_input_cache(app: AppHandle) -> Result<(), String> {
-    fileinput::reap(&app).map_err(|e| e.to_string())
+async fn clear_input_cache(app: AppHandle) -> Result<(), CommandError> {
+    fileinput::reap(&app).map_err(|e| CommandError::other(e.to_string()))
 }
 
 /// Reveal a received folder in the file manager (desktop). Not offered on mobile:
@@ -344,22 +345,22 @@ async fn clear_input_cache(app: AppHandle) -> Result<(), String> {
 /// is no reliable in-app intent to jump straight there.
 #[tauri::command]
 #[specta::specta]
-async fn open_path(app: AppHandle, path: String) -> Result<(), String> {
+async fn open_path(app: AppHandle, path: String) -> Result<(), CommandError> {
     use tauri_plugin_opener::OpenerExt;
-    app.opener().open_path(path, None::<&str>).map_err(|e| e.to_string())
+    app.opener().open_path(path, None::<&str>).map_err(|e| CommandError::other(e.to_string()))
 }
 
 // ---- pairing commands (device-pairing) ----
 
 #[tauri::command]
 #[specta::specta]
-async fn identity(pairing: State<'_, PairingService>) -> Result<String, String> {
+async fn identity(pairing: State<'_, PairingService>) -> Result<String, CommandError> {
     Ok(pairing.identity())
 }
 
 #[tauri::command]
 #[specta::specta]
-async fn trusted_devices(pairing: State<'_, PairingService>) -> Result<Vec<DeviceInfo>, String> {
+async fn trusted_devices(pairing: State<'_, PairingService>) -> Result<Vec<DeviceInfo>, CommandError> {
     Ok(pairing
         .trusted_devices()
         .into_iter()
@@ -371,22 +372,26 @@ async fn trusted_devices(pairing: State<'_, PairingService>) -> Result<Vec<Devic
 /// redeems it to pair; this device confirms the request before trust is written.
 #[tauri::command]
 #[specta::specta]
-async fn show_pair_code(pairing: State<'_, PairingService>) -> Result<String, String> {
-    pairing.show_pair_code()
+async fn show_pair_code(pairing: State<'_, PairingService>) -> Result<String, CommandError> {
+    Ok(pairing.show_pair_code()?)
 }
 
 /// Redeem a pairing code shown on another device. `via` is "qr" when scanned or
 /// "code" when typed, so the other device knows whether to show an SAS.
 #[tauri::command]
 #[specta::specta]
-async fn redeem_pair_code(pairing: State<'_, PairingService>, code: String, via: String) -> Result<(), String> {
-    pairing.redeem_pair_code(&code, &via).await
+async fn redeem_pair_code(
+    pairing: State<'_, PairingService>,
+    code: String,
+    via: String,
+) -> Result<(), CommandError> {
+    Ok(pairing.redeem_pair_code(&code, &via).await?)
 }
 
 /// This device's own name, shown to peers during pairing and on transfers.
 #[tauri::command]
 #[specta::specta]
-async fn self_name(pairing: State<'_, PairingService>) -> Result<String, String> {
+async fn self_name(pairing: State<'_, PairingService>) -> Result<String, CommandError> {
     Ok(pairing.self_name())
 }
 
@@ -394,28 +399,32 @@ async fn self_name(pairing: State<'_, PairingService>) -> Result<String, String>
 /// or transfer.
 #[tauri::command]
 #[specta::specta]
-async fn set_self_name(pairing: State<'_, PairingService>, name: String) -> Result<(), String> {
-    pairing.set_self_name(&name)
+async fn set_self_name(pairing: State<'_, PairingService>, name: String) -> Result<(), CommandError> {
+    Ok(pairing.set_self_name(&name)?)
 }
 
 #[tauri::command]
 #[specta::specta]
-async fn untrust(pairing: State<'_, PairingService>, fingerprint: String) -> Result<(), String> {
-    pairing.untrust(&fingerprint)
+async fn untrust(pairing: State<'_, PairingService>, fingerprint: String) -> Result<(), CommandError> {
+    Ok(pairing.untrust(&fingerprint)?)
 }
 
 /// Approve a pending pairing (from a `PairingRequest`) and trust the peer under
 /// `name`.
 #[tauri::command]
 #[specta::specta]
-async fn confirm_pair(pairing: State<'_, PairingService>, fingerprint: String, name: String) -> Result<(), String> {
-    pairing.confirm_pair(&fingerprint, &name)
+async fn confirm_pair(
+    pairing: State<'_, PairingService>,
+    fingerprint: String,
+    name: String,
+) -> Result<(), CommandError> {
+    Ok(pairing.confirm_pair(&fingerprint, &name)?)
 }
 
 /// Discard a pending pairing without trusting the peer.
 #[tauri::command]
 #[specta::specta]
-async fn dismiss_pair(pairing: State<'_, PairingService>, fingerprint: String) -> Result<(), String> {
+async fn dismiss_pair(pairing: State<'_, PairingService>, fingerprint: String) -> Result<(), CommandError> {
     pairing.dismiss_pair(&fingerprint);
     Ok(())
 }
@@ -423,20 +432,25 @@ async fn dismiss_pair(pairing: State<'_, PairingService>, fingerprint: String) -
 /// Rename an already-trusted device.
 #[tauri::command]
 #[specta::specta]
-async fn rename_device(pairing: State<'_, PairingService>, fingerprint: String, name: String) -> Result<(), String> {
-    pairing.rename_device(&fingerprint, &name)
+async fn rename_device(
+    pairing: State<'_, PairingService>,
+    fingerprint: String,
+    name: String,
+) -> Result<(), CommandError> {
+    Ok(pairing.rename_device(&fingerprint, &name)?)
 }
 
 #[tauri::command]
 #[specta::specta]
-async fn accept(pairing: State<'_, PairingService>, transfer_id: String) -> Result<(), String> {
-    pairing.accept(&transfer_id).await.map(|_| ())
+async fn accept(pairing: State<'_, PairingService>, transfer_id: String) -> Result<(), CommandError> {
+    pairing.accept(&transfer_id).await?;
+    Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
-async fn decline(pairing: State<'_, PairingService>, transfer_id: String) -> Result<(), String> {
-    pairing.decline(&transfer_id).await
+async fn decline(pairing: State<'_, PairingService>, transfer_id: String) -> Result<(), CommandError> {
+    Ok(pairing.decline(&transfer_id).await?)
 }
 
 #[tauri::command]
@@ -446,11 +460,9 @@ async fn send_to(
     pairing: State<'_, PairingService>,
     fingerprint: String,
     paths: Vec<String>,
-) -> Result<(), String> {
-    pairing
-        .send_to(&fingerprint, resolve_all(&app, paths)?)
-        .await
-        .map(|_| ())
+) -> Result<(), CommandError> {
+    pairing.send_to(&fingerprint, resolve_all(&app, paths)?).await?;
+    Ok(())
 }
 
 /// The command + event registry. Shared by `run()` (which mounts it) and the
@@ -622,6 +634,40 @@ pub fn run() {
 
     let tauri_builder = tauri::Builder::default();
 
+    // Desktop: one instance owns the app data. Must be registered before every
+    // other plugin — a second launch has to be rejected before it starts opening
+    // the blob store. Its `deep-link` feature forwards the URL a second launch
+    // carried to the running instance, so `floppy://` links keep working; all
+    // this callback owes is to bring the existing window forward.
+    #[cfg(desktop)]
+    let tauri_builder = tauri_builder.plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
+        if let Some(win) = app.get_webview_window("main") {
+            let _ = win.set_focus();
+            let _ = win.unminimize();
+        }
+    }));
+
+    // Every `tracing::` call in the core reaches the OS log through this: stdout
+    // (logcat on Android, oslog on iOS) plus a rotated file in the platform log
+    // dir. Registered early so plugin and setup failures are logged too.
+    // Quiet by default, verbose for floppy: iroh logs every packet at INFO and
+    // its QUIC layer every wakeup at DEBUG, so a global INFO floor buries our own
+    // lines several hundred to one. Raise a specific dependency here when
+    // debugging it (`.level_for("iroh", Debug)`) rather than lifting the floor.
+    let tauri_builder = tauri_builder.plugin(
+        tauri_plugin_log::Builder::new()
+            .level(log::LevelFilter::Warn)
+            .level_for(
+                "floppy_lib",
+                if cfg!(debug_assertions) {
+                    log::LevelFilter::Debug
+                } else {
+                    log::LevelFilter::Info
+                },
+            )
+            .build(),
+    );
+
     // iOS: stop UIKit adding its own safe-area inset to the webview's scroll
     // view. It does that by default, so the page gets pushed down by UIKit and
     // again by our own `env(safe-area-inset-top)` padding, and the band UIKit
@@ -645,6 +691,10 @@ pub fn run() {
 
     tauri_builder
         .plugin(tauri_plugin_opener::init())
+        // Registered for Rust's sake only: `fileinput` uses its `FilePath` on
+        // every platform and its resolver to read a `content://` pick on Android.
+        // The frontend never calls it, so no capability grants `fs:*` — Rust-side
+        // calls do not go through the ACL, and the webview gets nothing.
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -678,10 +728,14 @@ pub fn run() {
             // Ask once, up front: on iOS/Android an unasked-for notification is
             // dropped, so the first completed transfer would silently show
             // nothing. A no-op on desktop, which always reports granted.
+            //
+            // On the runtime's pool rather than a raw `std::thread`: this calls
+            // into a plugin, and on Android a plugin call from a thread the JVM
+            // has never seen has to attach itself to the VM first.
             {
                 use tauri_plugin_notification::NotificationExt;
                 let handle = app.handle().clone();
-                std::thread::spawn(move || {
+                tauri::async_runtime::spawn_blocking(move || {
                     if !matches!(
                         handle.notification().permission_state(),
                         Ok(tauri::plugin::PermissionState::Granted)
@@ -800,6 +854,41 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    use super::log;
+
+    /// The whole logging setup rests on one thing: `tracing` macros fall back to
+    /// emitting `log` records, which is what the log plugin's sinks consume. That
+    /// held silently false for a long time (no subscriber, no plugin, 20 dead
+    /// call sites), so pin it. Installing a tracing Subscriber or dropping
+    /// tracing's `log` feature both break this test rather than the app.
+    #[test]
+    fn tracing_events_reach_the_log_crate() {
+        static SEEN: AtomicUsize = AtomicUsize::new(0);
+        struct Probe;
+        impl log::Log for Probe {
+            fn enabled(&self, _: &log::Metadata<'_>) -> bool {
+                true
+            }
+            fn log(&self, record: &log::Record<'_>) {
+                if record.args().to_string().contains("floppy-log-probe") {
+                    SEEN.fetch_add(1, Ordering::SeqCst);
+                }
+            }
+            fn flush(&self) {}
+        }
+
+        // Nothing else in the test binary installs a logger; if that ever
+        // changes, this test has nothing to say rather than failing wrongly.
+        if log::set_logger(&Probe).is_err() {
+            return;
+        }
+        log::set_max_level(log::LevelFilter::Trace);
+        tracing::info!("floppy-log-probe");
+        assert_eq!(SEEN.load(Ordering::SeqCst), 1, "tracing did not emit a log record");
+    }
+
     // Generate the TypeScript bindings headlessly (no window). Run with
     // `cargo test export_bindings`; the checked-in bindings.ts is the artifact.
     #[test]

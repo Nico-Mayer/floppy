@@ -20,11 +20,12 @@ import {
 import { goto } from '$app/navigation'
 import { resolve } from '$app/paths'
 import { toast } from 'svelte-sonner'
+import { describeError, errorText } from './errors'
 import { app } from './transfer-app.svelte'
 
 /**
  * Frontend state for trusted devices. Mirrors the transfer-app pattern: a
- * single $state class, event subscriptions wired in init(), all Go calls
+ * single $state class, event subscriptions wired in init(), all core calls
  * funnelled through here. The backend owns every secret — this only ever holds
  * public identities, fingerprints, and the SAS for the compare step.
  */
@@ -119,7 +120,7 @@ class PairingApp {
 			await SetSelfName(next)
 			this.selfName = next
 		} catch (e) {
-			toast.error(`Could not rename this device: ${e}`)
+			toast.error(`Could not rename this device: ${errorText(e)}`)
 		}
 	}
 
@@ -141,7 +142,8 @@ class PairingApp {
 			await Accept(offer.transferId)
 		} catch (e) {
 			app.receive.stop()
-			toast.error(String(e))
+			const failure = describeError(e, 'receive')
+			toast.error(failure.title, { description: failure.message })
 		}
 	}
 
@@ -152,14 +154,14 @@ class PairingApp {
 		try {
 			await Decline(id)
 		} catch (e) {
-			toast.error(String(e))
+			toast.error(errorText(e))
 		}
 	}
 
 	/**
 	 * Offer already-selected files to a trusted device. The send panel enters
-	 * its connecting state immediately; the actual croc send begins once the
-	 * peer accepts (driven by croc:code/progress), or is unwound on decline.
+	 * its connecting state immediately; the actual send begins once the peer
+	 * accepts (driven by the code/progress events), or is unwound on decline.
 	 */
 	async sendTo(fingerprint: string, paths: string[]) {
 		if (!paths.length) return
@@ -174,7 +176,8 @@ class PairingApp {
 			await SendTo(fingerprint, paths)
 		} catch (e) {
 			app.send.reset()
-			toast.error(String(e))
+			const failure = describeError(e, 'send')
+			toast.error(failure.title, { description: failure.message })
 		}
 	}
 
@@ -189,7 +192,7 @@ class PairingApp {
 		try {
 			await ConfirmPair(req.fingerprint, name)
 		} catch (e) {
-			toast.error(`Could not add that device: ${e}`)
+			toast.error(`Could not add that device: ${errorText(e)}`)
 		}
 	}
 
@@ -210,7 +213,7 @@ class PairingApp {
 		try {
 			await RenameDevice(fingerprint, name)
 		} catch (e) {
-			toast.error(`Could not rename that device: ${e}`)
+			toast.error(`Could not rename that device: ${errorText(e)}`)
 		}
 		await this.refresh()
 	}
@@ -225,7 +228,7 @@ class PairingApp {
 		try {
 			await Untrust(fingerprint)
 		} catch (e) {
-			toast.error(`Could not remove that device: ${e}`)
+			toast.error(`Could not remove that device: ${errorText(e)}`)
 		}
 		// Refresh either way: on success it drops the row, on failure it restores
 		// the one the list already believes is gone.
@@ -233,7 +236,7 @@ class PairingApp {
 	}
 
 	// A trusted send that never got past "connecting" (declined, or failed
-	// before croc started) must release the send panel. Once croc is actually
+	// before the transfer started) must release the send panel. Once it is actually
 	// moving bytes, its own events own the panel and this leaves them alone.
 	#resetPendingSend() {
 		if (app.send.status === 'starting') app.send.reset()

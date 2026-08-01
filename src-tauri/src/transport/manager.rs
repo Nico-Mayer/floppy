@@ -1669,9 +1669,12 @@ mod tests {
         let id2 = sender.send(vec![src2]).await.unwrap();
 
         // Keep it active — touch faster than the TTL over a span exceeding it —
-        // and it must not be reaped.
-        for _ in 0..8 {
-            tokio::time::sleep(ttl / 2).await;
+        // and it must not be reaped. Touching at a quarter of the TTL rather than
+        // half leaves room for scheduler jitter: on a loaded machine (the whole
+        // suite plus a clippy build) a `ttl / 2` sleep can overshoot the TTL and
+        // fail this on timing alone.
+        for _ in 0..16 {
+            tokio::time::sleep(ttl / 4).await;
             sender.inner.touch_send(&id2);
         }
         assert!(

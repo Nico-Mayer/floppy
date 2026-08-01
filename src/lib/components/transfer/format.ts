@@ -1,6 +1,6 @@
 import type { ProgressEvent } from '$lib/ipc'
 
-/** Decimal byte sizes, matching what croc itself reports. */
+/** Decimal byte sizes, matching `format_bytes` in the core (lib.rs). */
 export function formatBytes(bytes: number): string {
 	if (bytes < 1000) return `${Math.max(bytes, 0)} B`
 	const units = ['kB', 'MB', 'GB', 'TB']
@@ -19,7 +19,7 @@ export function formatRate(bytesPerSecond: number): string {
 
 /**
  * What is moving right now: "photo.jpg", or "photo.jpg · 2 of 5" when there is
- * more than one file. Empty until croc reports a manifest, which for a
+ * more than one file. Empty until the core reports a manifest, which for a
  * receiver is the first thing it learns about the transfer at all.
  */
 export function currentFile(stats: ProgressEvent | null): string {

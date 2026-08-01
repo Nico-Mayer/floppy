@@ -5,57 +5,57 @@ import * as __TAURI_EVENT from "@tauri-apps/api/event";
 
 /** Commands */
 export const commands = {
-	send: (paths: string[]) => typedError<null, string>(__TAURI_INVOKE("send", { paths })),
-	receive: (code: string) => typedError<null, string>(__TAURI_INVOKE("receive", { code })),
-	cancelSend: () => typedError<null, string>(__TAURI_INVOKE("cancel_send")),
-	cancelReceive: () => typedError<null, string>(__TAURI_INVOKE("cancel_receive")),
+	send: (paths: string[]) => typedError<null, CommandError>(__TAURI_INVOKE("send", { paths })),
+	receive: (code: string) => typedError<null, CommandError>(__TAURI_INVOKE("receive", { code })),
+	cancelSend: () => typedError<null, CommandError>(__TAURI_INVOKE("cancel_send")),
+	cancelReceive: () => typedError<null, CommandError>(__TAURI_INVOKE("cancel_receive")),
 	/**  Quick one-off share over a human code phrase (code-phrase-share). */
-	quickShare: (paths: string[]) => typedError<null, string>(__TAURI_INVOKE("quick_share", { paths })),
-	describe: (paths: string[]) => typedError<FileEntry[], string>(__TAURI_INVOKE("describe", { paths })),
+	quickShare: (paths: string[]) => typedError<null, CommandError>(__TAURI_INVOKE("quick_share", { paths })),
+	describe: (paths: string[]) => typedError<FileEntry[], CommandError>(__TAURI_INVOKE("describe", { paths })),
 	/**
 	 *  Delete the sandbox copies made for the send queue (a no-op on desktop, where
 	 *  nothing is copied). The frontend calls this when the queue is cleared.
 	 */
-	clearInputCache: () => typedError<null, string>(__TAURI_INVOKE("clear_input_cache")),
+	clearInputCache: () => typedError<null, CommandError>(__TAURI_INVOKE("clear_input_cache")),
 	/**
 	 *  Reveal a received folder in the file manager (desktop). Not offered on mobile:
 	 *  received files land in the system-visible location (Android public Downloads,
 	 *  iOS Files → On My iPhone → Floppy), reachable from the OS file apps, and there
 	 *  is no reliable in-app intent to jump straight there.
 	 */
-	openPath: (path: string) => typedError<null, string>(__TAURI_INVOKE("open_path", { path })),
-	identity: () => typedError<string, string>(__TAURI_INVOKE("identity")),
+	openPath: (path: string) => typedError<null, CommandError>(__TAURI_INVOKE("open_path", { path })),
+	identity: () => typedError<string, CommandError>(__TAURI_INVOKE("identity")),
 	/**  This device's own name, shown to peers during pairing and on transfers. */
-	selfName: () => typedError<string, string>(__TAURI_INVOKE("self_name")),
+	selfName: () => typedError<string, CommandError>(__TAURI_INVOKE("self_name")),
 	/**
 	 *  Rename this device. The new name is advertised to peers on the next pairing
 	 *  or transfer.
 	 */
-	setSelfName: (name: string) => typedError<null, string>(__TAURI_INVOKE("set_self_name", { name })),
-	trustedDevices: () => typedError<DeviceInfo[], string>(__TAURI_INVOKE("trusted_devices")),
-	untrust: (fingerprint: string) => typedError<null, string>(__TAURI_INVOKE("untrust", { fingerprint })),
+	setSelfName: (name: string) => typedError<null, CommandError>(__TAURI_INVOKE("set_self_name", { name })),
+	trustedDevices: () => typedError<DeviceInfo[], CommandError>(__TAURI_INVOKE("trusted_devices")),
+	untrust: (fingerprint: string) => typedError<null, CommandError>(__TAURI_INVOKE("untrust", { fingerprint })),
 	/**
 	 *  Approve a pending pairing (from a `PairingRequest`) and trust the peer under
 	 *  `name`.
 	 */
-	confirmPair: (fingerprint: string, name: string) => typedError<null, string>(__TAURI_INVOKE("confirm_pair", { fingerprint, name })),
+	confirmPair: (fingerprint: string, name: string) => typedError<null, CommandError>(__TAURI_INVOKE("confirm_pair", { fingerprint, name })),
 	/**  Discard a pending pairing without trusting the peer. */
-	dismissPair: (fingerprint: string) => typedError<null, string>(__TAURI_INVOKE("dismiss_pair", { fingerprint })),
+	dismissPair: (fingerprint: string) => typedError<null, CommandError>(__TAURI_INVOKE("dismiss_pair", { fingerprint })),
 	/**  Rename an already-trusted device. */
-	renameDevice: (fingerprint: string, name: string) => typedError<null, string>(__TAURI_INVOKE("rename_device", { fingerprint, name })),
+	renameDevice: (fingerprint: string, name: string) => typedError<null, CommandError>(__TAURI_INVOKE("rename_device", { fingerprint, name })),
 	/**
 	 *  Show a pairing code on this device (also rendered as a QR). Another device
 	 *  redeems it to pair; this device confirms the request before trust is written.
 	 */
-	showPairCode: () => typedError<string, string>(__TAURI_INVOKE("show_pair_code")),
+	showPairCode: () => typedError<string, CommandError>(__TAURI_INVOKE("show_pair_code")),
 	/**
 	 *  Redeem a pairing code shown on another device. `via` is "qr" when scanned or
 	 *  "code" when typed, so the other device knows whether to show an SAS.
 	 */
-	redeemPairCode: (code: string, via: string) => typedError<null, string>(__TAURI_INVOKE("redeem_pair_code", { code, via })),
-	accept: (transferId: string) => typedError<null, string>(__TAURI_INVOKE("accept", { transferId })),
-	decline: (transferId: string) => typedError<null, string>(__TAURI_INVOKE("decline", { transferId })),
-	sendTo: (fingerprint: string, paths: string[]) => typedError<null, string>(__TAURI_INVOKE("send_to", { fingerprint, paths })),
+	redeemPairCode: (code: string, via: string) => typedError<null, CommandError>(__TAURI_INVOKE("redeem_pair_code", { code, via })),
+	accept: (transferId: string) => typedError<null, CommandError>(__TAURI_INVOKE("accept", { transferId })),
+	decline: (transferId: string) => typedError<null, CommandError>(__TAURI_INVOKE("decline", { transferId })),
+	sendTo: (fingerprint: string, paths: string[]) => typedError<null, CommandError>(__TAURI_INVOKE("send_to", { fingerprint, paths })),
 };
 
 /** Events */
@@ -81,6 +81,19 @@ export type CodeEvent = {
 	code: string,
 };
 
+/**  A command failure, as the frontend sees it. */
+export type CommandError = 
+/**  A transfer is already running; this device does one at a time. */
+{ kind: "busy" } | 
+/**  The previous transfer is still stopping. Retry shortly. */
+{ kind: "unwinding" } | 
+/**  Nothing was picked. */
+{ kind: "noFiles" } | 
+/**  The code or ticket is empty or malformed. */
+{ kind: "badCode" } | 
+/**  Anything without its own variant; `message` is already user-facing. */
+{ kind: "other"; message: string };
+
 /**  A `floppy://receive?code=…` deep link opened the app; prefill the code. */
 export type DeepLink = {
 	code: string,
@@ -98,11 +111,14 @@ export type DoneEvent = {
 	dest: string,
 };
 
-/**  Transfer failed. `message` is human text; `code` is machine-readable. */
+/**
+ *  Transfer failed. `code` is the machine-readable class the UI branches on;
+ *  `message` is the sentence to show when there is nothing better to say.
+ */
 export type ErrorEvent = {
 	id: string,
 	kind: TransferKind,
-	code: string,
+	code: TransferErrorCode,
 	message: string,
 };
 
@@ -167,6 +183,31 @@ export type ProgressEvent = {
 	bps: number,
 	eta: number,
 };
+
+/**
+ *  Machine-readable classification of a runtime transfer failure. Some variants
+ *  are situational (a bad ticket is caught earlier as a `StartError`); the enum
+ *  is kept complete as the classification contract.
+ * 
+ *  Derives `Type` so `ErrorEvent.code` exports as a TypeScript union rather than
+ *  a bare `string` the frontend has to know the spellings of. specta is a
+ *  serialization concern, not a Tauri one, so this stays consistent with the
+ *  core's no-Tauri-imports rule — and it means the taxonomy cannot drift from
+ *  the copy of it the frontend branches on, because there is no copy.
+ */
+export type TransferErrorCode = 
+/**  Could not reach the peer or relay to establish a connection. */
+"connect" | 
+/**  The connection was established but dropped mid-transfer. */
+"disconnected" | 
+/**  Connecting/handshake took too long. */
+"timeout" | 
+/**  The ticket could not be parsed. */
+"bad_ticket" | 
+/**  Writing received data to disk failed (permissions, disk full). */
+"storage" | 
+/**  Anything not otherwise classified. `message` carries the raw detail. */
+"other";
 
 /**  Which side of a transfer an event belongs to. Serializes as "send"/"receive". */
 export type TransferKind = "send" | "receive";
