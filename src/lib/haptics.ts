@@ -33,6 +33,8 @@ async function feel(run: () => Promise<unknown>): Promise<void> {
 export const haptics = {
 	/** A code was copied to the clipboard. */
 	copied: () => feel(() => impactFeedback('light')),
+	/** A QR code was read: the camera caught something, before anything is known. */
+	scanned: () => feel(() => impactFeedback('medium')),
 	/** A file was taken out of the send queue. */
 	removed: () => feel(() => impactFeedback('light')),
 	/** A transfer finished, in either direction. The one success note. */

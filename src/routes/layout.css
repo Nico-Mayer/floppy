@@ -278,6 +278,39 @@
 [data-slot='drawer-content'][data-vaul-drawer-direction='bottom'] {
 	padding-bottom: max(var(--safe-bottom), --spacing(4));
 }
+/* While the camera runs behind the webview (windowed scanning, see scan.svelte.ts),
+   every pixel this app does not paint is camera. So the page stops painting: the
+   document background goes transparent and the shell fades out, leaving only what
+   ScanSheet draws on top. Unlayered, because `bg-background` on <body> and on the
+   sidebar inset are utilities and would otherwise win.
+
+   The shell fades rather than switching to `visibility: hidden`, which is what made
+   opening feel like a channel change: the app blinked out, then the chrome faded in
+   as a second, unrelated motion. Crossing them over means the camera arrives as the
+   app leaves. `pointer-events: none` does what visibility used to, since an element
+   at zero opacity still takes taps.
+
+   The attribute outlives the close on purpose: ScanSheet removes it when its own
+   exit transition ends, so the shell does not pop back in while the chrome is still
+   sliding away. */
+html[data-scanning],
+html[data-scanning] body,
+html[data-scanning] [data-slot='sidebar-inset'] {
+	background: transparent;
+}
+[data-slot='sidebar-wrapper'] {
+	transition: opacity 220ms ease;
+}
+html[data-scanning] [data-slot='sidebar-wrapper'] {
+	opacity: 0;
+	pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+	[data-slot='sidebar-wrapper'] {
+		transition: none;
+	}
+}
+
 /* A centred dialog only has to stay off the notch, not sit below it. */
 [data-slot='dialog-content'] {
 	max-height: calc(100svh - var(--safe-top) - var(--safe-bottom) - --spacing(8));

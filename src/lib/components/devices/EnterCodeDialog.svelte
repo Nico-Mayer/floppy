@@ -1,33 +1,30 @@
 <script lang="ts">
 	import { isCompleteCode } from '$lib/code'
 	import CodeInput from '$lib/components/CodeInput.svelte'
-	import ScanStep from '$lib/components/devices/ScanStep.svelte'
 	import { Button } from '$lib/components/ui/button'
 	import * as Field from '$lib/components/ui/field'
 	import * as ResponsiveDialog from '$lib/components/ui/responsive-dialog'
 	import { Spinner } from '$lib/components/ui/spinner'
 	import { errorText } from '$lib/errors'
 	import { pairing } from '$lib/pairing-app.svelte'
-	import { isPhoneChrome } from '$lib/platform'
+	import { canScan } from '$lib/scan.svelte'
+	import CameraIcon from '@lucide/svelte/icons/camera'
 	import { toast } from 'svelte-sonner'
 
-	// The other half of a pairing: the code the *other* device is showing. This
-	// device's own code lives on the page behind this, so the screen offers both
-	// directions and neither is a role the user has to pick — this is only the one
-	// that needs a keyboard, which is why it gets a surface of its own.
+	// Typing the code the *other* device is showing.
+	//
+	// On a phone this is the fallback the camera lands on: cancelled, refused, or
+	// broken, the user ends up here with something to do. On desktop it is the whole
+	// of adding a device. Either way it offers the way back to the camera, so neither
+	// direction is a one-way door.
 
-	let { open = $bindable(false) }: { open?: boolean } = $props()
-
-	/** 'code' is the field; 'scan' is the camera step, which takes the surface. */
-	let step = $state<'code' | 'scan'>('code')
+	let { open = $bindable(false), onscan }: { open?: boolean; onscan?: () => void } = $props()
 
 	let typed = $state('')
 	let connecting = $state(false)
 
 	$effect(() => {
-		if (open) return
-		step = 'code'
-		typed = ''
+		if (!open) typed = ''
 	})
 
 	// A completed pairing is the reason this surface existed, and the new device is
@@ -59,41 +56,45 @@
 
 <ResponsiveDialog.Root bind:open>
 	<ResponsiveDialog.Content class="sm:max-w-sm">
-		{#if step === 'scan'}
-			<ScanStep onback={() => (step = 'code')} />
-		{:else}
-			<ResponsiveDialog.Header>
-				<ResponsiveDialog.Title>Add Device</ResponsiveDialog.Title>
-				<ResponsiveDialog.Description
-					>Type the code your other device is showing.</ResponsiveDialog.Description
-				>
-			</ResponsiveDialog.Header>
+		<ResponsiveDialog.Header>
+			<ResponsiveDialog.Title>Use their code</ResponsiveDialog.Title>
+			<ResponsiveDialog.Description>Type the code your other device is showing.</ResponsiveDialog.Description>
+		</ResponsiveDialog.Header>
 
-			<ResponsiveDialog.Body class="flex flex-col gap-2">
-				<!-- Scanning is offered on a phone build only, and it gets its own row
-				     there: it is the way you would actually do this holding a phone. Gated
-				     on the platform rather than the window width, because a narrow desktop
-				     window still has no camera worth pointing at a screen. -->
-				{#if isPhoneChrome}
-					<Button variant="outline" class="w-full" onclick={() => (step = 'scan')}>Scan it instead</Button>
-				{/if}
-				<Field.Field>
-					<Field.FieldLabel for="pair-code" class="sr-only">Their code</Field.FieldLabel>
-					<div class="flex items-center gap-2">
-						<div class="flex-1">
-							<CodeInput id="pair-code" bind:value={typed} disabled={connecting} onsubmit={connect} />
-						</div>
-						<Button disabled={!isCompleteCode(typed) || connecting} onclick={connect}>
-							{#if connecting}
-								<Spinner data-icon="inline-start" />
-								Linking…
-							{:else}
-								Connect
-							{/if}
-						</Button>
+		<ResponsiveDialog.Body class="flex flex-col gap-2">
+			<Field.Field>
+				<Field.FieldLabel for="pair-code" class="sr-only">Their code</Field.FieldLabel>
+				<div class="flex items-center gap-2">
+					<div class="flex-1">
+						<CodeInput id="pair-code" bind:value={typed} disabled={connecting} onsubmit={connect} />
 					</div>
-				</Field.Field>
-			</ResponsiveDialog.Body>
-		{/if}
+					<Button disabled={!isCompleteCode(typed) || connecting} onclick={connect}>
+						{#if connecting}
+							<Spinner data-icon="inline-start" />
+							Linking…
+						{:else}
+							Connect
+						{/if}
+					</Button>
+				</div>
+			</Field.Field>
+
+			<!-- The way back to the camera, where there is one. Quiet, because someone
+			     who is here either chose to type or just came from the scanner. -->
+			{#if canScan() && onscan}
+				<Button
+					variant="ghost"
+					size="sm"
+					class="self-start"
+					onclick={() => {
+						open = false
+						onscan?.()
+					}}
+				>
+					<CameraIcon data-icon="inline-start" />
+					Scan it instead
+				</Button>
+			{/if}
+		</ResponsiveDialog.Body>
 	</ResponsiveDialog.Content>
 </ResponsiveDialog.Root>

@@ -87,7 +87,7 @@
 	     keeps its normal gap there rather than losing it). -->
 	<nav
 		aria-label="Main"
-		class="flex shrink-0 items-stretch border-t bg-background pt-1 pr-(--safe-right) pb-[calc(--spacing(2)+var(--safe-bottom))] pl-(--safe-left)"
+		class="flex shrink-0 items-stretch border-t bg-background pt-1 pr-(--safe-right) pb-[calc(--spacing(0)+var(--safe-bottom))] pl-(--safe-left)"
 	>
 		{#each items as item (item.href)}
 			{@const active = pathname === item.href}

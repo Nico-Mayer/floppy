@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation'
 	import { resolve } from '$app/paths'
 	import { page } from '$app/state'
+	import ScanSheet from '$lib/components/devices/ScanSheet.svelte'
 	import IncomingOfferDialog from '$lib/components/prompts/IncomingOfferDialog.svelte'
 	import IncomingPairDialog from '$lib/components/prompts/IncomingPairDialog.svelte'
 	import AppHeader from '$lib/components/shell/AppHeader.svelte'
@@ -175,6 +176,11 @@
 <svelte:window onkeydown={handleShortcuts} />
 
 <ModeWatcher />
+
+<!-- The camera's own chrome. Outside the shell on purpose: while scanning, the
+     shell is hidden so the camera behind the webview can be seen, and a sheet
+     rendered inside it would go with it. -->
+<ScanSheet />
 
 <!-- One shell for every platform and width. The header is platform chrome (macOS
      traffic-light spacer, Windows controls, nothing at all on a phone); width

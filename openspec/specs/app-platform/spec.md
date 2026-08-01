@@ -178,7 +178,7 @@ without breaking the frontend.
 
 The shell SHALL use Tauri plugins for OS integration rather than bespoke implementations:
 notifications, deep links, file dialog, filesystem access, opening paths, logging,
-single-instance ownership, and haptic feedback.
+single-instance ownership, haptic feedback, and barcode scanning.
 
 Diagnostics SHALL reach the platform's log sink on every target: the core's tracing calls
 SHALL be delivered to a real sink rather than dropped, and a build SHALL NOT be able to
@@ -189,6 +189,23 @@ permissions the plugin needs on each mobile platform. It SHALL be attempted only
 coarse-pointer devices, and a failure to produce it SHALL never propagate to the caller: an
 absent plugin, a denied permission, or hardware without a vibrator SHALL leave the
 triggering action unaffected.
+
+Reading a QR code with the camera SHALL go through the barcode-scanner plugin, on the mobile
+targets where that plugin exists, and SHALL NOT be attempted on desktop. It SHALL run the camera
+behind the webview rather than as a surface of its own, so the app keeps its own controls over it.
+While it runs, the shell SHALL stop painting the region the camera shows through, and it SHALL go
+back to painting normally the moment the camera stops, whatever ended it. The camera permission
+each mobile platform requires SHALL be declared where that platform expects it: the plugin's
+capability permissions, and a usage string on iOS written in the same plain first-person voice
+as the app's other usage strings.
+
+The app SHALL ask for the camera at the moment the user presses something that plainly needs
+one, SHALL ask no more than once per attempt, and SHALL treat a refusal as an ordinary state:
+it SHALL say the camera is off, SHALL offer the way to the platform's own settings, and SHALL
+NOT leave the user without a way to finish what they were doing.
+
+The plugin's API SHALL be wrapped in one module. No feature component SHALL import it directly,
+for the same reason no component calls `invoke` directly.
 
 File picking SHALL go through the dialog plugin from the frontend and drag-drop through
 native webview events; neither SHALL be an app command or event.
@@ -235,6 +252,33 @@ native webview events; neither SHALL be an app command or event.
 
 - **WHEN** the same events occur in a desktop build
 - **THEN** no haptic call is made
+
+#### Scenario: Scanning is permitted on every mobile target
+
+- **WHEN** a debug build is produced for Android and for iOS
+- **THEN** the scanner's permissions are present in the app's capabilities, iOS carries a camera
+  usage string, and opening the camera works on both without a runtime permission error
+
+#### Scenario: A refused camera is an ordinary state
+
+- **WHEN** the user denies the camera permission
+- **THEN** the app says the camera is off, offers the way to the platform's settings, and the
+  user can still finish by typing the code
+
+#### Scenario: The app is visible over the camera
+
+- **WHEN** the camera is running on a phone build
+- **THEN** it is visible behind the app's own controls, and the shell stops painting over it
+
+#### Scenario: The shell comes back when the camera stops
+
+- **WHEN** the camera stops, whether by a scan, a stop, or a failure
+- **THEN** the shell paints normally again with no leftover transparency
+
+#### Scenario: No scan attempted on desktop
+
+- **WHEN** the same control is used in a desktop build
+- **THEN** no scanner call is made and no camera permission is requested
 
 ### Requirement: Image previews served by the core
 

@@ -84,6 +84,10 @@ tauri-build = { version = "2", features = [] }
 [target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
 tauri-plugin-ios-webview-insets = "0.1"
 tauri-plugin-haptics = "2"
+# Reading the other device's QR with the camera. Mobile-only by construction: the
+# plugin exists for Android and iOS, and on desktop adding a device is the code
+# field. The frontend gates the call on the same form-factor signal. See `run()`.
+tauri-plugin-barcode-scanner = "2.4.5"
 
 # Android only: write received files into the public Downloads collection
 # (scoped storage has no plain path). Pinned — the API used (`public_storage`,

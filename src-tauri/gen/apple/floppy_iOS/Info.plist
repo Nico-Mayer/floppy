@@ -59,5 +59,7 @@
 	<string>Floppy connects directly to nearby devices on your local network to transfer files without a relay.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Floppy needs access to your photo library so you can pick photos and videos to send.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Floppy uses the camera to read the code another device is showing, so you can add it without typing.</string>
 </dict>
 </plist>

@@ -691,6 +691,13 @@ pub fn run() {
     #[cfg(any(target_os = "android", target_os = "ios"))]
     let tauri_builder = tauri_builder.plugin(tauri_plugin_haptics::init());
 
+    // Mobile only: the camera, for reading the QR another device is showing. The
+    // plugin draws its own full-screen scanner and hands back the decoded string,
+    // which the frontend feeds to `redeem_pair_code` as a scanned code. Desktop has
+    // no such plugin and adds a device by typing instead.
+    #[cfg(any(target_os = "android", target_os = "ios"))]
+    let tauri_builder = tauri_builder.plugin(tauri_plugin_barcode_scanner::init());
+
     tauri_builder
         .plugin(tauri_plugin_opener::init())
         // Registered for Rust's sake only: `fileinput` uses its `FilePath` on

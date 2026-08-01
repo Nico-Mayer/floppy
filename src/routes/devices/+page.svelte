@@ -1,6 +1,6 @@
 <script lang="ts">
+	import CodePanel from '$lib/components/devices/CodePanel.svelte'
 	import DeviceList from '$lib/components/devices/DeviceList.svelte'
-	import SelfCodeCard from '$lib/components/devices/SelfCodeCard.svelte'
 	import SelfDeviceCard from '$lib/components/devices/SelfDeviceCard.svelte'
 	import PageHeader from '$lib/components/shell/PageHeader.svelte'
 	import PageShell from '$lib/components/shell/PageShell.svelte'
@@ -8,12 +8,14 @@
 	import * as ResponsiveDialog from '$lib/components/ui/responsive-dialog'
 	import { type DeviceInfo } from '$lib/ipc'
 	import { pairing } from '$lib/pairing-app.svelte'
+	import QrCodeIcon from '@lucide/svelte/icons/qr-code'
 	import Trash2Icon from '@lucide/svelte/icons/trash-2'
 
-	// The home for your devices: who this device says it is, the code another device
-	// can use to reach it, and the devices it already trusts. Both directions of a
-	// pairing are on this one screen — show your code, or open the surface that takes
-	// theirs (see EnterCodeDialog) — so there is no role to choose.
+	// The home for your devices: who this device says it is, and the devices it
+	// already trusts. Both directions of a pairing are reachable from here without
+	// either being a role the user picks: this device's code is a panel on the
+	// heading, and the other device's code is the control beside the list (a camera
+	// on a phone, the field on desktop).
 	//
 	// Everything here except adding is a local operation on the trust store, so the
 	// page stays usable when pairing cannot reach the broker.
@@ -21,6 +23,9 @@
 	/** Which row is showing its rename field, and whether this device's is open. */
 	let renaming = $state<string | null>(null)
 	let renamingSelf = $state(false)
+
+	/** This device's code, opened from the heading rather than sitting on the page. */
+	let showingCode = $state(false)
 
 	// --- Remove a paired device (confirm first) ---------------------------------
 	// Owned here rather than per row: one dialog for the list, whichever row asked.
@@ -37,9 +42,8 @@
 	 * the data: an open inline rename is stale by then, and leaving it sitting there
 	 * is what makes the gesture look like it did nothing.
 	 *
-	 * The shown code deliberately survives a pull. It is live — the other device may
-	 * be part-way through typing it — and a stray pull must not invalidate a pairing
-	 * in progress. "New code" is the control for that.
+	 * There is no code state to reason about here any more: a shown code lives in the
+	 * panel, which a pull cannot reach.
 	 */
 	async function refresh() {
 		renaming = null
@@ -52,17 +56,29 @@
      is the one screen in the app with a real reload to perform: the store can be
      changed by the other side of a pairing while this page is open. -->
 <PageShell scroll onrefresh={refresh}>
-	<PageHeader title="Devices" description="The devices you trust, and the name they see you by." />
+	<PageHeader title="Devices" description="The devices you trust, and the name they see you by.">
+		{#snippet action()}
+			<Button
+				variant="outline"
+				size="icon"
+				aria-label="Show your code"
+				disabled={!pairing.available}
+				onclick={() => (showingCode = true)}
+			>
+				<QrCodeIcon />
+			</Button>
+		{/snippet}
+	</PageHeader>
 
-	<!-- No separator anywhere on this page: the panel, the code card, and the list
-	     already read as different kinds of thing, and a rule between them made the
-	     page look like several lists of devices. -->
+	<!-- No separator between the two: the panel and the list already read as
+	     different kinds of thing, and a rule between them made the page look like two
+	     lists of devices. -->
 	<SelfDeviceCard bind:editing={renamingSelf} />
-
-	<SelfCodeCard />
 
 	<DeviceList bind:renaming onremove={(device) => (removing = device)} />
 </PageShell>
+
+<CodePanel bind:open={showingCode} />
 
 <!-- Removing a device is destructive (it can't send without a code again), so
      confirm first. Centered dialog on desktop, bottom drawer on mobile. -->

@@ -1,11 +1,4 @@
-# device-management
-
-## Purpose
-
-The Devices screen and the add-a-device flow: this device's editable self-name, the list of
-paired devices with local renames and trust revocation, and one symmetric screen that shows
-this device's code and consumes another's without the user picking a role.
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Dedicated Devices page
 
@@ -143,230 +136,6 @@ the device the user was adding is now a row in the list behind it.
 - **WHEN** a pairing completes while the code panel or the code field is open
 - **THEN** that surface closes and the new device is visible in the list
 
-### Requirement: Code entry clears after an attempt
-
-The code-entry field on the Add-a-device screen SHALL be cleared once an attempt
-finishes, whether it succeeded or failed. A pairing code is single-use and expires
-after a bounded timeout, so a code that has just failed cannot succeed on a retry:
-the other device has to show a new one. Leaving the spent code in the field invites
-the user to press connect again and hit the same error.
-
-The error itself SHALL still be shown, so clearing the field never costs the user the
-explanation of what went wrong.
-
-#### Scenario: A failed attempt empties the field
-
-- **WHEN** entering a code fails for any reason, including the self-pair refusals
-- **THEN** the field is empty and the error is shown
-
-#### Scenario: A successful attempt empties the field
-
-- **WHEN** entering a code adds the other device
-- **THEN** the field is empty, ready for the next one
-
-### Requirement: One-tap confirmation without naming
-
-Redeeming a code (by scan or type) SHALL count as the redeemer's consent and SHALL
-NOT prompt the redeemer for a confirmation or a name. The device that showed the
-code SHALL present exactly one confirmation of the incoming request, identifying
-the peer by its advertised self-name (e.g. "Add NicoPC?"). The confirmation SHALL
-NOT require the user to enter a name; it MAY offer an inline rename. When the
-request arrived via a scanned QR the confirmation SHALL NOT require an SAS
-comparison; when it arrived via a typed code the confirmation SHALL show the SAS
-for the user to compare.
-
-A request whose peer turns out to be this same device SHALL NOT reach the
-confirmation at all. The user SHALL never be asked to approve, name, or compare an
-SAS for a pairing the app has already established cannot happen, so no confirmation
-dialog SHALL appear and no device row SHALL be added to the list.
-
-The refusal SHALL be reported on the side the user acted on, which is the side that
-scanned or typed the code, as an ordinary error in the add-a-device flow. It SHALL
-be worded for a normal person and SHALL say which of the two situations happened:
-
-- The code belongs to this same device, e.g. "That's this device's own code."
-- Two devices are running the same identity, e.g. "These devices have the same
-  identity, so they can't be added."
-
-The copy SHALL follow the existing pairing vocabulary: it SHALL NOT say "trusted",
-"key", "fingerprint", or "pair link", and SHALL NOT use an em dash.
-
-#### Scenario: Redeemer is not asked to confirm or name
-
-- **WHEN** a device redeems a code
-- **THEN** it proceeds to link without showing a confirmation dialog or a name prompt
-
-#### Scenario: Shower confirms once, by name
-
-- **WHEN** a pairing request reaches the device that showed the code
-- **THEN** it shows a single confirmation naming the peer, with no required name input
-
-#### Scenario: SAS shown only for typed codes
-
-- **WHEN** the request originated from a typed code rather than a scanned QR
-- **THEN** the confirmation displays the SAS to compare before accepting
-
-#### Scenario: A device's own code raises no confirmation
-
-- **WHEN** the user enters or scans the code this same device is showing
-- **THEN** no confirmation dialog appears, no row is added to the device list, and the add-a-device flow shows an error saying it is this device's own code
-
-#### Scenario: A shared identity raises no confirmation
-
-- **WHEN** the user pairs two devices that are running a copy of the same identity
-- **THEN** no confirmation dialog appears on either device, and the device that entered the code shows an error saying the two devices have the same identity
-
-#### Scenario: Refusal copy stays in the pairing vocabulary
-
-- **WHEN** either self-pair error is shown
-- **THEN** its text avoids "trusted", "key", "fingerprint", "pair link", and em dashes
-
-### Requirement: Local rename of a paired device
-
-The user SHALL be able to rename a paired device on the Devices page. A rename SHALL
-be a local override that always wins over the peer's advertised self-name and SHALL
-never be sent to the peer. Clearing the override SHALL let the device fall back to
-the peer's advertised self-name.
-
-#### Scenario: Rename overrides the advertised name
-
-- **WHEN** the user renames a paired device locally
-- **THEN** the list shows the local name even after the peer advertises a different self-name
-
-#### Scenario: Rename is not shared
-
-- **WHEN** a device is renamed locally
-- **THEN** the peer's own list is unaffected
-
-### Requirement: No pasted links in the pairing UI
-
-The pairing UI SHALL NOT ask the user to paste a link, and SHALL NOT present the
-pairing secret as a URL to copy. Adding a device SHALL be done by scanning a QR or
-entering a code. User-visible copy SHALL use "code", "your devices", "paired", and
-"Remove", and SHALL NOT use "pair link", "key", or "trusted".
-
-#### Scenario: No paste-a-link affordance
-
-- **WHEN** the user is adding a device
-- **THEN** the UI offers scan or code entry and never a paste-a-link field
-
-#### Scenario: Consistent vocabulary
-
-- **WHEN** any pairing-related string is shown
-- **THEN** it uses the device/code/paired vocabulary and avoids link/key/trusted wording
-
-### Requirement: Entry to pairing from the send flow
-
-The Send screen SHALL offer a way into the Add-a-device flow while no device is
-paired, so a first-time user learns from the send flow that sending without a code
-exists. This entry SHALL route to the Devices add flow rather than opening a separate
-pasted-link dialog.
-
-With no devices paired there is nothing to choose between, so the target picker SHALL
-NOT be rendered and the entry SHALL take its place in the Send action row.
-
-Once at least one device is paired the entry SHALL be gone: the picker listing the
-paired devices is itself the evidence that the capability exists, and Devices is a
-top-level destination reachable from the navigation. The Send screen SHALL NOT carry a
-standing shortcut to pairing.
-
-The entry SHALL NOT be an option inside the target picker in either case: a picker's
-options are values, so a command placed among them would be a value to assistive
-technology and unreachable by keyboard navigation.
-
-#### Scenario: Send picker links to pairing
-
-- **WHEN** the Send panel is idle with files queued and no devices are paired
-- **THEN** the action row shows an entry that opens the Add-a-device flow on the
-  Devices page, in place of the target picker, and no one-option picker is rendered
-
-#### Scenario: The entry retires once a device is paired
-
-- **WHEN** the Send panel is idle with files queued and at least one device is paired
-- **THEN** the action row shows the target picker and the Send button only, with no
-  pairing shortcut of its own
-
-#### Scenario: Pairing is never an option inside the picker
-
-- **WHEN** the user opens the Send target picker
-- **THEN** its option list contains send targets only, and no Add-a-device command
-
-#### Scenario: Send does not move between the two states
-
-- **WHEN** the first device is paired while the Send panel is idle with files queued
-- **THEN** the entry is replaced by the picker in the same slot and the Send button
-  stays where it was
-
-### Requirement: An open rename closes when focus leaves it
-
-A rename field opened in place, for this device or for a paired device, SHALL close when
-focus leaves it, and SHALL keep what was typed: clicking or tabbing away is a commit, the
-way renaming a file is. An empty name SHALL still be treated as a cancel, since blanking a
-label is never the intent.
-
-Focus moving to the field's own cancel or save control SHALL NOT count as leaving, so those
-two still decide what happens.
-
-A rename SHALL NOT be left open behind a click somewhere else. An editor nobody is looking
-at is still holding its row, and the next thing the user does reads as broken.
-
-#### Scenario: Clicking away keeps the new name
-
-- **WHEN** the user types a new name and clicks somewhere else on the page
-- **THEN** the field closes and the new name is saved
-
-#### Scenario: Cancel still cancels
-
-- **WHEN** the user presses the field's cancel control
-- **THEN** the field closes and the name is unchanged
-
-#### Scenario: An emptied field closes without saving
-
-- **WHEN** the user clears the field and focus leaves it
-- **THEN** the field closes and the old name is kept
-
-### Requirement: This device does not look like one of the paired devices
-
-This device's own name SHALL be presented in a visibly different shape from a row in the
-paired list: it is a different kind of thing (the label you are known by, not a device you
-can send to, rename remotely, or remove) and a row that looks the same invites the reading
-that your own machine is sitting in your list of other machines.
-
-The difference SHALL be structural rather than a caption alone — its container, its glyph,
-or its fill SHALL differ from a device row — and the text beside the name SHALL say what
-the name is for rather than only labelling the section.
-
-Its picture SHALL be derived from the name, so the same name always draws the same picture
-and renaming the device redraws it. The picture SHALL be generated on the device: it SHALL NOT
-be fetched from a third-party service, because the name would ride in that request and the app
-is device to device with no cloud. It SHALL therefore render with no connection.
-
-#### Scenario: The self-name panel is distinguishable at a glance
-
-- **WHEN** the Devices page renders with at least one paired device
-- **THEN** this device's panel differs from the paired rows in shape, glyph, or fill, and it
-  is not an identically styled row above them
-
-#### Scenario: The label says what the name does
-
-- **WHEN** this device's panel renders
-- **THEN** the text beside the name says that other devices see it, rather than only naming the section
-
-#### Scenario: The picture follows the name
-
-- **WHEN** the user renames this device
-- **THEN** its picture changes with the name, and the same name always draws the same picture
-
-#### Scenario: The picture needs no network
-
-- **WHEN** the panel renders with no connection
-- **THEN** the picture is drawn anyway, and no request for it leaves the device
-
-#### Scenario: Opening the rename does not move the panel
-
-- **WHEN** the user opens and closes the rename on this device's panel
-- **THEN** the panel is the same height throughout and nothing below it moves
-
 ### Requirement: A shown code says how long it lasts and when it is spent
 
 A pairing code shown to the user SHALL carry its remaining life on screen, counted
@@ -420,32 +189,7 @@ voice, and SHALL NOT use "expired", "timeout", "session", or an em dash.
 - **WHEN** the user asks for a new code after one ran out
 - **THEN** a fresh code is shown with a full countdown and the spent state is gone
 
-### Requirement: Managing devices works with no connection
-
-When pairing is unavailable — the core's pairing service did not come up, or there is
-no connection — the Devices page SHALL still show this device's name and the list of
-paired devices, and renaming this device, renaming a paired device, and removing a
-paired device SHALL all still work. These are local operations against the trust store
-and do not need the broker.
-
-Only the add-a-device entry SHALL be blocked in that state, and the reason SHALL be
-said once, next to the blocked entry, in one line. The page SHALL NOT replace its whole
-contents with an error state.
-
-#### Scenario: The list survives an unavailable pairing service
-
-- **WHEN** the Devices page renders while pairing is unavailable and devices are paired
-- **THEN** this device's name and every paired device row are shown
-
-#### Scenario: Local actions still work offline
-
-- **WHEN** the user renames or removes a device while pairing is unavailable
-- **THEN** the change is saved and the list reflects it
-
-#### Scenario: Only adding is blocked
-
-- **WHEN** pairing is unavailable
-- **THEN** the add-a-device entry cannot be opened and one line beside it says why
+## ADDED Requirements
 
 ### Requirement: Scanning is how a phone adds a device
 
@@ -626,3 +370,15 @@ scan because the app cancelled it SHALL NOT be reported as a second, different o
 
 - **WHEN** the code field is open on a phone build
 - **THEN** it offers a way back to the camera
+
+## REMOVED Requirements
+
+### Requirement: Scanning has a slot in the add flow before it is wired up
+
+**Reason**: The slot has been filled. Scanning is a real camera on the mobile targets now, so the
+requirements about not imitating one, and about keeping the step shaped for a scanner that does not
+exist yet, no longer describe anything. What replaces them is "Scanning is how a phone adds a
+device", which covers the camera, its permission, and the paths off it.
+
+**Migration**: None. The placeholder step is deleted; the control that opened it opens the camera.
+Typing a code remains a complete path, as that requirement also demanded.
