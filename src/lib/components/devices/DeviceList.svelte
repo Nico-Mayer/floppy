@@ -33,14 +33,6 @@
 
 	let entering = $state(false)
 
-	// The shell rule, for the one panel the page cannot reach: this owns `entering`,
-	// so it closes it. The camera is not included — it is on its own layer above the
-	// prompt for exactly this reason, and cancelling a live scan for an offer that
-	// has nothing to do with it would be worse than showing the prompt over it.
-	$effect(() => {
-		if (pairing.prompting) entering = false
-	})
-
 	// Taking a code needs the broker; the rest of this page does not. So this is the
 	// one control that goes away when pairing is down, and it says why.
 

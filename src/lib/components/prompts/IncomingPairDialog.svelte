@@ -1,34 +1,36 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button'
-	import { Input } from '$lib/components/ui/input'
 	import * as ResponsiveDialog from '$lib/components/ui/responsive-dialog'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import CheckIcon from '@lucide/svelte/icons/check'
 	import XIcon from '@lucide/svelte/icons/x'
 
 	// Driven by pairing.request: a device finished the pairing handshake against a
-	// code this device is showing, and waits here for a yes/no plus a name. Trust
-	// is written only on confirm; closing by any other means declines it.
+	// code this device is showing, and waits here for a yes or a no. Trust is written
+	// only on confirm; closing by any other means declines it.
+	//
+	// One question, two answers, no field. The device arrives with a name it suggested
+	// for itself, which is nearly always the right one, and every row in the list
+	// renames inline — so the field asked for a decision the user had not made and
+	// could already change a moment later.
+	//
+	// It also made this the one surface in the app that opens unasked and holds a text
+	// input, which on a phone means the keyboard arriving with it: over a bottom sheet,
+	// with vaul resizing the panel and keepFocusVisible scrolling underneath it. That
+	// was worked around twice, by declining autofocus and then by placing focus
+	// somewhere harmless, and both were the wrong shape of answer. A prompt with no
+	// field cannot raise a keyboard at all.
 	const open = $derived(pairing.request !== null)
-
-	// The name field, seeded from the peer's suggestion whenever a new request
-	// arrives. Keyed on the request so reopening for a different device re-seeds.
-	let name = $state('')
-	$effect(() => {
-		if (pairing.request) name = pairing.request.suggestedName
-	})
 
 	function onOpenChange(next: boolean) {
 		if (!next && pairing.request) pairing.dismissPair()
 	}
 
-	// A blank name would trust the device under an unidentifiable label, so the
-	// name is required here just as it is on the pair page.
-	const nameOk = $derived(name.trim().length > 0)
-
+	// The suggested name is the name. Trust is still never written under a blank one:
+	// the core sends what the peer calls itself, and the list is where it gets changed.
 	function confirm() {
-		if (!nameOk) return
-		pairing.confirmPair(name.trim())
+		const req = pairing.request
+		if (req) void pairing.confirmPair(req.suggestedName)
 	}
 </script>
 
@@ -40,28 +42,22 @@
 			<ResponsiveDialog.Title>Add this device?</ResponsiveDialog.Title>
 			<ResponsiveDialog.Description>
 				A device used your code to link. It's called
-				<span class="font-medium text-foreground">{pairing.request?.suggestedName}</span>. Add it to send
-				without a code, or rename it below.
+				<span class="font-medium text-foreground">{pairing.request?.suggestedName}</span>. Add it and you can
+				send to it without a code.
 			</ResponsiveDialog.Description>
 		</ResponsiveDialog.Header>
 
-		<ResponsiveDialog.Body class="flex flex-col gap-3">
-			<Input
-				bind:value={name}
-				placeholder="Device name"
-				aria-label="Device name"
-				onkeydown={(e: KeyboardEvent) => e.key === 'Enter' && confirm()}
-			/>
-			<!-- A typed code carries less entropy than a scanned QR, so show the SAS
-			     to compare. A scanned QR delivered the secret out of band, so there's
-			     nothing left to check. -->
-			{#if pairing.request?.via === 'code' && pairing.request?.sas}
+		<!-- A typed code carries less entropy than a scanned QR, so show the SAS to
+		     compare. A scanned QR delivered the secret out of band, so there's nothing
+		     left to check, and the prompt is then the header and the two answers. -->
+		{#if pairing.request?.via === 'code' && pairing.request?.sas}
+			<ResponsiveDialog.Body>
 				<p class="text-center text-sm text-muted-foreground">
 					Make sure both devices show
 					<span class="font-mono font-medium text-foreground">{pairing.request.sas}</span>
 				</p>
-			{/if}
-		</ResponsiveDialog.Body>
+			</ResponsiveDialog.Body>
+		{/if}
 
 		<!-- Same treatment as the incoming-transfer prompt: 16px between the two
 		     actions on a phone, where the footer stacks and decline would otherwise
@@ -71,7 +67,7 @@
 				<XIcon data-icon="inline-start" />
 				Not now
 			</Button>
-			<Button onclick={confirm} disabled={!nameOk}>
+			<Button onclick={confirm}>
 				<CheckIcon data-icon="inline-start" />
 				Add
 			</Button>

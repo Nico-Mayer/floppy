@@ -37,16 +37,6 @@
 		if (device) await pairing.untrust(device.fingerprint)
 	}
 
-	// This page's half of the shell rule: a prompt the app raised itself takes the
-	// screen, so the panels opened from here get out of its way. Not a fix for the
-	// code panel in particular — the remove confirmation is in the same position,
-	// and closing it declines by omission exactly as dismissing it does.
-	$effect(() => {
-		if (!pairing.prompting) return
-		showingCode = false
-		removing = null
-	})
-
 	/**
 	 * A pull means "reload this screen", so the screen's transient state goes with
 	 * the data: an open inline rename is stale by then, and leaving it sitting there

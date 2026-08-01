@@ -49,8 +49,8 @@ Toasts are not affected: sonner's toaster is `z-index: 999999999`.
 
 ## What Changes
 
-Two levers. The first makes stacking deterministic; the second means the app rarely
-stacks at all.
+One lever, plus one thing taken away. Stacking becomes deterministic, and the prompt
+stops carrying the one control that cannot behave on a phone.
 
 - **A named layer scale, so paint order stops depending on portal order.** Four
   tokens in `layout.css` — header, panel, scanner, prompt — replace the four numbers
@@ -64,14 +64,19 @@ stacks at all.
   components declare `data-layer="prompt"`; one unlayered rule in `layout.css` lifts
   both the content and its overlay. No vendored shadcn file is patched, so this
   survives a component update.
-- **A system prompt takes the screen from a user-opened panel.** When an incoming
-  pairing request or transfer offer arrives, the Devices page closes its own
-  overlays. Two stacked bottom sheets on a phone — two dims, two 80vh panels — is
-  not a thing the layer scale should be asked to make look good.
-- **The code panel closes when its code is redeemed, instead of showing a spent
-  state.** That is the same rule applied at its one live call site. The panel's
-  `used` branch and its "That code has been used." copy go away; the prompt that
-  replaces it already says who redeemed the code, and already carries the SAS.
+- **No overlay is closed to make room for another.** An earlier revision of this
+  change had a system prompt close the panels underneath it. That was reverted: it
+  put two vaul drawers into overlapping transitions, and vaul keeps its body-lock
+  state in module-level singletons that do not survive that (design D4). Ordering is
+  the whole mechanism now, which is also the smaller one.
+- **The pair prompt loses its name field.** Found while running the change on two
+  devices: on a phone the prompt arrives with the soft keyboard already up, over a
+  bottom sheet, with vaul resizing the panel and `keepFocusVisible` scrolling under
+  it. The prompt becomes what its own requirement already calls it — one question and
+  two answers. The device is added under the name it suggested for itself, and every
+  row in the list already renames inline, so nothing is lost and a prompt with no
+  field cannot raise a keyboard on any platform. Two attempts at controlling focus
+  instead were tried first and neither held (design D5).
 
 Not in scope: moving portals into explicit container nodes. That is the deeper fix
 for portal ordering, but it needs a `portalTo` prop threaded through
@@ -88,26 +93,23 @@ None.
 
 - `app-shell`: gains a named overlay layer scale — one token per layer, one owner per
   surface, and the rule that a surface's layer does not depend on when its portal
-  mounted. Also gains the arbitration rule: a system prompt never shares the screen
-  with a user-opened panel.
-- `device-management`: `A shown code says how long it lasts and when it is spent`
-  changes for the used-code case — the panel closes rather than showing a spent
-  state. The run-out case is unchanged.
+  mounted. Also gains the rule that a prompt arriving unasked carries no text field.
+- `device-management`: `One-tap confirmation without naming` loses the inline rename
+  it permitted: the confirmation carries no text field at all.
 
 ## Impact
 
 - `src/routes/layout.css` — four `--z-*` tokens; one unlayered rule mapping
   `data-layer` to a token for dialog and drawer content plus their overlays.
 - `src/lib/components/prompts/IncomingPairDialog.svelte`,
-  `IncomingOfferDialog.svelte` — `data-layer="prompt"` on the content.
+  `IncomingOfferDialog.svelte` — `data-layer="prompt"` on the content. The pair
+  prompt also loses its `Input`, the `name` state, the effect seeding it, and the
+  `nameOk` gate on Add; `confirm()` passes the suggested name straight through.
 - `src/lib/components/shell/AppHeader.svelte` — `z-60` → the header token.
 - `src/lib/components/devices/ScanSheet.svelte` — `z-70` → the scanner token.
-- `src/routes/devices/+page.svelte` — one effect closing the page's three overlays
-  when a system prompt opens.
-- `src/lib/components/devices/CodePanel.svelte` — the `used` state, its effect and
-  its copy are removed; `spent` reduces to the run-out case.
 - No Rust, no IPC, no broker change. No new dependency.
-- One UI string is deleted ("That code has been used."); none is added.
+- No UI string is added. The description drops "or rename it below"; nothing else
+  in the app's copy moves.
 - `:has()` is used to reach an overlay from its content. Where it is unsupported the
   prompt's content still lands on the prompt layer and only its dim stays behind —
   the failure mode is cosmetic, not a return of this bug.

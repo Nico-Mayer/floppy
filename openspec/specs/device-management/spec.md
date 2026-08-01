@@ -6,7 +6,6 @@ The Devices screen and the add-a-device flow: this device's editable self-name, 
 paired devices with local renames and trust revocation, and one symmetric screen that shows
 this device's code and consumes another's without the user picking a role.
 ## Requirements
-
 ### Requirement: Dedicated Devices page
 
 The app SHALL provide a dedicated Devices page reachable from top-level navigation
@@ -169,11 +168,17 @@ explanation of what went wrong.
 Redeeming a code (by scan or type) SHALL count as the redeemer's consent and SHALL
 NOT prompt the redeemer for a confirmation or a name. The device that showed the
 code SHALL present exactly one confirmation of the incoming request, identifying
-the peer by its advertised self-name (e.g. "Add NicoPC?"). The confirmation SHALL
-NOT require the user to enter a name; it MAY offer an inline rename. When the
+the peer by its advertised self-name (e.g. "Add NicoPC?"). When the
 request arrived via a scanned QR the confirmation SHALL NOT require an SAS
 comparison; when it arrived via a typed code the confirmation SHALL show the SAS
 for the user to compare.
+
+The confirmation SHALL be a question and its two answers, and SHALL NOT carry a text
+field. It SHALL NOT ask for a name and SHALL NOT offer to change one: the device is
+added under the name it advertised for itself, and renaming it happens on the device
+list afterwards, where it can be seen next to the others. A prompt that arrives
+unasked cannot be allowed to hold a field, because on a phone a field on screen is a
+soft keyboard waiting to happen.
 
 A request whose peer turns out to be this same device SHALL NOT reach the
 confirmation at all. The user SHALL never be asked to approve, name, or compare an
@@ -199,7 +204,18 @@ The copy SHALL follow the existing pairing vocabulary: it SHALL NOT say "trusted
 #### Scenario: Shower confirms once, by name
 
 - **WHEN** a pairing request reaches the device that showed the code
-- **THEN** it shows a single confirmation naming the peer, with no required name input
+- **THEN** it shows a single confirmation naming the peer, with nothing to type into
+
+#### Scenario: The confirmation raises no keyboard
+
+- **WHEN** the confirmation opens on a phone
+- **THEN** the soft keyboard stays down and the panel does not resize under one
+
+#### Scenario: The added device carries the name it advertised
+
+- **WHEN** the user accepts the confirmation
+- **THEN** the device appears in the list under the self-name it advertised, and can
+  be renamed from its row
 
 #### Scenario: SAS shown only for typed codes
 
@@ -626,3 +642,4 @@ scan because the app cancelled it SHALL NOT be reported as a second, different o
 
 - **WHEN** the code field is open on a phone build
 - **THEN** it offers a way back to the camera
+

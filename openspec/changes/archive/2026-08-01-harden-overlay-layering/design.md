@@ -124,54 +124,143 @@ missing, the two content selectors still match and the prompt still paints above
 panel; only the prompt's own dim would stay at `--z-panel`. The bug does not come
 back.
 
-## D4 — Why arbitration is worth having on top of the layer scale
+## D4 — Nothing closes to make room, because two drawers cannot overlap
 
-The layer scale makes the prompt land in front. It does not make the result good: on
-a phone both surfaces are bottom drawers with `max-h-[80vh]`, so a correct stack is
-still two dims and two sheets, with the panel's rounded top edge poking out behind
-the prompt.
+An earlier revision of this change had a system prompt close the panels underneath
+it: `pairing.prompting` on the pairing state, and an effect on each owner clearing
+`showingCode`, `removing` and `entering`. The argument was aesthetic — on a phone a
+correct stack is still two dims and two sheets, with the lower one's edge showing.
 
-The rule is one line of policy — *a system prompt does not share the screen with a
-user-opened panel*. What it is not is one line of code in one place: the app's three
-user-opened overlays do not share an owner. The Devices page owns `showingCode` and
-`removing`; `DeviceList` owns `entering`, because the control that opens the
-enter-a-code dialog is the one beside the list.
-
-So the rule is named once and applied twice. `pairing.prompting` — *request or
-incoming* — is the single place the predicate and its reasoning live, and each owner
-closes what it owns in one line against it. Hoisting `entering` to the page to get a
-single effect would move a panel away from the control that opens it to save a line,
-and a third prompt event later would still only have to be added in one place either
-way.
-
-Naming the predicate on `pairing` rather than deriving it at each site is what keeps
-this from being the rule stated twice. A call site says *a prompt is up, so close* —
-it does not say which events count as a prompt.
-
-Placing the effects on the owners rather than inside each overlay component keeps
-`CodePanel` and `EnterCodeDialog` free of knowledge about a prompt neither owns.
-
-## D5 — What closing the code panel does to its spent state
-
-`CodePanel`'s `used` flag has exactly one writer:
+It was reverted, because it is not safe. vaul-svelte keeps its body-lock state in
+**module-level singletons**, shared by every drawer on the page:
 
 ```js
-$effect(() => { if (code && pairing.request) used = true })
+// use-position-fixed.svelte.js:5
+let previousBodyPosition = null;
+
+// use-prevent-scroll.svelte.js:43
+let preventScrollCount = 0;
+let restore;
 ```
 
-Under D4 that same condition now closes the panel, so `used` can never be observed
-and the branch is dead. It goes, along with `spent`'s `used ||` term and the
-`{used ? 'That code has been used.' : 'That code has run out.'}` ternary. `spent`
-becomes the run-out case only, which is the case that still needs a spent state: the
-code dies with the panel open and nobody there to explain it.
+`previousBodyPosition` is captured by the first drawer to open and cleared by any
+drawer that closes. The close path calls `restorePositionSetting()` unconditionally:
 
-Closing also resets the panel — the `!open` branch clears `code`, `used`, `elapsed`
-and `tried` — so reopening after declining a request mints a fresh code rather than
-re-showing a burned one. That is the right outcome and it costs nothing extra.
+```js
+// use-position-fixed.svelte.js:109
+else {
+    restorePositionSetting();
+}
+```
 
-The existing `seenPaired` effect, which closes the panel when a pairing completes, is
-kept. It is now redundant for the shower (already closed by D4) but still fires when
-*this* device is the redeemer and happens to have the panel open.
+The "is another drawer still open?" guard exists — but only in a *different* watch's
+cleanup (`use-position-fixed.svelte.js:83`), not here. So closing one drawer while
+another is opening strips `position: fixed` off `<body>` and runs `window.scrollTo`,
+in the same frame the second drawer is animating in.
+
+Two drawers being open at once is what the app already did, and it works: the second
+one to open never re-captures, so nothing is stomped. Two drawers *transitioning* at
+once is what the arbitration added, and it is the unsupported case. The distinction
+is worth stating plainly, because the two look identical in the component tree.
+
+So ordering is the whole mechanism. The layer scale is deterministic, it needs no
+state, no effects and no cross-component predicate, and it was already enough for the
+bug this change exists to fix. What it does not do is make the stack pretty, and that
+is the right thing to give up.
+
+Reverted with it: `CodePanel`'s spent-because-used state comes back. With the panel
+staying open behind the prompt, "That code has been used." is the honest thing for it
+to say, and it is the panel's own business again rather than a consequence of a rule
+somewhere else.
+
+
+## D5 — The prompt has no text field, so it cannot raise a keyboard
+
+Found on two devices after D1-D5 were in: the phone shows a code, the desktop
+redeems it, and the prompt opens on the phone with the soft keyboard already up over
+the sheet.
+
+The mechanism is worth recording, because two plausible fixes both failed against it.
+
+vaul already declines to autofocus:
+
+```js
+// vaul-svelte drawer.svelte:35
+autoFocus = false,
+
+// vaul-svelte use-drawer-content.svelte.js:73
+function onOpenAutoFocus(e) {
+    opts.onOpenAutoFocus.current?.(e);
+    if (!ctx.autoFocus.current) e.preventDefault();
+}
+```
+
+But bits-ui does not fall back to the container on a prevented event. It skips
+focusing altogether:
+
+```js
+// bits-ui focus-scope.svelte.js:56
+this.#opts.onOpenAutoFocus.current(event);
+if (!event.defaultPrevented) {
+    ...  firstTabbable.focus()  ...  else this.#container.focus()
+}
+```
+
+So the drawer opens, traps focus, and focus is *outside the trap*. The trap corrects
+that the only way it knows:
+
+```js
+// bits-ui focus-scope.svelte.js:120
+(firstTabbable || firstFocusable || container).focus()
+```
+
+`firstTabbable` was the name field. Any focus event landing outside the drawer hands
+the field the focus that open-autofocus refused to give it, and on a phone there is
+no shortage of those: the platform restoring focus to a field it remembers, a tap
+landing in the sheet as it slides up, another overlay closing behind it.
+
+Two systems then fight over the sheet, both keyed on "a text input is focused": vaul
+rewrites the drawer's height in pixels (`use-drawer-root.svelte.js:243-290`), and
+`keepFocusVisible` pads and scrolls the region under it (`keyboard.ts:85-90`).
+Neither is wrong; they are both right at once.
+
+Two attempts were made at controlling focus, and both were the wrong shape of answer:
+
+1. **Let vaul decline autofocus.** Already the default, and this is what leaves focus
+   outside a live trap in the first place.
+2. **Prevent autofocus and place focus on the panel** (`e.preventDefault()` then
+   focusing the content element, which carries `tabindex: -1` from the focus scope).
+   This closes the specific path above and did not stop the keyboard on device. Focus
+   is not the only thing that opens a keyboard on a phone — a tap that lands in the
+   sheet as it slides up will do it, and so will the platform restoring focus to a
+   field it remembers.
+
+The field itself is the problem, and it did not need to be there. The requirement
+governing this prompt is called *One-tap confirmation without naming*: the redeemer
+is not asked to name anything, and the shower "SHALL NOT require the user to enter a
+name; it MAY offer an inline rename". The field took that MAY and made the prompt a
+form, gated Add behind a non-empty value, and asked for a decision the user had not
+made yet.
+
+It is also redundant. The device arrives with the name it calls itself, which is what
+the user is being shown and asked about, and every row in the list renames inline
+(`DeviceRow` -> `InlineRename` -> `pairing.rename`). Renaming a device you just added
+is one tap away, on the surface where you can actually see it next to the others.
+
+So the prompt becomes one question and two answers, and `confirm()` passes
+`request.suggestedName` straight to `confirmPair`. No text input, no focus rule, no
+platform branch, and nothing left for vaul and `keepFocusVisible` to disagree about.
+
+`IncomingOfferDialog` never had a field. `EnterCodeDialog` keeps its, and keeps its
+autofocus: the user opened it in order to type.
+
+One thing the field was never doing, found while checking that nothing regressed:
+it was not a durable rename. `confirmPair` reaches `TrustStore::add(key,
+advertised_name)`, which writes the **advertised-name** slot, not `local_override`
+(`pairing/trust.rs:19-24, 125-132`). A name typed in the prompt would therefore be
+replaced the next time the peer advertised its own. The local override is only ever
+set by a rename on the device list, which is now the only place offering one — so
+removing the field also removes a rename that did not stick.
 
 ## D6 — Alternatives considered
 
@@ -190,5 +279,6 @@ open, leaves the header-over-dim bug open, and adds a fifth locally-picked numbe
 the four this change exists to replace.
 
 **Closing the code panel only, with no layer work.** Fixes the reported bug for the
-lowest cost of all. Rejected because the ordering is still a coin flip for every
-other pair of overlays, and the next collision would be diagnosed from scratch.
+lowest cost of all. Rejected twice over: the ordering would still be a coin flip for
+every other pair of overlays, and closing a drawer to open another is the unsafe
+manoeuvre in D4.
