@@ -30,11 +30,23 @@
 
 	const phase = $derived(scanner.phase)
 	/**
-	 * When the window is a surface rather than a hole: before the camera has had time
-	 * to start, and after it has stopped because a code was read. Both would otherwise
-	 * be a black square, which reads as broken rather than as busy.
+	 * How the window is painted, and how hard everything around it is dimmed.
+	 *
+	 * While the camera is starting or stopping there is nothing to frame, so the frame
+	 * stops existing: the window goes black and the dimming goes fully opaque, which
+	 * makes the whole screen one black field. A lit panel floating in a dimmed screen
+	 * is what a square with `bg-popover` looked like, and it read as a mistake.
+	 *
+	 * Holding a result is the opposite case — the spinner and the check have to be
+	 * legible — so there the window is a panel on purpose.
 	 */
-	const filled = $derived(scanner.warming || phase === 'caught' || phase === 'added')
+	const window_ = $derived(
+		scanner.warming
+			? 'bg-black shadow-[0_0_0_100vmax_rgb(0_0_0/1)]'
+			: phase === 'caught' || phase === 'added'
+				? 'bg-popover shadow-[0_0_0_100vmax_rgb(0_0_0/0.72)]'
+				: 'shadow-[0_0_0_100vmax_rgb(0_0_0/0.72)]'
+	)
 	/**
 	 * The document flag lives here rather than in the scanner, because the shell's
 	 * fade has to line up with this component's own transitions rather than with the
@@ -123,8 +135,11 @@
 		     it fills instead, and becomes where the result is said. -->
 		<div class="relative z-0 flex flex-1 items-center justify-center p-8">
 			<div
-				class="relative flex aspect-square w-full max-w-72 items-center justify-center rounded-4xl shadow-[0_0_0_100vmax_rgb(0_0_0/0.72)] transition-colors duration-300"
-				class:bg-popover={filled}
+				class={[
+					'relative flex aspect-square w-full max-w-72 items-center justify-center rounded-4xl',
+					'transition-[background-color,box-shadow] duration-300',
+					window_
+				]}
 			>
 				{#if scanner.warming && phase === 'aiming'}
 					<!-- The camera is coming. Nothing says so louder than this, on purpose:

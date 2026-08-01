@@ -7,9 +7,8 @@
 	import type { DeviceInfo } from '$lib/ipc'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import { canScan, openSettings, scanner } from '$lib/scan.svelte'
-	import CameraIcon from '@lucide/svelte/icons/camera'
+	import { PlusIcon, ScanQrCodeIcon } from '@lucide/svelte'
 	import MonitorSmartphoneIcon from '@lucide/svelte/icons/monitor-smartphone'
-	import PlusIcon from '@lucide/svelte/icons/plus'
 	import { toast } from 'svelte-sonner'
 
 	// The devices you already have, and the way in to using another device's code.
@@ -84,7 +83,7 @@
 {#snippet addButton(variant: 'default' | 'outline')}
 	<Button {variant} size="sm" disabled={!pairing.available || scanner.active} onclick={add}>
 		{#if canScan()}
-			<CameraIcon class="mr-1" data-icon="inline-start" />
+			<ScanQrCodeIcon class="mr-1" data-icon="inline-start" />
 		{:else}
 			<PlusIcon data-icon="inline-start" />
 		{/if}
