@@ -13,30 +13,19 @@
 		id,
 		placeholder = '1234-word-word-word',
 		disabled = false,
-		flash = false,
 		class: className,
-		onsubmit,
-		onclear
+		onsubmit
 	}: {
 		value: string
 		id?: string
 		placeholder?: string
 		disabled?: boolean
-		/** Briefly pop the field, e.g. when a code is auto-filled from the clipboard. */
-		flash?: boolean
 		class?: string
 		onsubmit?: () => void
-		/** Extra cleanup when the clear button is pressed; the value is cleared regardless. */
-		onclear?: () => void
 	} = $props()
-
-	function clear() {
-		value = ''
-		onclear?.()
-	}
 </script>
 
-<InputGroup.Root class={cn(flash && 'animate-pop')}>
+<InputGroup.Root>
 	<InputGroup.Input
 		{id}
 		{placeholder}
@@ -52,7 +41,7 @@
 	/>
 	{#if value}
 		<InputGroup.Addon align="inline-end">
-			<InputGroup.Button size="icon-xs" onclick={clear} aria-label="Clear code">
+			<InputGroup.Button size="icon-xs" onclick={() => (value = '')} aria-label="Clear code">
 				<XIcon />
 			</InputGroup.Button>
 		</InputGroup.Addon>

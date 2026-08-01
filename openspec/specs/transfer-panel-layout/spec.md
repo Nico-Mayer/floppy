@@ -51,14 +51,21 @@ Every panel state (idle, connecting/waiting, transferring, done, cancelling) SHA
 - **WHEN** the send file list grows beyond the available card height
 - **THEN** the list scrolls within the status zone and the action zone stays visible and anchored
 
-### Requirement: Receive clipboard auto-fill presentation survives the restructure
+### Requirement: The receive code input carries an inline clear control
 
-The restructured receive panel SHALL preserve the behaviors of the `receive-clipboard-detect` capability as amended by this change: auto-fill semantics are unchanged, the fill is signaled by an animation on the input, and the input carries an inline clear control whenever it is non-empty.
+The code input SHALL show an inline clear control whenever it is non-empty, in both the
+compact and the regular layout. The app SHALL NOT read the clipboard to pre-fill the code:
+the value only ever comes from the user typing or pasting into the field.
 
-#### Scenario: Fill signal and clear control in both layouts
+#### Scenario: Clear control follows input content
 
-- **WHEN** a code has been auto-filled in either compact or regular layout
-- **THEN** the input plays the fill animation and shows the inline clear control
+- **WHEN** the receive code input is non-empty in either compact or regular layout
+- **THEN** an inline clear control is visible in the input, and activating it empties the field
+
+#### Scenario: Clipboard is never read for the code
+
+- **WHEN** the receive panel mounts, or the window regains focus, with a valid code on the clipboard
+- **THEN** the input stays untouched
 
 ### Requirement: The Transfer screen dissolves its card chrome on mobile
 

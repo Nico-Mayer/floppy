@@ -5,7 +5,7 @@
 // — dialing only the NodeId the verified offer carries. No croc code, no shared
 // secret in the transfer path.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -33,6 +33,33 @@ const PAIR_TIMEOUT: Duration = Duration::from_secs(120);
 /// channel the mailbox task blocks on. `Some(name)` confirms and trusts the peer
 /// under `name`; `None` declines. Trust is written only on confirm.
 type PendingConfirms = Arc<Mutex<HashMap<String, oneshot::Sender<Option<String>>>>>;
+
+/// Normalized pairing codes this device is showing right now. Only ever read to
+/// decide which "you cannot pair with yourself" message to show — the refusal
+/// itself always comes from comparing identities, never from this set, so a
+/// stale entry costs a wrong message and never a missed guard.
+type ActiveCodes = Arc<Mutex<HashSet<String>>>;
+
+/// The reply the showing device sends back down the mailbox once it knows what
+/// it is dealing with. `CONFIRM` is followed by the sealed identity; the other
+/// two are sent alone.
+const REPLY_DECLINE: u8 = 0;
+const REPLY_CONFIRM: u8 = 1;
+/// The redeemer turned out to be us. Distinct from `DECLINE` so the redeemer
+/// does not report it as the other side refusing — nobody refused anything.
+const REPLY_SAME_DEVICE: u8 = 2;
+
+/// Shown when an install redeems a code it is displaying itself.
+fn own_code_message() -> String {
+    "That's this device's own code. Use the code from the other device.".to_string()
+}
+
+/// Shown when two installs are running the same identity, so their fingerprints
+/// match. Usually one was set up from a copy of the other's app data.
+fn same_identity_message() -> String {
+    "These devices have the same identity, so they can't be added. One was set up from a copy of the other."
+        .to_string()
+}
 
 /// How long an unanswered incoming-offer prompt is held before it is dropped, so
 /// an offer the user never answers does not leave the device wedged as busy.
@@ -97,6 +124,8 @@ pub struct PairingService {
     pending: Arc<Mutex<HashMap<String, Offer>>>,
     /// Codes shown on this device whose redeemer awaits our confirm.
     pending_confirms: PendingConfirms,
+    /// Codes this device is showing right now, for wording a self-pair refusal.
+    active_codes: ActiveCodes,
     /// The outgoing offer we are waiting on a response for, if any.
     outgoing: Arc<Mutex<Option<Outgoing>>>,
 }
@@ -115,7 +144,7 @@ impl PairingService {
     ) -> Result<PairingService, String> {
         let identity = Arc::new(Identity::load_or_create(dir)?);
         let self_name = Arc::new(SelfName::load_or_create(dir)?);
-        let trust = Arc::new(TrustStore::load(dir)?);
+        let trust = Arc::new(TrustStore::load(dir, &identity.public().fingerprint())?);
         let (broker, incoming) = connect(fp_url, &identity);
 
         let svc = PairingService {
@@ -128,6 +157,7 @@ impl PairingService {
             mailbox_url,
             pending: Arc::new(Mutex::new(HashMap::new())),
             pending_confirms: Arc::new(Mutex::new(HashMap::new())),
+            active_codes: Arc::new(Mutex::new(HashSet::new())),
             outgoing: Arc::new(Mutex::new(None)),
         };
 
@@ -165,12 +195,29 @@ impl PairingService {
             emit: self.emit.clone(),
             pending_confirms: self.pending_confirms.clone(),
         };
+        // Remember the code while it is live so redeeming it here can say so.
+        let normalized = code::normalize(&phrase);
+        self.active_codes.lock().unwrap().insert(normalized.clone());
+        let active_codes = self.active_codes.clone();
         tokio::spawn(async move {
-            if let Err(e) = timeout(PAIR_TIMEOUT, task.run()).await.unwrap_or(Ok(())) {
+            // Both the completed and the timed-out session land here, so this
+            // is the only place the code has to be forgotten.
+            let outcome = timeout(PAIR_TIMEOUT, task.run()).await.unwrap_or(Ok(()));
+            active_codes.lock().unwrap().remove(&normalized);
+            if let Err(e) = outcome {
                 tracing::debug!(error = %e, "pairing: show-code session ended");
             }
         });
         Ok(phrase)
+    }
+
+    /// Whether `normalized_code` is one this device is showing right now.
+    ///
+    /// Read once, before the exchange starts: the showing side forgets its code
+    /// as soon as its session ends, which happens before the redeemer has read
+    /// the reply. Asking afterwards would always say no.
+    fn is_own_code(&self, normalized_code: &str) -> bool {
+        self.active_codes.lock().unwrap().contains(normalized_code)
     }
 
     /// Redeem a pairing code shown on another device. `via` records how the code
@@ -180,6 +227,10 @@ impl PairingService {
     pub async fn redeem_pair_code(&self, raw_code: &str, via: &str) -> Result<(), String> {
         let phrase = code::normalize(raw_code);
         let room = code::room(&phrase).ok_or("that does not look like a code")?;
+        // Decided up front: by the time a refusal comes back the showing side
+        // has already ended its session and forgotten the code.
+        let self_pair_message =
+            if self.is_own_code(&phrase) { own_code_message() } else { same_identity_message() };
         let mut mailbox = client::join(&self.mailbox_url, &room).await?;
 
         // SPAKE2 — the redeemer speaks first.
@@ -197,22 +248,30 @@ impl PairingService {
         .map_err(|e| e.to_string())?;
         mailbox.send(&pake::seal(&key, &payload)?).await?;
 
-        // Wait for the shower's reply: `0x01 ‖ sealed(identity)` on confirm, or a
-        // lone `0x00` on decline.
+        // Wait for the shower's reply: `0x01 ‖ sealed(identity)` on confirm, a
+        // lone `0x00` on decline, or a lone `0x02` when it recognised us as
+        // itself.
         let reply = timeout(PAIR_TIMEOUT, mailbox.recv()).await.map_err(|_| pair_wait_timeout())??;
         match reply.split_first() {
-            Some((1, sealed)) => {
+            Some((&REPLY_CONFIRM, sealed)) => {
                 let opened = pake::open(&key, sealed)?;
                 let peer: CodePairPayload =
                     serde_json::from_slice(&opened).map_err(|e| format!("bad pairing reply: {e}"))?;
                 let peer_key = PublicKey::decode(&peer.id)?;
                 let fingerprint = peer_key.fingerprint();
+                // The other side is us. Bail before touching trust: the store
+                // would refuse anyway, but this is where the good message is.
+                if fingerprint == self.identity.public().fingerprint() {
+                    return Err(self_pair_message);
+                }
                 self.trust.add(peer_key, &peer.name)?;
                 let name = self.trust.get(&fingerprint).map_or(peer.name, |d| d.label());
                 self.emit.emit(PairingEvent::Paired { name });
                 Ok(())
             }
-            Some((0, _)) => Err("The other device didn't add this one.".into()),
+            // The shower recognised us first and stopped there.
+            Some((&REPLY_SAME_DEVICE, _)) => Err(self_pair_message),
+            Some((&REPLY_DECLINE, _)) => Err("The other device didn't add this one.".into()),
             _ => Err("The other device sent something unexpected.".into()),
         }
     }
@@ -377,6 +436,18 @@ impl ShowTask {
             serde_json::from_slice(&opened).map_err(|e| format!("bad pairing payload: {e}"))?;
         let peer_key = PublicKey::decode(&peer.id)?;
         let fingerprint = peer_key.fingerprint();
+
+        // The redeemer is us. Every cryptographic step above still agreed —
+        // SPAKE2 shares the password and an ECDH against our own public key is
+        // perfectly well defined, so the SAS would match too — which is exactly
+        // why this has to be an explicit check. Stop before raising a confirm:
+        // there is nothing the user could usefully approve.
+        if fingerprint == self.identity.public().fingerprint() {
+            tracing::warn!("pairing: refused a code redeemed by this same identity");
+            let _ = mailbox.send(&[REPLY_SAME_DEVICE]).await;
+            return Ok(());
+        }
+
         // SAS from the ECDH shared secret; the UI shows it only for a typed code.
         let sas = self.identity.shared_secret(&peer_key).map(|s| sas(&s)).unwrap_or_default();
 
@@ -399,7 +470,7 @@ impl ShowTask {
                     via: String::new(),
                 })
                 .map_err(|e| e.to_string())?;
-                let mut blob = vec![1u8];
+                let mut blob = vec![REPLY_CONFIRM];
                 blob.extend_from_slice(&pake::seal(&key, &reply)?);
                 mailbox.send(&blob).await?;
                 let name = self.trust.get(&fingerprint).map_or(name, |d| d.label());
@@ -409,7 +480,7 @@ impl ShowTask {
             // stops waiting, then end.
             _ => {
                 self.pending_confirms.lock().unwrap().remove(&fingerprint);
-                let _ = mailbox.send(&[0u8]).await;
+                let _ = mailbox.send(&[REPLY_DECLINE]).await;
             }
         }
         Ok(())
@@ -930,7 +1001,108 @@ mod tests {
         let redeem2 = tokio::spawn(async move { b3.redeem_pair_code(&code2, "code").await });
         wait_until(Duration::from_secs(10), || a.pending_confirms.lock().unwrap().contains_key(&b_fp)).await;
         a.dismiss_pair(&b_fp);
-        assert!(redeem2.await.unwrap().is_err(), "redeemer learns it was declined");
+        let declined = redeem2.await.unwrap().expect_err("redeemer learns it was declined");
+        // A real decline must not be dressed up as a self-pair.
+        assert!(!declined.contains("this device's own"), "decline misreported: {declined}");
+        assert!(!declined.contains("same identity"), "decline misreported: {declined}");
+    }
+
+    /// Build a pairing service on `id_dir` against the mock brokers.
+    async fn pair_svc(
+        tmp: &Path,
+        name: &str,
+        id_dir: &Path,
+        fp: &str,
+        mailbox: &str,
+        ev: PairCollector,
+    ) -> PairingService {
+        let mgr = manager(tmp, name, Arc::new(DoneFlag::default())).await;
+        PairingService::new(id_dir, mgr, fp.to_string(), mailbox.to_string(), Arc::new(ev)).unwrap()
+    }
+
+    /// Showing a code and then redeeming it on the same install used to pair the
+    /// device with itself: SPAKE2 agrees (one password) and the SAS matches (an
+    /// ECDH against your own key is still deterministic), so nothing failed on
+    /// its own. It must be refused, by name, with no confirm raised.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn an_install_cannot_redeem_its_own_code() {
+        let tmp = tempfile::tempdir().unwrap();
+        let fp = mock_fp_broker().await;
+        let mailbox = mock_mailbox_broker().await;
+        let ev = PairCollector::default();
+        let a = pair_svc(tmp.path(), "sa", &tmp.path().join("id-a"), &fp, &mailbox, ev.clone()).await;
+
+        let code = a.show_pair_code().unwrap();
+        let err = a.redeem_pair_code(&code, "code").await.expect_err("self-pair is refused");
+
+        assert!(err.contains("this device's own code"), "wrong message: {err}");
+        assert!(a.trusted_devices().is_empty(), "nothing was added to the device list");
+        // The user was never asked to approve anything.
+        assert!(!ev.tags().iter().any(|t| t.starts_with("request:")), "no confirm was raised: {:?}", ev.tags());
+        assert!(a.pending_confirms.lock().unwrap().is_empty());
+        // The finished session forgot its code (the timeout path clears it on
+        // the same line).
+        wait_until(Duration::from_secs(5), || a.active_codes.lock().unwrap().is_empty()).await;
+    }
+
+    /// Two installs sharing one identity file have one fingerprint. They are
+    /// refused too, but the wording says why: this is a copied install, not a
+    /// code typed into the device that is showing it.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn installs_sharing_an_identity_cannot_pair() {
+        let tmp = tempfile::tempdir().unwrap();
+        let fp = mock_fp_broker().await;
+        let mailbox = mock_mailbox_broker().await;
+        let shared = tmp.path().join("id-shared");
+
+        let a_ev = PairCollector::default();
+        let a = pair_svc(tmp.path(), "ca", &shared, &fp, &mailbox, a_ev.clone()).await;
+        let b = pair_svc(tmp.path(), "cb", &shared, &fp, &mailbox, PairCollector::default()).await;
+        assert_eq!(a.identity(), b.identity(), "the point of this test");
+
+        let code = a.show_pair_code().unwrap();
+        let err = b.redeem_pair_code(&code, "code").await.expect_err("shared identity is refused");
+
+        assert!(err.contains("same identity"), "wrong message: {err}");
+        assert!(!err.contains("this device's own code"), "wrong shape reported: {err}");
+        assert!(a.trusted_devices().is_empty());
+        assert!(b.trusted_devices().is_empty());
+        assert!(!a_ev.tags().iter().any(|t| t.starts_with("request:")), "no confirm was raised");
+    }
+
+    /// Someone who saw the displayed code redeems it and reflects the shower's
+    /// own public identity back (it is public, so they can). The shower must not
+    /// raise a confirm, must not add anything, and must not trust the attacker.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn a_reflected_identity_never_reaches_the_user() {
+        let tmp = tempfile::tempdir().unwrap();
+        let fp = mock_fp_broker().await;
+        let mailbox = mock_mailbox_broker().await;
+        let ev = PairCollector::default();
+        let a = pair_svc(tmp.path(), "ra", &tmp.path().join("id-a"), &fp, &mailbox, ev.clone()).await;
+
+        let phrase = a.show_pair_code().unwrap();
+        let normalized = code::normalize(&phrase);
+        let room = code::room(&normalized).unwrap();
+
+        // Play the redeemer by hand so we control what identity gets sealed.
+        let mut mb = client::join(&mailbox, &room).await.unwrap();
+        let (handshake, my_msg) = pake::start(&normalized, &room);
+        mb.send(&my_msg).await.unwrap();
+        let peer_msg = mb.recv().await.unwrap();
+        let key = handshake.finish(&peer_msg).unwrap();
+        let payload = serde_json::to_vec(&CodePairPayload {
+            id: a.identity(), // the shower's own identity, reflected
+            name: "not-really-a-phone".to_string(),
+            via: "code".to_string(),
+        })
+        .unwrap();
+        mb.send(&pake::seal(&key, &payload).unwrap()).await.unwrap();
+
+        let reply = mb.recv().await.unwrap();
+        assert_eq!(reply.as_slice(), &[REPLY_SAME_DEVICE], "shower answers same-device, not confirm/decline");
+        assert!(a.trusted_devices().is_empty(), "nothing was added");
+        assert!(!ev.tags().iter().any(|t| t.starts_with("request:")), "no confirm was raised: {:?}", ev.tags());
     }
 
     async fn wait_until<F: Fn() -> bool>(timeout: Duration, cond: F) {

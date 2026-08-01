@@ -1,5 +1,4 @@
 <script lang="ts">
-	import './layout.css'
 	import IncomingOfferDialog from '$lib/components/prompts/IncomingOfferDialog.svelte'
 	import IncomingPairDialog from '$lib/components/prompts/IncomingPairDialog.svelte'
 	import AppHeader from '$lib/components/shell/AppHeader.svelte'
@@ -8,15 +7,16 @@
 	import * as Sidebar from '$lib/components/ui/sidebar'
 	import { Toaster } from '$lib/components/ui/sonner'
 	import { pairing } from '$lib/pairing-app.svelte'
-	import { app } from '$lib/transfer-app.svelte'
 	import { isPhoneChrome } from '$lib/platform'
 	import { watchSafeArea } from '$lib/safe-area'
+	import { app } from '$lib/transfer-app.svelte'
 	import { onBackButtonPress } from '@tauri-apps/api/app'
+	import type { PluginListener } from '@tauri-apps/api/core'
 	import { getCurrentWebview } from '@tauri-apps/api/webview'
 	import { getCurrentWindow } from '@tauri-apps/api/window'
 	import { ModeWatcher } from 'mode-watcher'
 	import { onMount } from 'svelte'
-	import type { PluginListener } from '@tauri-apps/api/core'
+	import './layout.css'
 
 	const { children } = $props()
 
@@ -153,6 +153,7 @@
      richColors: type is carried by the icon (see ui/sonner). -->
 <Toaster
 	position="top-center"
+	richColors={true}
 	offset={{ top: 'calc(var(--header-height) + var(--spacing) * 2)' }}
 	mobileOffset={{ top: 'calc(var(--header-height) + var(--spacing) * 2)' }}
 	closeButton

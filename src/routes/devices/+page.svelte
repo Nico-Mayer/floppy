@@ -96,10 +96,13 @@
 		connecting = true
 		try {
 			await pairing.redeemCode(value, 'code')
-			typed = ''
 		} catch (e) {
 			toast.error(`${e}`.replace(/^Error:\s*/, ''))
 		} finally {
+			// Clear either way. A code is single-use and short-lived, so once a
+			// try has failed the other device has to show a new one. Leaving the
+			// dead code sitting there just invites the same failure again.
+			typed = ''
 			connecting = false
 		}
 	}

@@ -51,43 +51,91 @@ const TRUST_FILE: &str = "trust.json";
 
 pub struct TrustStore {
     path: Option<PathBuf>,
+    /// The fingerprint of the install this store belongs to. The store never
+    /// holds an entry for it: a device trusting itself is meaningless, and it
+    /// makes fingerprint-keyed routing and the glare tiebreak degenerate.
+    own_fingerprint: String,
     devices: Mutex<HashMap<String, TrustedDevice>>, // keyed by fingerprint
 }
 
 impl TrustStore {
-    /// Open (or create empty) the trust store in `dir`. A missing file is not an
-    /// error — a fresh install trusts nobody.
-    pub fn load(dir: &std::path::Path) -> Result<TrustStore, String> {
+    /// Open (or create empty) the trust store in `dir`, owned by the install
+    /// whose identity fingerprints to `own_fingerprint`. A missing file is not
+    /// an error — a fresh install trusts nobody. An entry for the owner itself
+    /// is dropped on the way in (an older build could write one) and the
+    /// cleaned store is persisted, so the file on disk stops carrying it.
+    pub fn load(dir: &std::path::Path, own_fingerprint: &str) -> Result<TrustStore, String> {
         std::fs::create_dir_all(dir).map_err(|e| format!("creating trust dir: {e}"))?;
         let path = dir.join(TRUST_FILE);
         let mut devices = HashMap::new();
+        let mut purged = false;
         match std::fs::read(&path) {
             Ok(data) => {
                 let list: Vec<TrustedDevice> =
                     serde_json::from_slice(&data).map_err(|e| format!("parsing trust store: {e}"))?;
                 for d in list {
-                    devices.insert(d.fingerprint(), d);
+                    let fp = d.fingerprint();
+                    if fp == own_fingerprint {
+                        purged = true;
+                        continue;
+                    }
+                    devices.insert(fp, d);
                 }
             }
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
             Err(e) => return Err(format!("reading trust store: {e}")),
         }
-        Ok(TrustStore { path: Some(path), devices: Mutex::new(devices) })
+        let store = TrustStore {
+            path: Some(path),
+            own_fingerprint: own_fingerprint.to_string(),
+            devices: Mutex::new(devices),
+        };
+        // Only rewrite when there was something to drop, so a clean start does
+        // not touch the file.
+        if purged {
+            tracing::warn!("pairing: dropped this device's own entry from the trust store");
+            store.save()?;
+        }
+        Ok(store)
     }
 
-    /// A non-persistent store for tests.
+    /// A non-persistent store for tests. The owner fingerprint is empty, which
+    /// no real fingerprint can equal (they are 64 hex chars), so the self-add
+    /// guard never fires — use `in_memory_owned_by` to exercise it.
     #[cfg(test)]
     pub fn in_memory() -> TrustStore {
-        TrustStore { path: None, devices: Mutex::new(HashMap::new()) }
+        TrustStore {
+            path: None,
+            own_fingerprint: String::new(),
+            devices: Mutex::new(HashMap::new()),
+        }
+    }
+
+    /// A non-persistent store belonging to `own_fingerprint`, for testing the
+    /// self-add guard.
+    #[cfg(test)]
+    pub fn in_memory_owned_by(own_fingerprint: &str) -> TrustStore {
+        TrustStore {
+            path: None,
+            own_fingerprint: own_fingerprint.to_string(),
+            devices: Mutex::new(HashMap::new()),
+        }
     }
 
     /// Record a trusted device under the self-name it advertised, or refresh
     /// that advertised name if it is already trusted. A re-add keeps any local
     /// override the user set. Persists.
+    ///
+    /// Adding this install's own identity is refused. This is the single
+    /// backstop for that invariant — callers check earlier only to fail fast
+    /// and word the error, never instead of this.
     pub fn add(&self, key: PublicKey, advertised_name: &str) -> Result<(), String> {
         {
             let mut devices = self.devices.lock().unwrap();
             let fp = key.fingerprint();
+            if fp == self.own_fingerprint {
+                return Err("that is this device's own identity".into());
+            }
             let advertised = advertised_name.trim().to_string();
             devices
                 .entry(fp)
@@ -168,13 +216,13 @@ mod tests {
         let peer = Identity::load_or_create(tempfile::tempdir().unwrap().path()).unwrap().public();
         let fp = peer.fingerprint();
         {
-            let store = TrustStore::load(dir.path()).unwrap();
+            let store = TrustStore::load(dir.path(), "me").unwrap();
             store.add(peer.clone(), "laptop").unwrap();
             assert!(store.trusted(&peer));
             assert_eq!(store.get(&fp).unwrap().label(), "laptop");
         }
         // Reload from disk: the trust survived.
-        let store = TrustStore::load(dir.path()).unwrap();
+        let store = TrustStore::load(dir.path(), "me").unwrap();
         assert!(store.trusted(&peer));
         store.remove(&fp).unwrap();
         assert!(!store.trusted(&peer));
@@ -213,5 +261,76 @@ mod tests {
         store.add(peer.clone(), "NicoPC").unwrap();
         store.refresh_advertised(&fp, "NicoDesktop").unwrap();
         assert_eq!(store.get(&fp).unwrap().label(), "NicoDesktop");
+    }
+
+    /// A device trusting itself is meaningless, and the store is the one place
+    /// that has to refuse it no matter which caller asks.
+    #[test]
+    fn own_identity_cannot_be_added() {
+        let me = Identity::load_or_create(tempfile::tempdir().unwrap().path()).unwrap().public();
+        let fp = me.fingerprint();
+        let store = TrustStore::in_memory_owned_by(&fp);
+        assert!(store.add(me.clone(), "myself").is_err());
+        // Nothing was recorded on the way out.
+        assert!(!store.trusted(&me));
+        assert!(store.get(&fp).is_none());
+        assert!(store.list().is_empty());
+    }
+
+    #[test]
+    fn peers_still_add_when_owner_is_set() {
+        let me = Identity::load_or_create(tempfile::tempdir().unwrap().path()).unwrap().public();
+        let peer = Identity::load_or_create(tempfile::tempdir().unwrap().path()).unwrap().public();
+        let store = TrustStore::in_memory_owned_by(&me.fingerprint());
+        store.add(peer.clone(), "laptop").unwrap();
+        assert!(store.trusted(&peer));
+    }
+
+    /// An older build could persist a self-entry; loading drops it and rewrites
+    /// the file, leaving genuine peers (and their overrides) untouched.
+    #[test]
+    fn self_entry_purged_on_load_leaving_peers() {
+        let dir = tempfile::tempdir().unwrap();
+        let me = Identity::load_or_create(tempfile::tempdir().unwrap().path()).unwrap().public();
+        let peer = Identity::load_or_create(tempfile::tempdir().unwrap().path()).unwrap().public();
+        let my_fp = me.fingerprint();
+        let peer_fp = peer.fingerprint();
+
+        // Seed a store that predates the guard: it holds both.
+        {
+            let store = TrustStore::load(dir.path(), "someone-else").unwrap();
+            store.add(me.clone(), "myself").unwrap();
+            store.add(peer.clone(), "NicoPC").unwrap();
+            store.rename(&peer_fp, "Work PC").unwrap();
+        }
+
+        let store = TrustStore::load(dir.path(), &my_fp).unwrap();
+        assert!(!store.trusted(&me));
+        assert!(store.trusted(&peer));
+        assert_eq!(store.get(&peer_fp).unwrap().label(), "Work PC");
+
+        // The purge was written through, so a later load sees the clean file
+        // even without the guard re-firing.
+        let reloaded = TrustStore::load(dir.path(), "someone-else").unwrap();
+        assert!(!reloaded.trusted(&me));
+        assert!(reloaded.trusted(&peer));
+        assert_eq!(reloaded.get(&peer_fp).unwrap().local_override.as_deref(), Some("Work PC"));
+    }
+
+    /// Nothing to purge means the file is left exactly as it was.
+    #[test]
+    fn clean_load_does_not_rewrite() {
+        let dir = tempfile::tempdir().unwrap();
+        let peer = Identity::load_or_create(tempfile::tempdir().unwrap().path()).unwrap().public();
+        let me = Identity::load_or_create(tempfile::tempdir().unwrap().path()).unwrap().public();
+        {
+            let store = TrustStore::load(dir.path(), &me.fingerprint()).unwrap();
+            store.add(peer.clone(), "laptop").unwrap();
+        }
+        let path = dir.path().join(TRUST_FILE);
+        let before = std::fs::metadata(&path).unwrap().modified().unwrap();
+        let store = TrustStore::load(dir.path(), &me.fingerprint()).unwrap();
+        assert!(store.trusted(&peer));
+        assert_eq!(std::fs::metadata(&path).unwrap().modified().unwrap(), before);
     }
 }

@@ -91,7 +91,6 @@
 	<Card.Header class={slotPadding[chrome]}>
 		<Card.Title class="flex items-center gap-2">
 			<div class="relative flex">
-				<span class="absolute size-3 animate-ping rounded-full bg-(--tint) animation-duration-[2s]"></span>
 				<span class="size-3 rounded-full bg-(--tint)"></span>
 			</div>
 			{title}

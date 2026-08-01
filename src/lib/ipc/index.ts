@@ -7,7 +7,7 @@
 import { commands } from './bindings'
 
 export * from './bindings'
-export { Clipboard, Window, onWindowFocus } from './runtime'
+export { Clipboard, Window } from './runtime'
 
 /** Unwrap a tauri-specta `Result`: return the data, or throw the error string. */
 async function ok<T>(p: Promise<{ status: 'ok'; data: T } | { status: 'error'; error: string }>): Promise<T> {
