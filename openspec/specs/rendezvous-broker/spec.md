@@ -2,7 +2,12 @@
 
 ## Purpose
 
-Provide an accountless, stateless signalling broker that lets paired devices find each other and exchange signed control messages (offers, responses, ready, unreachable) over WebSocket, routing purely by device fingerprint. The broker never sees file contents — those move end-to-end over croc between the devices — and it authenticates connections solely by device-key signatures.
+Provide an accountless, stateless signalling broker that lets devices find each other over
+WebSocket: a fingerprint router that relays signed control messages between paired devices,
+and a code mailbox that relays sealed handshake blobs between two parties holding the same
+code. The broker never sees file contents, which move end to end over iroh between the
+devices, and it never learns a code or a PAKE key.
+
 ## Requirements
 ### Requirement: Device registration with proof of ownership
 
@@ -47,7 +52,7 @@ The broker SHALL hold at most one live connection per fingerprint. A new registr
 
 ### Requirement: No accounts, no persistence
 
-The broker SHALL require no user account and SHALL persist no state: routing is purely in-memory over live connections, authenticated only by device-key signatures. It SHALL never see file contents (those move end-to-end over croc between the devices).
+The broker SHALL require no user account and SHALL persist no state: routing is purely in-memory over live connections, authenticated only by device-key signatures. It SHALL never see file contents, which move end to end over iroh between the devices.
 
 #### Scenario: Stateless routing
 

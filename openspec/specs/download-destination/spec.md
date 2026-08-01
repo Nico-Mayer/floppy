@@ -103,6 +103,36 @@ and an empty result drops the segment.
 - **WHEN** the sender device name is blank or whitespace
 - **THEN** the folder is `floppy/<datetime>/` with no ` from …` segment
 
+### Requirement: A received filename cannot escape its folder
+
+Every filename carried by a transfer SHALL be reduced to a single safe path component before
+it is exported: path separators, `..`, `.`, and characters the platform rejects SHALL be
+removed or flattened, and a name left with nothing usable SHALL fall back to a fixed
+placeholder rather than an empty component. An export SHALL therefore never write outside
+its own per-transfer folder, whatever the sender named the file.
+
+#### Scenario: A traversing filename is flattened
+
+- **WHEN** a transfer carries a file named with path separators or `..`
+- **THEN** it is written as a single component inside the per-transfer folder, and nothing is
+  written outside that folder
+
+#### Scenario: An unusable filename still gets written
+
+- **WHEN** sanitizing a filename leaves nothing usable
+- **THEN** the file is written under a fixed placeholder name rather than an empty one
+
+### Requirement: The destination stamp is filename-safe and sortable
+
+The datetime used for the per-transfer folder SHALL be local time formatted as
+`YYYY-MM-DD HH-MM-SS`, containing no character a filesystem rejects (notably no `:`) and
+sorting chronologically as plain text.
+
+#### Scenario: The stamp sorts as text
+
+- **WHEN** several transfers are received on the same day
+- **THEN** sorting their folder names as text lists them in the order they arrived
+
 ### Requirement: Android public write needs no storage permission on API 29+
 
 On Android API 29+ the app SHALL write to public Downloads through the scoped

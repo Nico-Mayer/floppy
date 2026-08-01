@@ -8,10 +8,22 @@ context: |
   - Frontend: SvelteKit (adapter-static, SPA fallback) + Svelte 5 runes
     (`$state`, `$derived`, `$props`, `$effect`) in `src/`
   - UI / Frontend: shadcn-svelte first; animated variants from https://v-animations.vercel.app use the available shadcn-svelte and svelte skills before implementing stuff
-  - Broker: small Go service in `broker/` (the only Go left), deployed via
+  - Broker: small Go service in `broker/` (the only Go in the repo), deployed via
     `broker/Dockerfile` (railway.json)
   - Transfer: iroh + iroh-blobs (QUIC, hole-punching, relay fallback, BLAKE3
-    content addressing). croc/Wails/Go app-core are gone.
+    content addressing)
+
+  Capabilities (`openspec/specs/`), 11 of them:
+  - Core — `file-transfer` (iroh transport + transfer lifecycle),
+    `download-destination` (where received files land),
+    `device-pairing` (identity, trust store, signed offers, SAS),
+    `code-phrase-share` (quick share by code), `rendezvous-broker` (the Go broker).
+  - Platform — `app-platform` (Tauri 2 runtime, generated IPC, plugins, previews,
+    mobile targets).
+  - Frontend — `app-shell` (responsive shell, sidebar + bottom bar, safe areas,
+    page container), `transfer-panel-layout` (Send/Receive screens),
+    `device-management` (Devices screen), `interaction` (hit areas, gestures,
+    haptics, motion), `preview-markers` (unfinished-surface honesty).
 
   Layout:
   - `src-tauri/src/lib.rs` — Tauri app wiring: commands, plugins, the `thumb://`
@@ -23,7 +35,7 @@ context: |
   - `src-tauri/src/rendezvous/` — quick share: `code` (phrase gen/normalize),
     `pake` (SPAKE2 + AEAD-sealed ticket), `client` (broker WebSocket mailbox).
   - `src-tauri/src/pairing/` — trusted devices: Ed25519 identity, X25519 kex,
-    trust store, signed offers, SAS, one-sided pair links, `PairingService`.
+    trust store, signed offers, SAS, code pairing, `PairingService`.
   - `src-tauri/src/preview.rs` — image thumbnails via the `image` crate.
   - `broker/` — Go broker: `/ws` code mailbox (quick share), `/fp` fingerprint
     routing (trusted devices), `/health`.
@@ -35,15 +47,15 @@ context: |
     exported to `src/lib/ipc/bindings.ts`. Regenerated on every debug build and
     by `cargo test export_bindings`; the checked-in file is the artifact.
   - Commands: `send`, `receive`, `cancel_send`, `cancel_receive`, `quick_share`,
-    `describe`, `open_path`, `identity`, `trusted_devices`, `preview_pairing`,
-    `trust`, `untrust`, `create_pair_link`, `open_pair_link`, `accept`,
-    `decline`, `send_to`.
+    `describe`, `clear_input_cache`, `open_path`, `identity`, `self_name`,
+    `set_self_name`, `trusted_devices`, `untrust`, `confirm_pair`, `dismiss_pair`,
+    `rename_device`, `show_pair_code`, `redeem_pair_code`, `accept`, `decline`,
+    `send_to`.
   - Events (struct name → wire name → `events.<camelCase>`): `CodeEvent`,
     `ProgressEvent`, `DoneEvent`, `ErrorEvent`, `PairingOfferEvent`,
-    `PairingAccepted`, `PairingDeclined`, `PairingPaired`, `PairingError`,
-    `DeepLink`. Send/receive share one event each, distinguished by
-    `kind: "send" | "receive"` (the old split `croc:send:*`/`croc:recv:*` names
-    are gone). Every transfer payload carries `id` and `kind`.
+    `PairingAccepted`, `PairingDeclined`, `PairingRequest`, `PairingPaired`,
+    `PairingError`, `DeepLink`. Send/receive share one event each, distinguished
+    by `kind: "send" | "receive"`; every transfer payload carries `id` and `kind`.
   - File picking uses `@tauri-apps/plugin-dialog` from the frontend; drag-drop
     uses native webview events — neither is an app command/event.
 
@@ -59,8 +71,12 @@ context: |
     progress stream → export files. Cancel drops the task (prompt QUIC reset) and
     emits **no** terminal event.
   - Resume is by BLAKE3 hash from the on-disk store; there is no per-code folder
-    and no process-CWD ownership (both were croc-era rules).
-  - Destination: `dest_root/<ticket-hash-prefix>/`; the app uses `~/Downloads/floppy`.
+    and correctness never depends on the process working directory.
+  - Destination: one folder per transfer, `<dest_root>/<YYYY-MM-DD HH-MM-SS>`
+    with ` from <device>` appended for a trusted sender (`transport/dest.rs`).
+    `dest_root` resolves per platform to the user-visible download location
+    (`~/Downloads/floppy` on desktop, public Downloads on Android, Documents on
+    iOS). The code phrase never appears in a path.
   - The device runs one transfer at a time (send XOR receive): a live transfer
     blocks a new one of either kind with the `Busy` sentinel, and a busy device
     auto-declines an incoming trusted offer (distinct `busy` reason). Simultaneous
@@ -88,6 +104,9 @@ context: |
   Tests:
   - Rust gate: `cargo test` in `src-tauri/` — unit + hermetic transport tests
     (`RelayConfig::DisableRelay`, loopback bind, in-memory store; no network).
+  - One shared in-process mock of the Go broker serves every Rust test, in a
+    single `#[cfg(test)]` test-support module, and covers both broker modes
+    (`/ws` mailbox, `/fp` router). Do not add a second mock of the wire protocol.
   - Broker gate: `go test -race ./...` in `broker/`.
   - Live cross-language E2E is `#[ignore]`d; `mise run test:live` runs it
     against `FLOPPY_TEST_BROKER` (the hosted broker unless `FLOPPY_BROKER=local`,

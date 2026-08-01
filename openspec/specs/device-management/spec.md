@@ -1,8 +1,11 @@
-# device-management Specification
+# device-management
 
 ## Purpose
 
-TBD - created by archiving change redesign-device-pairing. Update Purpose after archive.
+The Devices screen and the add-a-device flow: this device's editable self-name, the list of
+paired devices with local renames and trust revocation, and one symmetric screen that shows
+this device's code and consumes another's without the user picking a role.
+
 ## Requirements
 ### Requirement: Dedicated Devices page
 
@@ -12,12 +15,10 @@ at the top, the list of paired devices below (each with its shown label), and a 
 to add a device. Removing a device from the list SHALL revoke local trust so that
 device can no longer send without a code.
 
-On a coarse pointer, removal SHALL be reached by swiping the device's row rather than by a
-destructive control sitting beside rename, so a thumb cannot hit the destructive action while
-aiming for the reversible one. On a fine pointer the destructive control SHALL remain, since a
-mouse aims precisely and has no drag gesture available, and removal must not become unreachable.
-Rename SHALL remain a control in the row on both. Removal SHALL still require the existing
-confirmation before trust is revoked.
+Removal SHALL require a confirmation before trust is revoked, however the remove action was
+reached, because revoking trust cannot be undone without pairing again. How the action is
+reached on each pointer type — swipe on touch, a button with a mouse — belongs to
+`interaction`.
 
 #### Scenario: Devices page is its own destination
 
@@ -34,21 +35,10 @@ confirmation before trust is revoked.
 - **WHEN** the user removes a paired device from the list
 - **THEN** that device is no longer trusted and a code-free send from it is refused
 
-#### Scenario: Removal is reached by swipe on touch
-
-- **WHEN** a paired device row renders on a coarse-pointer device
-- **THEN** it shows rename but no destructive control, and the remove action is revealed by
-  swiping the row
-
-#### Scenario: Removal keeps its button with a mouse
-
-- **WHEN** a paired device row renders on a fine-pointer device
-- **THEN** the destructive control is present beside rename, as before
-
 #### Scenario: Removal still confirms before revoking
 
-- **WHEN** the user activates the revealed remove action
-- **THEN** the existing confirmation appears, and trust is revoked only once it is confirmed
+- **WHEN** the user activates the remove action, however it was reached
+- **THEN** a confirmation appears, and trust is revoked only once it is confirmed
 
 ### Requirement: Symmetric add-a-device flow
 
@@ -160,10 +150,6 @@ be a local override that always wins over the peer's advertised self-name and SH
 never be sent to the peer. Clearing the override SHALL let the device fall back to
 the peer's advertised self-name.
 
-The rename control SHALL stay in the device's row and SHALL NOT be moved behind the swipe
-gesture: one revealed action per row is easier to discover than two, and rename is the
-reversible one, so it keeps the always-visible affordance.
-
 #### Scenario: Rename overrides the advertised name
 
 - **WHEN** the user renames a paired device locally
@@ -173,11 +159,6 @@ reversible one, so it keeps the always-visible affordance.
 
 - **WHEN** a device is renamed locally
 - **THEN** the peer's own list is unaffected
-
-#### Scenario: Rename stays visible in the row
-
-- **WHEN** a paired device row renders
-- **THEN** its rename control is visible without any gesture
 
 ### Requirement: No pasted links in the pairing UI
 

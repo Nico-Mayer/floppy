@@ -1,7 +1,11 @@
-# preview-markers Specification
+# preview-markers
 
 ## Purpose
-TBD - created by archiving change frontend-mobile-polish. Update Purpose after archive.
+
+Be honest about what is not built yet: one declaration marks a destination or surface as a
+preview, every placement of the marker reads from it, preview controls stay operable, and a
+control that would state something false is removed rather than marked.
+
 ## Requirements
 ### Requirement: A screen whose controls do nothing yet says so
 

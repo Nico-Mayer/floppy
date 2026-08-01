@@ -1,7 +1,11 @@
-# code-phrase-share Specification
+# code-phrase-share
 
 ## Purpose
-TBD - created by archiving change tauri-iroh-migration. Update Purpose after archive.
+
+Share files with a device you have not paired with, using one short spoken-aloud code: the
+code is a SPAKE2 password run over a broker mailbox, the iroh ticket travels sealed under
+the key it derives, and nothing about the exchange is remembered afterwards.
+
 ## Requirements
 ### Requirement: Human code phrase for quick sharing
 
