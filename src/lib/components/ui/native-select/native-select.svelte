@@ -1,0 +1,45 @@
+<script lang="ts">
+	// PATCHED (not from the shadcn-svelte registry): `pointer-coarse:min-h-11` and
+	// `md:not-pointer-coarse:text-base`, matching the Input patch. This control only
+	// ever renders on a coarse pointer, so 36px was always below the 44px hit-area
+	// minimum. The text goes to 16px there too, because iOS zooms the page when you
+	// focus a control smaller than that, and an iPad is wider than `md`. See the
+	// `interaction` capability.
+	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
+	import { cn, type WithElementRef } from "$lib/utils.js";
+	import type { HTMLSelectAttributes } from "svelte/elements";
+
+	type NativeSelectProps = Omit<WithElementRef<HTMLSelectAttributes>, "size"> & {
+		size?: "sm" | "default";
+	};
+
+	let {
+		ref = $bindable(null),
+		value = $bindable(),
+		class: className,
+		size = "default",
+		children,
+		...restProps
+	}: NativeSelectProps = $props();
+</script>
+
+<div
+	class={cn(
+		"cn-native-select-wrapper group/native-select relative w-fit has-[select:disabled]:opacity-50",
+		className
+	)}
+	data-slot="native-select-wrapper"
+	data-size={size}
+>
+	<select
+		bind:value
+		bind:this={ref}
+		data-slot="native-select"
+		data-size={size}
+		class="h-9 pointer-coarse:min-h-11 w-full min-w-0 appearance-none rounded-3xl border border-transparent bg-input/50 py-1 pr-8 pl-3 text-base md:not-pointer-coarse:text-sm transition-[color,box-shadow,background-color] select-none selection:bg-primary selection:text-primary-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-[size=sm]:h-8 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 outline-none disabled:pointer-events-none disabled:cursor-not-allowed"
+		{...restProps}
+	>
+		{@render children?.()}
+	</select>
+	<ChevronDownIcon class="top-1/2 right-2.5 size-4 -translate-y-1/2 text-muted-foreground pointer-events-none absolute select-none" aria-hidden data-slot="native-select-icon" />
+</div>

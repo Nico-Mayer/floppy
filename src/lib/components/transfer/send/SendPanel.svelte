@@ -116,11 +116,16 @@
 	     already on its way to idle. -->
 	{#snippet actions()}
 		{#if send.status === 'idle' && send.files.length > 0}
-			<!-- Adding files moved into the queue grid itself (SendQueue's last tile),
-			     so this zone holds one primary action and nothing to weigh it against. -->
-			<div class="flex flex-col gap-3">
+			<!-- One line, not a stack: who the files go to and the button that sends
+			     them are one sentence, and the ~110px the stacked version cost is a
+			     whole row of tiles in the queue above. The picker takes the leftover
+			     width and truncates; Send keeps its content width at the trailing
+			     edge, where the thumb is. Adding files is not weighed against Send
+			     here either — that moved into the queue grid itself (SendQueue's
+			     last tile). -->
+			<div class="flex items-center gap-2">
 				<SendTargetPicker bind:value={() => selection, (next) => (picked = next)} />
-				<Button class="w-full" onclick={dispatchSend}>
+				<Button onclick={dispatchSend}>
 					<SendIcon />
 					Send
 				</Button>
