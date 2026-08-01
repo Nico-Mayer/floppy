@@ -80,6 +80,7 @@ Do not start before group 4 is complete and verified.
 
 - [x] 9.1 `hooks/is-mobile.svelte.ts`: update the doc comment — the threshold now decides bottom bar versus icon rail, not drawer versus rail.
 - [x] 9.2 `platform.ts`: update the signals note — platform form factor now governs whether a titlebar exists at all, rather than the mobile app bar versus the desktop titlebar.
+- [x] 9.4 Two requirements this change did not target were left contradicting it, both caught during the archive sync: `app-shell`'s "The shell has no in-app history-back" still sent hardware back looking for the navigation drawer, and `interface-motion`'s "Touch feedback fires at the moments that carry meaning" still listed a mode change committed by swipe. Both are now MODIFIED here rather than deferred, and `haptics.modeChanged` — whose only caller was the deleted pager — is gone with its `selectionFeedback` import.
 - [x] 9.3 Drop the deferred `branding-placement-split` idea. It proposed making the sidebar brand row mobile-only; the sidebar is now desktop-only, which inverts it.
 
 ## 10. Gates and on-device verification

@@ -17,7 +17,7 @@
 // visual and vestibular motion; haptic strength has its own OS-level control,
 // which the platform already honours below us.
 
-import { impactFeedback, notificationFeedback, selectionFeedback } from '@tauri-apps/plugin-haptics'
+import { impactFeedback, notificationFeedback } from '@tauri-apps/plugin-haptics'
 import { isTouch } from './platform'
 
 async function feel(run: () => Promise<unknown>): Promise<void> {
@@ -40,7 +40,8 @@ export const haptics = {
 	/** An incoming transfer was accepted. Heavier than declining: more happened. */
 	accepted: () => feel(() => impactFeedback('medium')),
 	/** An incoming transfer was declined. */
-	declined: () => feel(() => impactFeedback('light')),
-	/** A swipe committed to the other mode. Nothing fires when it springs back. */
-	modeChanged: () => feel(() => selectionFeedback())
+	declined: () => feel(() => impactFeedback('light'))
+	// No entry for changing destination. That used to be a swipe that could commit
+	// or spring back, which is a moment worth feeling; it is now a tap on a bar
+	// item, which takes nothing and hands over nothing.
 }

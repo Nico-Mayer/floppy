@@ -144,6 +144,29 @@ entry in the destination list, and two rows SHALL NOT read as active at once.
 - **WHEN** the account row's destination is the current route
 - **THEN** that destination's row in the list shows as active and the account row does not
 
+### Requirement: The shell has no in-app history-back
+
+Navigation SHALL be flat: every destination stands on its own and SHALL be reached directly, so
+no back affordance SHALL appear in any chrome on any platform.
+
+Where the platform provides its own back button, it SHALL dismiss an open overlay — a dialog,
+sheet, or drawer — and SHALL otherwise close the app, which is what the platform would have done
+unaided. No navigation surface SHALL be consulted, because navigation is a bar in the layout flow
+with nothing of its own to close.
+
+#### Scenario: No back control anywhere
+
+- **WHEN** the user navigates between any destinations
+- **THEN** no back button appears in the header on any platform
+
+#### Scenario: Android hardware-back dismisses overlays, else closes the app
+
+- **WHEN** the Android hardware back button is pressed while an overlay (dialog, sheet, or
+  drawer) is open
+- **THEN** that overlay is dismissed and navigation does not change
+- **WHEN** the Android hardware back button is pressed with no overlay open
+- **THEN** the app closes, with no navigation state consulted
+
 ### Requirement: The shell respects safe areas on every platform
 
 The shell SHALL keep content and chrome clear of the status bar, notch, home indicator,

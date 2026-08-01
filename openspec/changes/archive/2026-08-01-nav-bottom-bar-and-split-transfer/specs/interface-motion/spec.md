@@ -1,3 +1,41 @@
+## MODIFIED Requirements
+
+### Requirement: Touch feedback fires at the moments that carry meaning
+
+On touch devices the app SHALL give haptic feedback at the moments where something was taken
+from the user or handed to them, and nowhere else. Those moments are: a code copied, a file
+removed from the send queue, a transfer finished, and an incoming offer answered. Feedback
+intensity SHALL match the weight of the event, with completion distinct from an incidental tap.
+
+Changing destination SHALL NOT be one of those moments. Navigation is now a tap on a bar item, a
+click, or a shortcut rather than a gesture that could commit or spring back, and a tap that
+merely moves between screens took nothing and handed over nothing.
+
+#### Scenario: Transfer completion is felt
+
+- **WHEN** a transfer finishes on a phone
+- **THEN** a success-weight haptic fires once
+
+#### Scenario: Copy and remove are light
+
+- **WHEN** the user copies a code or removes a file from the queue on a phone
+- **THEN** a light haptic fires once for each action
+
+#### Scenario: Answering an offer is felt, accept more than decline
+
+- **WHEN** the user accepts or declines an incoming transfer on a phone
+- **THEN** a haptic fires, and accepting is the heavier of the two
+
+#### Scenario: Changing destination is silent
+
+- **WHEN** the user taps a bottom-bar item to change destination on a phone
+- **THEN** no haptic fires
+
+#### Scenario: Ordinary taps are silent
+
+- **WHEN** the user taps a control that is not one of the listed moments
+- **THEN** no haptic fires
+
 ## ADDED Requirements
 
 ### Requirement: Destination changes are animated in the direction of travel

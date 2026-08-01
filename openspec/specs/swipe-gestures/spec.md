@@ -5,22 +5,24 @@ TBD - created by archiving change frontend-mobile-polish. Update Purpose after a
 ## Requirements
 ### Requirement: Horizontal swipes resolve by one fixed arbitration order
 
-Several horizontal gestures share the app. Which one owns a touch SHALL be decided by one fixed
-order, evaluated when the pointer goes down and again on the first 10 CSS pixels of travel, and
-SHALL NOT depend on listener registration order or on which component mounted first:
+Horizontal gestures SHALL be claimed by one shared engine, and which gesture owns a touch SHALL
+be decided by one fixed order, evaluated when the pointer goes down and again on the first 10 CSS
+pixels of travel. It SHALL NOT depend on listener registration order or on which component
+mounted first:
 
 1. A pointer that is not a touch is ignored. Pointer devices do not drag.
-2. A touch starting within 24 CSS pixels of the left screen edge belongs to the navigation
-   drawer, and no other consumer inspects it.
-3. A gesture whose vertical travel exceeds its horizontal travel after 10 pixels is released to
+2. A gesture whose vertical travel exceeds its horizontal travel after 10 pixels is released to
    scrolling, and SHALL NOT be re-claimed for the remainder of that touch.
-4. A gesture inside a row that declares itself swipeable belongs to that row.
-5. Any remaining gesture belongs to the mode pager.
+3. A gesture inside a row that declares itself swipeable belongs to that row.
+4. Any remaining horizontal gesture is unclaimed. No gesture owns the screen at large.
 
-#### Scenario: Edge strip belongs to the drawer alone
+No region of the screen SHALL be reserved for a navigation gesture. Navigation is a bottom bar
+and has no gesture of its own, so a horizontal touch anywhere on screen belongs to the surface
+under the finger.
 
-- **WHEN** a touch begins within 24 CSS pixels of the left edge and travels right
-- **THEN** the navigation drawer opens, and neither the mode pager nor any row swipe responds
+The shared engine SHALL remain the single definition of this order even while only one consumer
+exists, so a future horizontal gesture declares what it refuses rather than adding a competing
+set of listeners.
 
 #### Scenario: Vertical intent releases to scrolling and stays released
 
@@ -30,14 +32,20 @@ SHALL NOT depend on listener registration order or on which component mounted fi
 
 #### Scenario: Mouse dragging does nothing
 
-- **WHEN** a mouse is pressed and dragged horizontally across the transfer screen
+- **WHEN** a mouse is pressed and dragged horizontally across any screen
 - **THEN** no gesture activates and the pointer behaves as it does today
+
+#### Scenario: The screen edge is not reserved
+
+- **WHEN** a horizontal gesture begins at the very left edge of the screen, inside a swipeable
+  row
+- **THEN** the row's gesture handles it, because no navigation gesture reserves that region
 
 #### Scenario: Arbitration lives in one place
 
 - **WHEN** a new horizontal gesture is added to the app
-- **THEN** it declares what it refuses through the shared arbitration, and the reserved edge
-  strip is read from a single shared definition rather than repeated
+- **THEN** it declares what it refuses through the shared arbitration rather than registering
+  independent listeners
 
 ### Requirement: A gesture commits on distance or velocity, and otherwise springs back
 
@@ -60,34 +68,6 @@ commit on release alone.
 
 - **WHEN** a gesture is in progress
 - **THEN** the affected surface moves with the finger rather than waiting for release
-
-### Requirement: The transfer screen pages between Send and Receive by swipe
-
-On touch devices the transfer screen SHALL switch between Send and Receive by horizontal swipe,
-in addition to tapping the switcher and the keyboard shortcuts. Paging SHALL NOT wrap: swiping
-past the outer edge springs back. Committing to the other mode SHALL be identical to selecting
-it any other way.
-
-#### Scenario: Swipe changes mode
-
-- **WHEN** the user swipes horizontally across the transfer screen on a phone
-- **THEN** the app moves to the other mode, the switcher reflects it, and the mode is the same
-  state a tap would have produced
-
-#### Scenario: Outer edges do not wrap
-
-- **WHEN** the user swipes further outward while already on the first or last mode
-- **THEN** the surface springs back and the mode does not change
-
-#### Scenario: Swiping over the file queue still pages
-
-- **WHEN** the send queue holds enough files to scroll and the user swipes horizontally over it
-- **THEN** the mode pages, and a vertical drag over the same area scrolls the queue instead
-
-#### Scenario: Tap and shortcuts are unaffected
-
-- **WHEN** the user taps the switcher or presses the mode shortcut
-- **THEN** the mode changes as it does today
 
 ### Requirement: A paired device row is removed by swipe, with confirmation intact
 
@@ -126,22 +106,50 @@ control in the row on both.
 - **WHEN** the user renames a paired device
 - **THEN** it works as it does today, from a control in the row
 
-### Requirement: The activity timeline refreshes by pull
+### Requirement: The device list refreshes by pull
 
-The activity timeline SHALL reload by a downward pull gesture. The gesture SHALL only start
-when the list is already scrolled to the top, so it cannot interrupt scrolling, and SHALL
-resist past a maximum pull distance rather than dragging without limit.
+The paired-device list SHALL reload by a downward pull gesture. The gesture SHALL only start when
+the list is already scrolled to the top, so it cannot interrupt scrolling, and SHALL resist past
+a maximum pull distance rather than dragging without limit.
+
+A downward drag from a resting top SHALL be claimed by the gesture rather than left to the
+scroller's overscroll bounce, because a platform that has begun bouncing may abandon the touch
+and the pull would be lost. An upward drag SHALL scroll normally.
+
+The progress indication SHALL remain visible long enough to be seen, even when the reload
+itself completes within a frame, so a deliberate gesture is always acknowledged.
+
+Refreshing SHALL reset the screen's transient state along with its data: a partially entered
+code and any open inline rename SHALL be cleared. A pairing code currently on display SHALL NOT
+be regenerated, because another device may be part-way through entering it.
 
 #### Scenario: Pull at the top refreshes
 
-- **WHEN** the timeline is scrolled to the top and the user pulls down past the trigger
+- **WHEN** the device list is scrolled to the top and the user pulls down past the trigger
   distance
-- **THEN** the list reloads and a progress indication is shown while it does
+- **THEN** the list reloads from the trust store and a progress indication is shown while it does
 
 #### Scenario: Pull mid-list scrolls
 
-- **WHEN** the timeline is scrolled away from the top and the user drags down
+- **WHEN** the device list is scrolled away from the top and the user drags down
 - **THEN** the list scrolls and no refresh starts
+
+#### Scenario: The pull is not lost to the overscroll bounce
+
+- **WHEN** the user drags down repeatedly from the top of the device list
+- **THEN** every such drag runs the pull gesture, and none of them is swallowed by the
+  scroller bouncing instead
+
+#### Scenario: A fast reload is still announced
+
+- **WHEN** the reload completes almost immediately
+- **THEN** the progress indication is still visible for long enough to be seen
+
+#### Scenario: Refreshing clears stale input
+
+- **WHEN** the user has typed part of a code, or opened a rename, and then pulls to refresh
+- **THEN** the field is cleared and the rename closes, while a pairing code on display is
+  left untouched
 
 #### Scenario: Short pull is abandoned
 

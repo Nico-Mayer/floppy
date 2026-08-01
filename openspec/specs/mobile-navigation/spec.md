@@ -4,147 +4,134 @@
 
 TBD - created by archiving change unify-responsive-shell. Update Purpose after archive.
 ## Requirements
-### Requirement: Mobile navigation is the sidebar as a left drawer
+### Requirement: Mobile navigation is a bottom bar
 
-On touch or narrow-width devices the navigation SHALL be the same sidebar rendered as a
-left-edge drawer, reusing the shared destination list. The drawer SHALL be openable by a
-menu (hamburger) control in the header. Choosing a destination SHALL close the drawer so
-that navigating is a single action.
+Below the navigation's own rail threshold the navigation SHALL be a bottom bar listing every
+top-level destination from the single shared destination list. Each item SHALL carry an icon and
+a text label, and the item for the current destination SHALL be visually distinct from the rest.
+Choosing an item SHALL navigate directly, in one tap, with no intermediate surface to open or
+dismiss.
 
-#### Scenario: Hamburger opens the drawer
+The bar SHALL be present on every route and in every application state, including while a
+transfer is running. Navigation SHALL NOT be blocked, deferred, or queued on account of a
+running transfer, because leaving a transfer's route does not affect the transfer.
 
-- **WHEN** the user taps the header menu control on a phone
-- **THEN** the navigation drawer slides in from the left showing the same destinations as
-  the desktop sidebar
+The one exception is the platform's own soft keyboard, which takes its height out of the
+layout the bar sits in. While a text field is focused the bar SHALL stand down rather than be
+displaced upward to sit above the keys, which is what no platform's own navigation does, and it
+SHALL return as soon as the field is blurred. This is occlusion by a system surface, not the
+app withholding navigation.
 
-#### Scenario: Navigating collapses the drawer
+#### Scenario: The bar lists every destination
 
-- **WHEN** the drawer is open and the user selects a destination
-- **THEN** the app navigates to that destination and the drawer closes
+- **WHEN** the app runs below the rail threshold
+- **THEN** a bottom bar renders one labelled item per top-level destination, matching the
+  desktop sidebar's list from the same shared source
 
-#### Scenario: Same destinations everywhere
+#### Scenario: One tap navigates
 
-- **WHEN** the drawer is compared to the desktop sidebar
-- **THEN** both list the identical top-level destinations from the single shared source
+- **WHEN** the user taps a bar item
+- **THEN** the app navigates to that destination immediately, with no drawer, sheet, or menu
+  opening first
 
-### Requirement: The drawer is reachable and dismissable one-handed
+#### Scenario: The current destination is marked
 
-The menu control SHALL remain a visible, tappable affordance so the drawer is reachable
-without knowing the gesture, and the drawer SHALL be dismissable by tapping the overlay,
-by choosing a destination, by dragging it back toward the edge it came from, and (on Android)
-by the hardware back button. While the drawer is open it MAY cover the menu control; closing
-does not depend on it.
+- **WHEN** any destination is showing
+- **THEN** that destination's bar item is visually distinct and the others are not
 
-The drag dismissal SHALL follow the finger, SHALL commit on either distance or release
-velocity, SHALL animate back to open when it commits to neither, and SHALL fade the overlay in
-proportion to the drag so the gesture's effect is visible before it is released.
+#### Scenario: The bar stays during a transfer
 
-Opening remains a discrete action rather than a tracked drag: the menu control and the
-left-edge swipe both open the drawer at once, and the drawer animates in. The opening gesture
-SHALL NOT be required to track the finger.
+- **WHEN** a send or a receive is in progress
+- **THEN** the bar remains visible and every destination stays reachable
 
-#### Scenario: Overlay tap closes the drawer
+#### Scenario: The keyboard does not push the bar up
 
-- **WHEN** the drawer is open and the user taps the dimmed area outside it
-- **THEN** the drawer closes and no navigation occurs
+- **WHEN** the user focuses a text field on a phone and the soft keyboard opens
+- **THEN** the bar is not rendered above the keyboard, the focused field stays in view, and
+  the bar reappears when the field is blurred
 
-#### Scenario: Hardware back closes the drawer first
+#### Scenario: Leaving a transfer's route does not cancel it
 
-- **WHEN** the drawer is open on Android and the hardware back button is pressed
-- **THEN** the drawer closes instead of the app closing or navigation changing
+- **WHEN** a transfer is running and the user navigates to another destination
+- **THEN** the transfer continues, and returning to its route shows its current state
 
-#### Scenario: Dragging the drawer back closes it
+### Requirement: The bottom bar sits in the layout flow and owns the bottom inset
 
-- **WHEN** the drawer is open and the user drags it toward the edge it came from past the
-  commit distance
-- **THEN** the drawer follows the finger during the drag and closes on release
+The bar SHALL be a sibling in the shell's layout flow rather than a fixed overlay, so it
+participates in layout instead of floating above it. It SHALL NOT introduce a stacking layer,
+and no scroll region SHALL need bottom padding to account for it.
 
-#### Scenario: A flick closes the drawer
+The bar SHALL clear the home indicator and gesture bar by carrying the bottom safe-area inset
+itself, and it SHALL be the only surface that does so, so the responsibility cannot be
+duplicated or dropped.
 
-- **WHEN** the user flicks the open drawer toward its edge above the velocity threshold but
-  below the commit distance
-- **THEN** the drawer closes
+#### Scenario: The bar is not an overlay
 
-#### Scenario: An abandoned drag returns to open
+- **WHEN** the bar renders
+- **THEN** content above it is laid out in the remaining space, and no content sits underneath
+  the bar requiring compensating padding
 
-- **WHEN** the user drags the open drawer partway and releases below both thresholds
-- **THEN** the drawer animates back to fully open and no navigation occurs
+#### Scenario: The bar clears the gesture bar
 
-#### Scenario: The overlay tracks the drag
+- **WHEN** the app runs on a phone with a home indicator or gesture bar
+- **THEN** the bar's items sit above it and no item is obscured or partly unreachable
 
-- **WHEN** the user drags the open drawer partway toward its edge
-- **THEN** the dimmed overlay lightens in proportion to the drag distance
+#### Scenario: The bar does not contend with overlays
 
-#### Scenario: Opening is a discrete action
+- **WHEN** a dialog, sheet, or toast is open
+- **THEN** the overlay renders above the bar without the bar needing a stacking-order
+  adjustment of its own
 
-- **WHEN** the user taps the menu control or swipes in from the left edge past its threshold
-- **THEN** the drawer opens and animates in, without requiring the gesture to track the finger
+### Requirement: Bar items carry counts, preview markers, and transfer state
 
-### Requirement: The drawer owns the left edge strip exclusively
+A bar item SHALL be able to show a count for its destination, a preview marker when that
+destination is a preview, and an indication that the destination holds a transfer that is
+running or has failed. These indications SHALL be legible together on one item without
+truncating each other, and SHALL be quiet enough not to be mistaken for the item's own label.
 
-A horizontal gesture beginning within 24 CSS pixels of the left screen edge SHALL belong to the
-navigation drawer on every screen, and no other horizontal gesture SHALL respond to it. The
-reserved width SHALL be defined once and read by every other horizontal gesture, so the
-reservation cannot drift between screens.
+Because the bar is present on every route, a transfer's running or failed state SHALL be
+observable from any destination, not only from the transfer's own route.
 
-#### Scenario: Edge swipe opens the drawer over a swipeable screen
+#### Scenario: A count shows on its destination
 
-- **WHEN** the user swipes in from the left edge while on a screen that has its own horizontal
-  gesture
-- **THEN** the drawer opens and that screen's gesture does not activate
+- **WHEN** at least one device is paired
+- **THEN** the Devices item shows the count
 
-#### Scenario: A swipe just inside the strip belongs to the screen
+#### Scenario: A preview destination is marked in the bar
 
-- **WHEN** a horizontal gesture begins beyond the reserved edge width
-- **THEN** the screen's own gesture handles it and the drawer does not open
+- **WHEN** a destination is declared a preview
+- **THEN** its bar item carries the preview marker, and connected destinations do not
 
-#### Scenario: The reservation is defined once
+#### Scenario: A failure elsewhere is visible
 
-- **WHEN** the reserved edge width changes
-- **THEN** every horizontal gesture in the app observes the new width without separate edits
+- **WHEN** a send fails while the user is on the Receive destination
+- **THEN** the Send item indicates the failure, and opening it shows the failure in full
 
-### Requirement: The drawer clears safe areas as a floating panel
+#### Scenario: A running transfer is visible from anywhere
 
-The mobile navigation drawer SHALL clear the status bar, the home indicator, and the gesture
-rails on every platform, whether it renders edge to edge or as an inset floating panel. Its
-footer SHALL stay clear of the bottom inset so the account row is never under the gesture bar.
+- **WHEN** a transfer is running and the user is on an unrelated destination
+- **THEN** that transfer's item indicates activity
 
-#### Scenario: Drawer content clears the status bar and gesture bar
+### Requirement: Mobile navigation has no drawer, no menu control, and no edge gesture
 
-- **WHEN** the drawer is open on a phone with a notch and a gesture bar
-- **THEN** no drawer content is obscured at the top or bottom, and its footer sits above the
-  gesture bar
+There SHALL be no navigation drawer at any width or on any platform. No control SHALL exist
+whose purpose is to open or toggle a navigation drawer, and no horizontal screen-edge gesture
+SHALL be reserved for navigation.
 
-#### Scenario: Drawer sits below the app bar
+Consequently no region of the viewport SHALL be reserved for a navigation gesture, and other
+horizontal gestures SHALL NOT need to refuse a reserved strip.
 
-- **WHEN** the drawer is open on a phone
-- **THEN** it begins below the app bar rather than covering the app's title area
+#### Scenario: No drawer can be opened
 
-### Requirement: The navigation drawer is one flat surface, not a bottom-sheet card
+- **WHEN** the app runs at any width
+- **THEN** no navigation drawer exists to be opened, by control or by gesture
 
-The navigation drawer SHALL present a single continuous surface anchored to the screen
-edge it slides from. It SHALL NOT borrow the inset floating-card treatment the shared
-drawer primitive gives bottom sheets: no second background colour inside the panel, no
-outline around an inset region, and no large corner radius on a full-height
-edge-anchored panel.
+#### Scenario: The screen edge is not reserved
 
-Suppressing that treatment SHALL be scoped to the navigation drawer. Transient bottom
-sheets elsewhere in the app SHALL keep the card look unchanged.
+- **WHEN** a horizontal gesture begins at the very left edge of the screen
+- **THEN** the surface under the finger handles it normally, and no navigation responds
 
-#### Scenario: The drawer has no inset card
+#### Scenario: Hardware back does not look for a drawer
 
-- **WHEN** the navigation drawer is open on a phone
-- **THEN** the panel is one uninterrupted surface from edge to edge, with no inset
-  outline, no second background colour, and no rounded region floating inside it
-
-#### Scenario: Menu rows are not clipped by a corner radius
-
-- **WHEN** the navigation drawer is open and scrolled to the top or the bottom
-- **THEN** the first and last rows are fully drawn, with no corner cutting into them
-
-#### Scenario: Bottom sheets keep their card
-
-- **WHEN** a transient bottom sheet is opened anywhere else in the app
-- **THEN** it still renders as an inset floating card with its outline, radius, and
-  shadow
-
+- **WHEN** the hardware back button is pressed on Android with no overlay open
+- **THEN** the app closes, without any drawer state being consulted

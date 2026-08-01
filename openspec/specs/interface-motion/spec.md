@@ -7,9 +7,12 @@ TBD - created by archiving change frontend-mobile-polish. Update Purpose after a
 
 On touch devices the app SHALL give haptic feedback at the moments where something was taken
 from the user or handed to them, and nowhere else. Those moments are: a code copied, a file
-removed from the send queue, a transfer finished, an incoming offer answered, and a mode change
-committed by swipe. Feedback intensity SHALL match the weight of the event, with completion
-distinct from an incidental tap.
+removed from the send queue, a transfer finished, and an incoming offer answered. Feedback
+intensity SHALL match the weight of the event, with completion distinct from an incidental tap.
+
+Changing destination SHALL NOT be one of those moments. Navigation is now a tap on a bar item, a
+click, or a shortcut rather than a gesture that could commit or spring back, and a tap that
+merely moves between screens took nothing and handed over nothing.
 
 #### Scenario: Transfer completion is felt
 
@@ -26,10 +29,10 @@ distinct from an incidental tap.
 - **WHEN** the user accepts or declines an incoming transfer on a phone
 - **THEN** a haptic fires, and accepting is the heavier of the two
 
-#### Scenario: Committing a swipe is felt
+#### Scenario: Changing destination is silent
 
-- **WHEN** a mode swipe commits to the other mode
-- **THEN** a selection-weight haptic fires once, and no haptic fires when the swipe springs back
+- **WHEN** the user taps a bottom-bar item to change destination on a phone
+- **THEN** no haptic fires
 
 #### Scenario: Ordinary taps are silent
 
@@ -86,27 +89,37 @@ move backwards, whatever the interpolation does internally.
 - **WHEN** the user has reduced motion enabled
 - **THEN** progress still animates between values, because the movement is the information
 
-### Requirement: Mode changes and loading states are animated in place of blank swaps
+### Requirement: Destination changes are animated in the direction of travel
 
-Switching between Send and Receive SHALL animate in the direction of travel, so a swipe and a
-tap both read as movement toward the same destination. A surface waiting on data SHALL show
-placeholder shapes matching the content it is loading, rather than an unplaced spinner.
+Moving between the Send and Receive destinations SHALL animate in the direction of travel, so
+that moving forward through the destination list and back again read as movement in opposite
+directions rather than as two identical swaps.
 
-#### Scenario: Mode change moves in the direction of travel
+The direction SHALL be derived from the change in position within the shared destination list,
+not from the control or gesture that caused it, so every route into the change animates
+consistently: a bar tap, a sidebar click, a keyboard shortcut, and a programmatic navigation from
+an accepted transfer all produce the same motion.
 
-- **WHEN** the user moves from the first mode to the second, by swipe or by tap
+A surface waiting on data SHALL show placeholder shapes matching the content it is loading,
+rather than an unplaced spinner.
+
+#### Scenario: Destination change moves in the direction of travel
+
+- **WHEN** the user moves from Send to Receive, by any means
 - **THEN** the outgoing content leaves and the incoming content arrives in the direction that
-  matches the change, and reversing the change reverses the direction
+  matches the change, and moving back reverses the direction
 
-#### Scenario: Loading a list shows its shape
+#### Scenario: Every route into the change agrees
 
-- **WHEN** the activity timeline is loading
-- **THEN** placeholder rows resembling timeline entries are shown instead of a centred spinner
+- **WHEN** the user reaches a destination by tapping the bar, clicking the sidebar, pressing its
+  shortcut, or being taken there by an accepted transfer
+- **THEN** the animation direction is the same in every case, because it is derived from the
+  destinations' positions rather than from the control used
 
-#### Scenario: Empty is distinct from loading
+#### Scenario: A loading list shows its shape
 
-- **WHEN** the activity timeline finishes loading with no entries
-- **THEN** the empty state is shown, and it is visually distinct from the loading placeholders
+- **WHEN** a surface in the app loads a list of items
+- **THEN** it shows placeholder rows resembling those items rather than a centred spinner
 
 ### Requirement: Decorative motion collapses under reduced-motion, informative motion does not
 
