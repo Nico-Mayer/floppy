@@ -9,6 +9,7 @@
 	import { currentFile } from '../format'
 	import TransferCard from '../TransferCard.svelte'
 	import TransferProgress from '../TransferProgress.svelte'
+	import AddFilesSheet from './AddFilesSheet.svelte'
 	import { sendBadge, sendHeadline } from './labels'
 	import SendCode from './SendCode.svelte'
 	import SendComplete from './SendComplete.svelte'
@@ -83,7 +84,16 @@
 	<!-- One screen per state of the send flow — see ./labels.ts for the table the
 	     branches follow. Only 'starting' and 'waiting' differ by target. -->
 	{#if send.status === 'idle'}
-		<SendQueue />
+		<!-- The relative box the floating add button positions against. It spans the
+		     status zone, so the button lands above the anchored action zone instead
+		     of on top of Send, and it sits outside the queue's own scrolling
+		     element so the button does not scroll away with the tiles.
+		     Idle only: every other state has an uneditable queue and nothing to add
+		     to. AddFilesSheet renders nothing at all off a phone build. -->
+		<div class="relative flex min-h-0 flex-1 flex-col">
+			<SendQueue />
+			<AddFilesSheet />
+		</div>
 	{:else if send.status === 'cancelling'}
 		<TransferProgress label="Stopping…" />
 	{:else if send.status === 'starting'}

@@ -5,7 +5,6 @@
 Be honest about what is not built yet: one declaration marks a destination or surface as a
 preview, every placement of the marker reads from it, preview controls stay operable, and a
 control that would state something false is removed rather than marked.
-
 ## Requirements
 ### Requirement: A screen whose controls do nothing yet says so
 
@@ -138,6 +137,12 @@ build but has not built yet, so the entry point can stay in place while being ho
 does not work. Such a surface SHALL remain reachable and SHALL NOT be removed merely because it
 is unimplemented.
 
+The surface MAY be smaller than a whole screen. Where a working choice and a planned one sit
+side by side in the same menu or sheet, the marker SHALL be placed on the planned row itself
+rather than on the container, so it cannot be read as covering the working row too. A row
+carrying the marker SHALL stay focusable and tappable, like any other preview control, and
+activating it SHALL change nothing.
+
 A marked planned feature SHALL NOT be read as a change to any guarantee the product already
 makes. In particular, the account sign-in entry point stands for planned app-level device sync
 and SHALL NOT be taken to mean the rendezvous broker keeps accounts or persists state: the
@@ -159,4 +164,15 @@ broker's accountless, stateless contract is unaffected by anything on this surfa
 - **WHEN** the sign-in surface describes what signing in would do
 - **THEN** its wording covers device sync between installs only, and does not state or imply
   that the rendezvous broker holds accounts or stores state
+
+#### Scenario: One planned row beside a working one
+
+- **WHEN** a sheet offers a working choice and a planned choice as two rows
+- **THEN** the marker sits on the planned row only, the sheet as a whole carries no marker,
+  and the working row is offered without qualification
+
+#### Scenario: A marked row is still operable
+
+- **WHEN** the user focuses and activates a row carrying the preview marker
+- **THEN** the row takes focus and responds to the tap, and nothing in the app changes
 
