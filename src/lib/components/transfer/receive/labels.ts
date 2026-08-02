@@ -16,7 +16,7 @@ import type { ReceiveStatus, ReceiveTarget } from '../types'
  * the code intact — the usual reason to cancel is a typo in it.
  */
 
-/** Lowercase line under the card title: what is happening right now. */
+/** Lowercase status line in the top bar: what is happening right now. */
 export function receiveHeadline(status: ReceiveStatus, target: ReceiveTarget): string {
 	switch (status) {
 		case 'cancelling':
@@ -29,23 +29,6 @@ export function receiveHeadline(status: ReceiveStatus, target: ReceiveTarget): s
 			return 'all done'
 		default:
 			return 'type your code'
-	}
-}
-
-/** Badge in the card's top-right corner: the state at a glance. */
-export function receiveBadge(status: ReceiveStatus, target: ReceiveTarget, progress: number | null): string {
-	switch (status) {
-		case 'cancelling':
-			return 'stopping'
-		case 'connecting':
-			return target.kind === 'device' ? 'accepted' : 'looking'
-		case 'receiving':
-			// A receiver has no byte counts until the sender's manifest lands.
-			return progress === null ? 'starting' : `${progress}%`
-		case 'done':
-			return 'done'
-		default:
-			return 'waiting'
 	}
 }
 

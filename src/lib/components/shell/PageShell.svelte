@@ -58,12 +58,15 @@
 	// settles, so it does not snap away while work is still happening.
 	const shift = $derived(refreshing ? PULL_TRIGGER : pull)
 
-	// Same horizontal gutter in both scales, so the left edge of content never
-	// moves between routes. Only the vertical differs, which is the point of
-	// `tight`. Both resolve to one uniform `sm:p-6` once there is desktop room.
+	// Same horizontal gutter and the same top in both scales, so neither the
+	// left edge of content nor the top bar's position ever moves between
+	// routes. Only the floor differs, which is what is left of `tight`: it
+	// used to shave the top too, but the shared heading lives up there now and
+	// an 8px jump between tabs read as a bug. Both resolve to one uniform
+	// `sm:p-6` once there is desktop room.
 	const padding = {
 		default: 'p-4 sm:p-6',
-		tight: 'px-4 py-2 sm:p-6'
+		tight: 'px-4 pt-4 pb-2 sm:p-6'
 	}
 
 	const maxWidth = {

@@ -354,6 +354,16 @@ async fn open_path(app: AppHandle, path: String) -> Result<(), CommandError> {
     app.opener().open_path(path, None::<&str>).map_err(|e| CommandError::other(e.to_string()))
 }
 
+/// The resolved download root, as shown in desktop settings. The same resolver
+/// the transfer core is built with, so the value shown is the value used. Pure
+/// read: nothing is created — a receive makes the folder when it needs it.
+#[tauri::command]
+#[specta::specta]
+async fn download_root(app: AppHandle) -> Result<String, CommandError> {
+    let fallback = app.path().app_data_dir().unwrap_or_else(|_| std::env::temp_dir());
+    Ok(resolve_dest_root(&app, &fallback).display().to_string())
+}
+
 // ---- pairing commands (device-pairing) ----
 
 #[tauri::command]
@@ -501,6 +511,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
             describe,
             clear_input_cache,
             open_path,
+            download_root,
             identity,
             self_name,
             set_self_name,

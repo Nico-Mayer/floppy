@@ -2,27 +2,21 @@
 	import PendingHint from '$lib/components/feedback/PendingHint.svelte'
 	import TransferComplete from '$lib/components/feedback/TransferComplete.svelte'
 	import { Button } from '$lib/components/ui/button'
-	import * as Tooltip from '$lib/components/ui/tooltip'
 	import { fast } from '$lib/motion'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import { app } from '$lib/transfer-app.svelte'
 	import QrCodeIcon from '@lucide/svelte/icons/qr-code'
 	import SendIcon from '@lucide/svelte/icons/send'
-	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert'
 	import XIcon from '@lucide/svelte/icons/x'
 	import { fade } from 'svelte/transition'
 	import { currentFile } from '../format'
 	import TransferCard from '../TransferCard.svelte'
 	import TransferProgress from '../TransferProgress.svelte'
 	import AddFilesSheet from './AddFilesSheet.svelte'
-	import { sendBadge, sendHeadline } from './labels'
 	import SendCode from './SendCode.svelte'
 	import SendDevice from './SendDevice.svelte'
 	import SendQueue from './SendQueue.svelte'
 	import SendTargetPicker from './SendTargetPicker.svelte'
-
-	/** Above this, a transfer is long enough that leaving the app matters. */
-	const LARGE_TRANSFER = 2_000_000_000
 
 	const send = app.send
 
@@ -47,15 +41,6 @@
 	)
 
 	const summary = $derived(send.files.length === 1 ? send.files[0].name : `${send.files.length} files`)
-	const headline = $derived(sendHeadline(send.status, send.target, send.files.length))
-	const badge = $derived(
-		sendBadge(
-			send.status,
-			send.target,
-			{ count: send.files.length, totalSize: send.totalSize },
-			send.progress
-		)
-	)
 
 	function dispatchSend() {
 		if (selection === 'code') {
@@ -69,33 +54,11 @@
 	}
 </script>
 
-{#snippet largeTransferWarning()}
-	{#if send.status === 'idle' && send.totalSize > LARGE_TRANSFER}
-		<Tooltip.Provider delayDuration={150}>
-			<Tooltip.Root>
-				<Tooltip.Trigger aria-label="Big transfer warning" class="flex text-amber-500">
-					<TriangleAlertIcon class="size-4" />
-				</Tooltip.Trigger>
-				<Tooltip.Content class="max-w-56 text-center">
-					This one is big. Keep both devices awake and Floppy open until it finishes.
-				</Tooltip.Content>
-			</Tooltip.Root>
-		</Tooltip.Provider>
-	{/if}
-{/snippet}
-
 <!-- Only this card accepts dropped files, and only while the queue is still
      editable. +page.svelte resolves a drop against the [data-file-drop-target]
      under the cursor, so dropping onto the rest of the window (or onto a
      running transfer) is refused with a toast instead of silently appending. -->
-<TransferCard
-	accent="send"
-	title="Send"
-	{headline}
-	{badge}
-	alert={largeTransferWarning}
-	dropTarget={send.status === 'idle'}
->
+<TransferCard accent="send" dropTarget={send.status === 'idle'}>
 	<!-- One screen per state of the send flow — see ./labels.ts for the table the
 	     branches follow. Only 'starting' and 'waiting' differ by target. -->
 	{#if send.status === 'idle'}

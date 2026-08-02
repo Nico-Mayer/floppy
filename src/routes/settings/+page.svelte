@@ -2,10 +2,11 @@
 	import PageHeader from '$lib/components/shell/PageHeader.svelte'
 	import PageShell from '$lib/components/shell/PageShell.svelte'
 	import SettingsView from '$lib/components/settings/SettingsView.svelte'
-	import { isStub } from '$lib/nav-items'
 </script>
 
+<!-- No page-wide preview marker: theme and the download folder are real now,
+     and the sections that are not carry their own marks (see SettingsView). -->
 <PageShell scroll>
-	<PageHeader title="Settings" description="Tune how Floppy looks and connects." stub={isStub('/settings')} />
+	<PageHeader title="Settings" description="Tune how Floppy looks and connects." />
 	<SettingsView />
 </PageShell>

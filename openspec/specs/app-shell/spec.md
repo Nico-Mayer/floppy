@@ -10,8 +10,8 @@ route renders through.
 ### Requirement: A single shell serves every platform and width
 
 The application SHALL render one shell built on a single `Sidebar.Provider`. Platform (macOS /
-Windows / Linux / iOS / Android) SHALL determine only the header chrome; available width SHALL
-determine only which navigation surface renders.
+Windows / Linux / iOS / Android) SHALL determine the header chrome and which destinations
+exist; available width SHALL determine only which navigation surface renders.
 
 Width SHALL select between exactly two navigation surfaces: a bottom bar below the navigation's
 rail threshold, and the sidebar at or above it. Exactly one SHALL render at a time. Selecting
@@ -168,48 +168,13 @@ entry in the destination list, and two rows SHALL NOT read as active at once.
 - **WHEN** the account row's destination is the current route
 - **THEN** that destination's row in the list shows as active and the account row does not
 
-### Requirement: The account row navigates to Settings rather than opening a dialog
-
-The sidebar's account row SHALL navigate to the Settings destination. It SHALL NOT open a
-transient dialog, and sign-in SHALL live on the Settings screen as a section of that page, so
-there is one place the account is presented and one way to reach it.
-
-Sign-in status SHALL be conveyed in text wherever it is shown. It SHALL NOT be represented by an
-icon alone, because the account avatar has no image to distinguish states and would render
-identically signed in and signed out.
-
-Mobile SHALL carry no account affordance in its chrome. The Settings destination is in the bottom
-bar, a bar item has no room for a status line, and reserving primary navigation for account
-state would over-weight it.
-
-#### Scenario: The account row navigates
-
-- **WHEN** the user activates the sidebar's account row
-- **THEN** the app navigates to the Settings destination and no dialog opens
-
-#### Scenario: Sign-in lives on the Settings screen
-
-- **WHEN** the user opens Settings
-- **THEN** the sign-in surface is a section of that page
-
-#### Scenario: Status is stated in words
-
-- **WHEN** the account row renders while signed out
-- **THEN** it says so in text rather than relying on the avatar to communicate it
-
-#### Scenario: Mobile chrome carries no account control
-
-- **WHEN** navigation is the bottom bar
-- **THEN** no avatar or account control is rendered in any chrome, and the Settings item is a
-  destination like any other
-
 ### Requirement: The bottom bar lists every destination and stays put
 
 Below the navigation's rail threshold the navigation SHALL be a bottom bar listing every
-top-level destination from the single shared destination list. Each item SHALL carry an icon
-and a text label, and the item for the current destination SHALL be visually distinct from
-the rest. Choosing an item SHALL navigate directly, in one tap, with no intermediate surface
-to open or dismiss.
+top-level destination the running platform declares, read from the single shared destination
+source. Each item SHALL carry an icon and a text label, and the item for the current
+destination SHALL be visually distinct from the rest. Choosing an item SHALL navigate
+directly, in one tap, with no intermediate surface to open or dismiss.
 
 The bar SHALL be present on every route and in every application state, including while a
 transfer is running. Navigation SHALL NOT be blocked, deferred, or queued on account of a
@@ -224,8 +189,8 @@ not the app withholding navigation.
 #### Scenario: The bar lists every destination
 
 - **WHEN** the app runs below the rail threshold
-- **THEN** a bottom bar renders one labelled item per top-level destination, matching the
-  desktop sidebar's list from the same shared source
+- **THEN** a bottom bar renders one labelled item per top-level destination the running
+  platform declares, read from the same shared source the desktop sidebar reads
 
 #### Scenario: One tap navigates
 
@@ -422,46 +387,81 @@ whose card fills the viewport height on a phone and cannot spare the room.
 - **WHEN** a route is added using the shared container without layout classes of its own
 - **THEN** its gutters, width, and scrolling already match its peers
 
-### Requirement: Page headings come from one shared pattern
+### Requirement: One top bar serves every destination
 
-A route that shows a title and description SHALL render them through one shared heading
-component, so wording, sizing, and spacing cannot drift between pages. A route whose content
-carries its own title SHALL be able to omit the heading entirely.
+Every destination SHALL render its title through one shared heading component, so wording,
+sizing, and spacing cannot drift between pages and there is a single place the top of a
+screen is shaped. No destination SHALL render a second title of its own below it.
 
-The shared heading SHALL accept one action, placed on the title's own row at its trailing edge,
-so a route can put a control there without hand-rolling a heading of its own. The title and its
-preview marker SHALL stay together as one thing to read, with the action at the far end rather
-than between them and the description. The heading SHALL own that control's placement and
-spacing; a route SHALL only say what the control is. A route that passes nothing SHALL render
-exactly as it does today.
+The heading SHALL accept, beyond the title and optional description: an optional accent dot
+before the title, for a screen whose color identity matters (Send, Receive); an optional
+status line on the title row, rendered quiet and mono, stating what is happening right now;
+and one action at the title row's trailing edge, whose placement and spacing the heading
+owns. A status change SHALL be announced politely to assistive technology. The title and its
+preview marker SHALL stay together as one thing to read.
 
-A long title SHALL truncate rather than push the action off the row.
+Below the `sm` breakpoint the heading SHALL be compact: a single row with a smaller title
+scale, and the description not rendered. At `sm` and above the title and description SHALL
+keep their current sizes. A long title SHALL truncate rather than push the status or the
+action off the row.
+
+The title row SHALL reserve the height an icon action occupies whether or not one is
+passed, so a destination with a control in its heading stands no taller than one without,
+and the bar's height never changes as the user moves between destinations or as an action
+appears.
+
+The heading SHALL sit at the same distance from the top of the content region on every
+destination at any one width. A page container variant that trades vertical gutter for
+content room SHALL take that room from below the content, not from above the heading.
+
+#### Scenario: The bar does not move between destinations
+
+- **WHEN** the user moves between any two destinations at the same width
+- **THEN** the heading renders at the same vertical position on both
 
 #### Scenario: Headings match across pages
 
-- **WHEN** the titled routes are compared
-- **THEN** their title and description sizing, weight, and spacing are identical
+- **WHEN** the destinations are compared at any one width
+- **THEN** their title sizing, weight, and spacing are identical, all rendered by the one
+  shared component
 
-#### Scenario: A route without a heading is supported
+#### Scenario: The transfer screens use the same top bar
 
-- **WHEN** the transfer screen renders
-- **THEN** it shows no page heading, because its card carries the title, and the shared
-  container does not force one
+- **WHEN** Send or Receive renders in any state
+- **THEN** its title, accent dot, and live status line are in the shared heading, and the
+  content below renders no title of its own
+
+#### Scenario: The phone bar is one compact row
+
+- **WHEN** any destination renders below the `sm` breakpoint
+- **THEN** the heading is a single row with the compact title scale and no description line
+
+#### Scenario: The description returns with room
+
+- **WHEN** the same destination renders at `sm` width or above
+- **THEN** the description renders below the title at its current size
 
 #### Scenario: A heading can carry one action
 
 - **WHEN** a route passes an action to the shared heading
-- **THEN** it renders at the trailing edge of the title's row, spaced by the heading rather than by the route
+- **THEN** it renders at the trailing edge of the title's row, spaced by the heading rather
+  than by the route
 
-#### Scenario: A long title does not displace the action
+#### Scenario: A long title does not displace the status or the action
 
 - **WHEN** a titled route's title is too long for the row
-- **THEN** the title truncates and the action stays fully visible
+- **THEN** the title truncates and the status line and action stay fully visible
 
-#### Scenario: A heading without an action is unchanged
+#### Scenario: The bar is the same height with and without an action
 
-- **WHEN** a route passes no leading action
-- **THEN** its heading renders exactly as it did before the slot existed
+- **WHEN** a destination whose heading carries an action is compared with one whose heading
+  does not, at the same width and pointer type
+- **THEN** the two headings are the same height
+
+#### Scenario: A status change is announced
+
+- **WHEN** the status line's text changes while the screen is open
+- **THEN** assistive technology announces the new status without stealing focus
 
 ### Requirement: Scroll regions contain their own overscroll
 
@@ -686,4 +686,88 @@ and keep focusing it, because that is what the user asked for.
 
 - **WHEN** the user opens a panel whose purpose is entering something
 - **THEN** its field is focused and the keyboard comes up as usual
+
+### Requirement: The account row navigates to the Account destination
+
+The sidebar's account row SHALL navigate to the Account destination. It SHALL NOT open a
+transient dialog, and sign-in SHALL live on the Account screen as its body, so there is one
+place the account is presented and one way to reach it per platform.
+
+Sign-in status SHALL be conveyed in text wherever it is shown. It SHALL NOT be represented by
+an icon alone, because the account avatar has no image to distinguish states and would render
+identically signed in and signed out.
+
+#### Scenario: The account row navigates
+
+- **WHEN** the user activates the sidebar's account row
+- **THEN** the app navigates to the Account destination and no dialog opens
+
+#### Scenario: Sign-in lives on the Account screen
+
+- **WHEN** the user opens the Account destination
+- **THEN** the sign-in surface is the body of that screen
+
+#### Scenario: Status is stated in words
+
+- **WHEN** the account row renders while signed out
+- **THEN** it says so in text rather than relying on the avatar to communicate it
+
+### Requirement: The destination set is platform-aware but single-sourced
+
+Which top-level destinations exist SHALL be declared once, in the single shared destination
+source, with each entry stating which platforms it belongs to. Phone chrome SHALL declare
+Send, Receive, Devices, and Account, and SHALL NOT declare Settings. Desktop SHALL declare
+Send, Receive, Devices, and Settings in its navigation list, and SHALL reach Account through
+the sidebar's account row rather than a list entry.
+
+Every consumer of the destination list — both navigation surfaces, the navigation keyboard
+shortcuts, and the route-transition ordering — SHALL read the filtered list for the running
+platform from that one source. The platform test SHALL be form factor (phone chrome), not
+width: a narrow desktop window SHALL keep the desktop set.
+
+#### Scenario: Phone chrome shows Account, not Settings
+
+- **WHEN** the app runs on phone chrome
+- **THEN** the bottom bar's items are Send, Receive, Devices, and Account, and no Settings
+  destination is reachable from navigation
+
+#### Scenario: Desktop shows Settings, and Account only via the account row
+
+- **WHEN** the app runs on desktop
+- **THEN** the navigation list's items are Send, Receive, Devices, and Settings, and the
+  Account destination is reachable through the sidebar's account row
+
+#### Scenario: A narrow desktop window keeps the desktop set
+
+- **WHEN** a desktop window is resized below the rail threshold
+- **THEN** the bottom bar renders the desktop destination set, Settings included
+
+#### Scenario: The Account bar item wears the avatar
+
+- **WHEN** phone chrome renders the bottom bar
+- **THEN** the Account item's icon is the account's avatar glyph and its label is "Account"
+
+### Requirement: Phone theme follows the system
+
+On phone chrome the application's theme SHALL follow the system appearance. No in-app theme
+control SHALL render on phone chrome, and a theme preference stored by an earlier build SHALL
+be reset to follow the system at startup, so no phone is ever stuck on a choice it can no
+longer change.
+
+Desktop SHALL keep the in-app theme control, offering light, dark, and system.
+
+#### Scenario: The phone follows a system appearance change
+
+- **WHEN** the OS switches between light and dark while the app runs on phone chrome
+- **THEN** the app follows without any in-app setting being consulted
+
+#### Scenario: A stale stored preference is cleared
+
+- **WHEN** the app starts on phone chrome with a previously stored theme preference
+- **THEN** the preference is reset to system and the system appearance wins
+
+#### Scenario: Desktop still chooses
+
+- **WHEN** the user opens Settings on desktop
+- **THEN** a theme control offers light, system, and dark, and the choice persists
 

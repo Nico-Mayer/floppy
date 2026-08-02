@@ -67,19 +67,22 @@ the value only ever comes from the user typing or pasting into the field.
 - **WHEN** the receive panel mounts, or the window regains focus, with a valid code on the clipboard
 - **THEN** the input stays untouched
 
-### Requirement: The Transfer screen dissolves its card chrome on mobile
+### Requirement: The transfer surface is headerless and dissolves its chrome on mobile
+
+The transfer card SHALL render no header of its own at any width: no title row, no tint dot,
+no status headline, and no badge. The screen's title, accent dot, and live status line SHALL
+come from the shared top bar (see `app-shell`), and the large-transfer warning SHALL render
+as that heading's trailing action. The status badge is removed without replacement: the
+percent is carried by the progress display, the queue size by the file list, and the phase
+by the status line.
 
 Below the `sm` breakpoint the Send and Receive screens SHALL each present as one full-bleed
-surface rather than a floating card inside padding. The `TransferCard` SHALL drop its border,
-shadow, radius, background, and horizontal padding so it becomes the page; the page SHALL
-supply exactly one gutter and drop its max-width so content spans the available width. At
-`sm` and above the desktop card presentation SHALL be unchanged. Feature parity SHALL be
-preserved: every state, the action zone, and the file-drop target remain.
-
-The card header SHALL retain its status headline at every width. The headline was previously
-hidden below `sm` because the mode switcher above it and the app bar already said where the user
-was; with both removed, the headline is the only sentence describing the current state and SHALL
-be shown.
+surface rather than a floating card inside padding: the card SHALL drop its border, shadow,
+radius, background, and horizontal padding so it becomes the page, and the page SHALL supply
+exactly one gutter and drop its max-width so content spans the available width. At `sm` and
+above the card SHALL keep its box chrome (border, shadow, radius, background). Feature
+parity SHALL be preserved at every width: every state, the action zone, and the file-drop
+target remain.
 
 The two chrome treatments SHALL be named variants of the card, selected by name, rather than
 override classes applied at the call site, so neither treatment can partially drift. The page
@@ -91,16 +94,22 @@ gutter itself belongs to the shared page container (see `app-shell`), not to thi
 - **THEN** the transfer surface spans the content width with no card border, shadow,
   radius, or horizontal card padding, with a single page gutter and no centered narrow column
 
-#### Scenario: The status headline shows on mobile
+#### Scenario: The card renders no header at any width
 
-- **WHEN** either transfer screen renders below the `sm` breakpoint in any state
-- **THEN** the card's status headline is visible, describing what is currently happening
+- **WHEN** either transfer screen renders at any width in any state
+- **THEN** the card shows no title, dot, headline, or badge of its own, and the shared top
+  bar above it carries the title and the live status
 
-#### Scenario: Desktop card is unchanged
+#### Scenario: No badge renders on the transfer screens
+
+- **WHEN** either transfer screen renders in any state
+- **THEN** no status badge is shown anywhere on the screen
+
+#### Scenario: Desktop card keeps its box
 
 - **WHEN** either transfer screen renders at `sm` width or above
-- **THEN** the `TransferCard` retains its border, shadow, radius, background, and header
-  as before
+- **THEN** the card retains its border, shadow, radius, and background, with the content and
+  action zones unchanged
 
 #### Scenario: Chrome is selected by name
 

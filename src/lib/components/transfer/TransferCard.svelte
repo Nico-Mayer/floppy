@@ -26,29 +26,24 @@
 </script>
 
 <script lang="ts">
-	import { Badge } from '$lib/components/ui/badge'
 	import * as Card from '$lib/components/ui/card'
 	import { cn } from '$lib/utils'
 	import type { Snippet } from 'svelte'
 	import type { Accent } from './types'
 
+	// Headerless by design: the screen's title, tint dot and live status line
+	// live in the shared top bar (PageHeader), so the card is the surface under
+	// it, not a second heading. The accent still comes in because the content
+	// inside paints with the tint tokens.
+
 	let {
 		accent,
-		title,
-		headline,
-		badge,
-		alert,
 		dropTarget = false,
 		chrome = 'bleed',
 		children,
 		actions
 	}: {
 		accent: Accent
-		title: string
-		headline: string
-		badge: string
-		/** Optional adornment shown left of the badge — e.g. a warning icon + tooltip. */
-		alert?: Snippet
 		/**
 		 * Marks the card as a file-drop target. Tauri reports drops for the whole
 		 * window, so +page.svelte hit-tests the drop point against
@@ -88,27 +83,6 @@
 	style="--tint: var(--{accent}); --tint-fg: var(--{accent}-foreground)"
 	data-file-drop-target={dropTarget ? '' : undefined}
 >
-	<Card.Header class={slotPadding[chrome]}>
-		<Card.Title class="flex items-center gap-2">
-			<div class="relative flex">
-				<span class="size-3 rounded-full bg-(--tint)"></span>
-			</div>
-			{title}
-		</Card.Title>
-		<!-- The mono status line, at every width. It used to be hidden below `sm`
-		     because the mode switcher above it and the app bar already said where
-		     you were; both are gone, and this is the only sentence describing what
-		     is currently happening — the badge beside it is a token, not a state. -->
-		<Card.Description class="font-mono text-[10px] tracking-widest uppercase">
-			{headline}
-		</Card.Description>
-		<Card.Action class="flex items-center gap-1.5">
-			{@render alert?.()}
-			<Badge variant="outline" class="p-3 uppercase">
-				{badge}
-			</Badge>
-		</Card.Action>
-	</Card.Header>
 	<!-- @container makes the card content the layout unit: panels switch
 	     compact/regular on the card's own width (@sm:/@md: variants), so they
 	     stay correct however the window — or a future shell — composes them. -->

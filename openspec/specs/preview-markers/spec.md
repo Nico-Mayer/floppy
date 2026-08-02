@@ -101,11 +101,15 @@ control that would display or imply a value contradicting actual app behaviour S
 until it can show the truth. Placeholder text SHALL NOT imitate a real value, such as a
 plausible hostname or a real filesystem path.
 
+A value read from the app itself is the truth and may be shown: the settings screen SHALL show
+the save location only as the real resolved destination root, never as a hardcoded or
+imagined path.
+
 #### Scenario: No control asserts a wrong destination
 
-- **WHEN** the settings screen renders
-- **THEN** it shows no field claiming a save location, because the real location is resolved per
-  platform and differs from any single value shown there
+- **WHEN** the settings screen shows a save location
+- **THEN** the value shown is the real destination root the app resolved, not a hardcoded
+  path, and if the real value cannot be read no location is shown at all
 
 #### Scenario: No control offers a choice that does not exist
 
@@ -175,4 +179,23 @@ broker's accountless, stateless contract is unaffected by anything on this surfa
 
 - **WHEN** the user focuses and activates a row carrying the preview marker
 - **THEN** the row takes focus and responds to the tap, and nothing in the app changes
+
+### Requirement: A partly real screen is marked per section
+
+A screen that mixes connected sections with preview sections SHALL NOT be marked page-wide.
+The preview marker SHALL sit on each unconnected section instead, so a marker never claims a
+working control is a preview and a working section never lends credibility to a stub. A
+destination whose screen has at least one connected section SHALL NOT carry the preview
+marker in navigation.
+
+#### Scenario: Only the stub sections are marked
+
+- **WHEN** a screen renders with both connected and unconnected sections
+- **THEN** each unconnected section carries the preview marker and the connected sections and
+  the page title do not
+
+#### Scenario: The navigation entry reads as connected
+
+- **WHEN** a destination's screen has at least one connected section
+- **THEN** its navigation entries carry no preview marker
 

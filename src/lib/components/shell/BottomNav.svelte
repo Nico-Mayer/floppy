@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths'
 	import { page } from '$app/state'
-	import { navItems as items, type NavItem } from '$lib/nav-items'
+	import { platformNavItems as items, type NavItem } from '$lib/nav-items'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import { isPhoneChrome } from '$lib/platform'
 	import { app } from '$lib/transfer-app.svelte'

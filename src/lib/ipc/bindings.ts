@@ -24,6 +24,12 @@ export const commands = {
 	 *  is no reliable in-app intent to jump straight there.
 	 */
 	openPath: (path: string) => typedError<null, CommandError>(__TAURI_INVOKE("open_path", { path })),
+	/**
+	 *  The resolved download root, as shown in desktop settings. The same resolver
+	 *  the transfer core is built with, so the value shown is the value used. Pure
+	 *  read: nothing is created — a receive makes the folder when it needs it.
+	 */
+	downloadRoot: () => typedError<string, CommandError>(__TAURI_INVOKE("download_root")),
 	identity: () => typedError<string, CommandError>(__TAURI_INVOKE("identity")),
 	/**  This device's own name, shown to peers during pairing and on transfers. */
 	selfName: () => typedError<string, CommandError>(__TAURI_INVOKE("self_name")),

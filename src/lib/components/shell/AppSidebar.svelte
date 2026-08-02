@@ -4,7 +4,7 @@
 	import StubMark from '$lib/components/shell/StubMark.svelte'
 	import * as Avatar from '$lib/components/ui/avatar'
 	import * as Sidebar from '$lib/components/ui/sidebar'
-	import { navItems as items, type NavItem } from '$lib/nav-items'
+	import { platformNavItems as items, type NavItem } from '$lib/nav-items'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import UserIcon from '@lucide/svelte/icons/user'
 
@@ -146,19 +146,19 @@
 				<!-- Signing in is a planned feature, not dead scaffolding, so the entry
 				     point stays and says it is a preview instead of being removed. Lives
 				     in the footer so it's out of the main nav.
-				     It navigates to Settings, where the Account section actually is,
-				     rather than opening a dialog: one place the account is presented and
-				     one way to reach it. Deliberately no `isActive` — on /settings the
-				     destination row above is the one that reads as active, and two rows
-				     lighting at once would say this is a second entry in the list.
+				     It navigates to the Account screen rather than opening a dialog: one
+				     place the account is presented and one way to reach it per platform
+				     (phones reach it as a bar destination instead). Deliberately no
+				     `isActive` — /account is not in the desktop destination list, and an
+				     account affordance that happens to navigate should not read as a
+				     fifth entry.
 				     The wording stays limited to syncing devices between installs: the
 				     rendezvous broker is accountless and stateless, and nothing here
-				     changes that. Status is in text for the same reason there is no
-				     account item in the bottom bar: the avatar has no image to fetch, so
-				     signed in and signed out would render the same glyph. -->
+				     changes that. Status is in text: the avatar has no image to fetch,
+				     so signed in and signed out would render the same glyph. -->
 				<Sidebar.MenuButton size="lg" tooltipContent="Sign in">
 					{#snippet child({ props })}
-						<a href={resolve('/settings')} {...props}>
+						<a href={resolve('/account')} {...props}>
 							<!-- No avatar image while signed out. A face would misrepresent the
 							     empty account, and fetching one from a third party is at odds
 							     with the app's peer-to-peer, no-cloud promise, so there is no

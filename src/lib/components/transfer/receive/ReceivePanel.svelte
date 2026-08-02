@@ -9,19 +9,15 @@
 	import TransferCard from '../TransferCard.svelte'
 	import TransferProgress from '../TransferProgress.svelte'
 	import TransferComplete from '$lib/components/feedback/TransferComplete.svelte'
-	import { receiveBadge, receiveHeadline } from './labels'
 	import ReceiveCodeForm from './ReceiveCodeForm.svelte'
 	import ReceiveDevice from './ReceiveDevice.svelte'
 	import ReceiveIdle from './ReceiveIdle.svelte'
 	import ReceiveSearching from './ReceiveSearching.svelte'
 
 	const receive = app.receive
-
-	const headline = $derived(receiveHeadline(receive.status, receive.target))
-	const badge = $derived(receiveBadge(receive.status, receive.target, receive.progress))
 </script>
 
-<TransferCard accent="receive" title="Receive" {headline} {badge}>
+<TransferCard accent="receive">
 	<!-- One screen per state of the receive flow — see ./labels.ts for the table
 	     the branches follow. Only 'connecting' differs by target. -->
 	{#if receive.status === 'cancelling'}

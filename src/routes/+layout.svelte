@@ -12,7 +12,7 @@
 	import { Toaster } from '$lib/components/ui/sonner'
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte'
 	import { fast, shift } from '$lib/motion'
-	import { navItems } from '$lib/nav-items'
+	import { platformNavItems } from '$lib/nav-items'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import { isPhoneChrome } from '$lib/platform'
 	import { keepFocusVisible } from '$lib/keyboard'
@@ -22,7 +22,7 @@
 	import type { PluginListener } from '@tauri-apps/api/core'
 	import { getCurrentWebview } from '@tauri-apps/api/webview'
 	import { getCurrentWindow } from '@tauri-apps/api/window'
-	import { ModeWatcher } from 'mode-watcher'
+	import { ModeWatcher, setMode } from 'mode-watcher'
 	import { onMount } from 'svelte'
 	import { fly } from 'svelte/transition'
 	import './layout.css'
@@ -46,11 +46,12 @@
 	// way. Only the arriving screen animates: the two would otherwise both be in
 	// the flex column at once and the layout would jump.
 	// Seeded on first run rather than at declaration: a route outside the list
-	// (there is none today) leaves the direction as it was.
+	// (desktop's /account, reached via the sidebar's account row) leaves the
+	// direction as it was.
 	let enterDir = $state(1)
 	let previousIndex: number | null = null
 	$effect(() => {
-		const index = navItems.findIndex((item) => item.href === page.url.pathname)
+		const index = platformNavItems.findIndex((item) => item.href === page.url.pathname)
 		if (index === -1) return
 		if (previousIndex !== null && index !== previousIndex) enterDir = index > previousIndex ? 1 : -1
 		previousIndex = index
@@ -62,7 +63,7 @@
 		if (!(e.metaKey || e.ctrlKey)) return
 		const slot = Number(e.key)
 		if (!Number.isInteger(slot)) return
-		const item = navItems[slot - 1]
+		const item = platformNavItems[slot - 1]
 		if (!item) return
 		e.preventDefault()
 		void goto(resolve(item.href))
@@ -94,6 +95,14 @@
 	// <body>, outside the shell, and still have to clear the bars.
 	if (isPhoneChrome && typeof document !== 'undefined') {
 		document.documentElement.dataset.mobile = ''
+	}
+
+	// A phone follows the system theme, always. There is no theme control on
+	// phone chrome (Settings is a desktop destination), so a preference stored
+	// by an earlier build would be a choice with no way to change it — reset it
+	// rather than leave it winning silently.
+	if (isPhoneChrome && typeof document !== 'undefined') {
+		setMode('system')
 	}
 
 	onMount(() => {
