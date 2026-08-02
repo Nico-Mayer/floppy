@@ -6,6 +6,7 @@
 	import { fast } from '$lib/motion'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import { app } from '$lib/transfer-app.svelte'
+	import QrCodeIcon from '@lucide/svelte/icons/qr-code'
 	import SendIcon from '@lucide/svelte/icons/send'
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert'
 	import XIcon from '@lucide/svelte/icons/x'
@@ -32,6 +33,17 @@
 		send.picked !== 'code' && !pairing.devices.some((d) => d.fingerprint === send.picked)
 			? 'code'
 			: send.picked
+	)
+
+	// Send is an icon button, so the glyph is the only thing on it and the label is
+	// the only thing a screen reader gets. Both come off `selection` — the same
+	// value dispatchSend branches on — so the button can never show one kind of
+	// send and start the other, including when an un-trusted device drops the
+	// selection back to the code target.
+	const sendLabel = $derived(
+		selection === 'code'
+			? 'Show the code'
+			: `Send to ${pairing.devices.find((d) => d.fingerprint === selection)?.name ?? 'your device'}`
 	)
 
 	const summary = $derived(send.files.length === 1 ? send.files[0].name : `${send.files.length} files`)
@@ -139,7 +151,10 @@
 			     DOM until it finishes, and as two siblings of the flex column that would
 			     stack them for the length of the crossfade and shove the queue up a row.
 			     Stacked in one cell they overlap instead, and the cell keeps the taller
-			     one's height — which is the same height, see the h-9 below. -->
+			     one's height — which is the same height, and has to stay that way: the
+			     pill below and PendingHint's `pill` variant both say
+			     h-12 / pointer-coarse:h-14, and changing one without the other is what
+			     would make the queue jump when a pick starts. -->
 			<div class="grid *:col-start-1 *:row-start-1">
 				{#if send.picking}
 					<!-- A pick that has not come back yet, which on a phone is seconds and
@@ -153,9 +168,9 @@
 					     keep in step with anything, the control simply is not there yet.
 					     Not a button: nothing here is pressable, and a dimmed disabled
 					     button would be quieter than the row it replaced, not louder.
-					     h-9 plus the coarse-pointer minimum are the Send button's own
-					     numbers, so the grid cell is the same height in both shapes and the
-					     crossfade moves nothing. -->
+					     The pill variant carries the send pill's own height
+					     (h-12 / pointer-coarse:h-14), so the grid cell is the same height in
+					     both shapes and the crossfade moves nothing. -->
 					<div transition:fade={{ duration: fast() }}>
 						<PendingHint variant="pill" label="getting files ready" />
 					</div>
@@ -166,12 +181,26 @@
 					     width and truncates; Send keeps its content width at the trailing
 					     edge, where the thumb is. Adding files is not weighed against Send
 					     here either — that moved into the queue grid itself (SendQueue's
-					     last tile). -->
-					<div class="flex items-center gap-2" transition:fade={{ duration: fast() }}>
+					     last tile).
+					     One pill rather than two bordered boxes with a gap: the sentence reads
+					     as one bar, and the picker inside it drops its own chrome to keep it
+					     that way (see SendTargetPicker). The height is definite so the picker
+					     can fill it with h-full, and it is the number PendingHint's pill
+					     variant matches — see the note on the grid cell above.
+					     Send is icon-only: the card title already says Send, and the glyph
+					     says something the word cannot, which is whether this hands files to a
+					     device or puts a code on screen. -->
+					<div
+						class="flex h-12 items-center gap-1 rounded-full border border-border/60 bg-muted/40 p-1 shadow-sm backdrop-blur-sm pointer-coarse:h-14"
+						transition:fade={{ duration: fast() }}
+					>
 						<SendTargetPicker bind:value={() => selection, (next) => (send.picked = next)} />
-						<Button onclick={dispatchSend}>
-							<SendIcon />
-							Send
+						<Button size="icon-lg" touch="grow" aria-label={sendLabel} onclick={dispatchSend}>
+							{#if selection === 'code'}
+								<QrCodeIcon class="size-5" />
+							{:else}
+								<SendIcon class="size-5" />
+							{/if}
 						</Button>
 					</div>
 				{/if}

@@ -39,8 +39,15 @@
      in the styled listbox bits' keyboard nav only walks [data-select-item] nodes,
      so a command in there would be a value by ARIA and mouse-only by keyboard, and
      an <option> in the native one is a value by definition. Either state is one
-     row and Send does not move between them. -->
-<div class="flex min-w-0 flex-1 items-center gap-2">
+     row and Send does not move between them.
+
+     Every shape here lives inside SendPanel's send pill, so nothing here brings
+     chrome of its own — the bar is the chrome. The overrides sit at this one call
+     site rather than as a `bare` variant added to the vendored shadcn files: those
+     already carry local patches that have to be re-applied by hand after a
+     registry update, and one caller does not pay for two more. h-full works
+     because the pill's height is definite. -->
+<div class="flex h-full min-w-0 flex-1 items-center gap-2">
 	{#if pairing.devices.length === 0}
 		<!-- Devices live on their own page now; this is the way in from the send flow. -->
 		<a
@@ -59,7 +66,15 @@
 		     optgroup label carries the structure instead and the code option leans on
 		     its own self-describing text. -->
 		{#if isTouch()}
-			<NativeSelect.Root bind:value aria-label="Send to" class="w-full min-w-0">
+			<!-- The wrapper takes the class, not the select, so the chrome comes off
+			     through a descendant variant. That also settles the override for us: a
+			     descendant rule outranks the select's own single-class ones whatever
+			     order they land in. -->
+			<NativeSelect.Root
+				bind:value
+				aria-label="Send to"
+				class="h-full w-full min-w-0 [&>select]:h-full [&>select]:border-transparent [&>select]:bg-transparent"
+			>
 				<NativeSelect.Option value="code">{CODE_LABEL}</NativeSelect.Option>
 				<NativeSelect.OptGroup label={DEVICES_LABEL}>
 					{#each pairing.devices as device (device.fingerprint)}
@@ -70,8 +85,15 @@
 		{:else}
 			<Select.Root type="single" bind:value>
 				<!-- truncate, not the row growing: a long device name shortens rather than
-				     pushing Send off the edge of a phone-width card. -->
-				<Select.Trigger aria-label="Send to" class="w-full min-w-0">
+				     pushing Send off the edge of a phone-width card.
+				     `data-[size=default]:h-full` repeats the exact prefix the vendored
+				     trigger sets its height under. A bare h-full is one class against a
+				     class-plus-attribute selector and loses, however tailwind-merge orders
+				     them. -->
+				<Select.Trigger
+					aria-label="Send to"
+					class="w-full min-w-0 border-transparent bg-transparent shadow-none data-[size=default]:h-full"
+				>
 					{#if value === 'code'}
 						<GlobeIcon class="text-muted-foreground" />
 					{:else}

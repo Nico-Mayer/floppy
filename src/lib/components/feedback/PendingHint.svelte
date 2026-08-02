@@ -6,9 +6,9 @@
 	// is doing, in the three shapes the screens need.
 	//
 	// hint  — the tiny "still working" line at the foot of a transfer panel.
-	// pill  — the report that stands in a control's slot, sized to the button it
-	//         replaces (h-9 plus the coarse-pointer minimum) so a crossfade
-	//         between the two moves nothing.
+	// pill  — the report that stands in a control's slot, sized to the send pill
+	//         it replaces (h-12, h-14 on a coarse pointer) so a crossfade between
+	//         the two moves nothing.
 	// stack — the centred spinner-over-sentence for an empty surface.
 	//
 	// role="status" announces the label once; the spinner is aria-hidden so a
@@ -28,7 +28,7 @@
 	<div
 		role="status"
 		class={cn(
-			'flex h-9 w-full items-center justify-center gap-2 rounded-4xl border border-(--tint)/30 bg-(--tint)/10 px-4 text-sm font-medium text-(--tint) pointer-coarse:min-h-11',
+			'flex h-12 w-full items-center justify-center gap-2 rounded-full border border-(--tint)/30 bg-(--tint)/10 px-4 text-sm font-medium text-(--tint) pointer-coarse:h-14',
 			className
 		)}
 	>

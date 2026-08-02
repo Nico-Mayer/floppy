@@ -87,9 +87,13 @@
 	<!-- pb-20 on a phone: the floating add button hangs over this corner, and
 	     without the padding the last row can never be scrolled clear of it. It is
 	     the button's height plus its inset, rounded up. -->
+	<!-- The bottom edge fades rather than cutting: the send pill sits right under
+	     this, and a hard row of tile corners stopping dead against it reads as two
+	     surfaces colliding. A short mask (one gap's worth) softens the meeting
+	     point and doubles as the "there is more below" tell while scrolling. -->
 	<div
 		class={cn(
-			'grid min-h-0 flex-1 auto-rows-min grid-cols-2 gap-2 overflow-y-auto @lg:grid-cols-3 @2xl:grid-cols-4 @3xl:grid-cols-5 @5xl:grid-cols-6',
+			'grid min-h-0 flex-1 auto-rows-min grid-cols-2 gap-2 overflow-y-auto mask-b-from-[calc(100%-0.5rem)] @lg:grid-cols-3 @2xl:grid-cols-4 @3xl:grid-cols-5 @5xl:grid-cols-6',
 			isPhoneChrome && 'pb-20'
 		)}
 	>
