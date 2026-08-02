@@ -317,8 +317,8 @@ where it is, so a picker that opens a file in place can never have the user's ow
 out from under them.
 
 Sandbox copies SHALL be reaped when the send queue is emptied and when a send completes. They
-SHALL NOT be reaped when a send is cancelled, since the queue survives a cancellation and its
-entries must keep pointing at readable files.
+SHALL NOT be reaped when a send ends without sending — cancelled, declined, or failed — since
+the queue survives all of those and its entries must keep pointing at readable files.
 
 #### Scenario: Android transfer end to end
 
@@ -379,6 +379,13 @@ entries must keep pointing at readable files.
 - **WHEN** a send is cancelled
 - **THEN** the queue is unchanged and its sandbox copies are still readable, so the same files
   can be sent again without re-picking them
+
+#### Scenario: A failed send keeps its copies
+
+- **WHEN** a send to a trusted device ends because the device is offline, turns it down, or the
+  offer fails
+- **THEN** the queue is unchanged and its sandbox copies are still readable, so pressing Send
+  again works without re-picking anything
 
 #### Scenario: Notification while the app is backgrounded
 

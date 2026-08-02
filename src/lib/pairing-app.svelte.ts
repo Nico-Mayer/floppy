@@ -114,7 +114,7 @@ class PairingApp {
 				// is already watching (`feedback`). Anything else is background news
 				// and toasts.
 				if (app.send.status === 'starting') {
-					app.send.reset()
+					app.send.stop()
 					app.send.error = { title: 'Could not send', message: e.payload.message }
 				} else {
 					toast.error(e.payload.message)
@@ -228,8 +228,9 @@ class PairingApp {
 			await this.#track(`send:${fingerprint}`, () => SendTo(fingerprint, paths))
 		} catch (e) {
 			// Inline in the Send panel, the same as a code send failing: one screen,
-			// one place its failures land, whoever the target was (`feedback`).
-			app.send.reset()
+			// one place its failures land, whoever the target was (`feedback`). The
+			// queue stays, so trying again once they are back is one tap.
+			app.send.stop()
 			app.send.error = describeError(e, 'send')
 		}
 	}
@@ -291,10 +292,11 @@ class PairingApp {
 	}
 
 	// A trusted send that never got past "connecting" (declined, or failed
-	// before the transfer started) must release the send panel. Once it is actually
-	// moving bytes, its own events own the panel and this leaves them alone.
+	// before the transfer started) must release the send panel. The queue is left
+	// alone: they said no now, not never. Once it is actually moving bytes, its own
+	// events own the panel and this leaves them alone.
 	#resetPendingSend() {
-		if (app.send.status === 'starting') app.send.reset()
+		if (app.send.status === 'starting') app.send.stop()
 	}
 }
 

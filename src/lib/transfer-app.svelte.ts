@@ -210,14 +210,27 @@ class SendTransfer {
 	}
 
 	/**
+	 * Give up on this attempt but keep the queue, the way cancel does. Every way a
+	 * send can end without sending goes through here — cancelled, declined, target
+	 * offline, refused before it started — so which of them happened never decides
+	 * whether the files are still there. The caller sets `error` afterwards if
+	 * there is something to say.
+	 *
+	 * Not reset(): that reaps the sandbox copies the entries point at, which is
+	 * only ever right when the queue is going away with them.
+	 */
+	stop() {
+		this.#clearTransfer()
+	}
+
+	/**
 	 * Clear the queue and everything behind it.
 	 *
 	 * Only ever call this when no send is serving. The core imports files by
 	 * reference, so the blob store points at these sandbox copies rather than
 	 * holding its own — deleting them under a live passive send would leave the
-	 * receiver fetching a file that is no longer there. Today's callers are safe:
-	 * the done screen's "send something else", and two trusted-send failure paths
-	 * that can only run before the send slot was claimed.
+	 * receiver fetching a file that is no longer there. One caller: the done
+	 * screen's "send something else". A send that failed uses stop() instead.
 	 */
 	reset() {
 		this.#clearTransfer()
