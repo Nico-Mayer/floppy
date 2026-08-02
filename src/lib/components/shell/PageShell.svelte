@@ -103,7 +103,7 @@
 			class="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-center"
 			style="height: {shift}px"
 		>
-			<Spinner class={cn('size-5 text-muted-foreground', !refreshing && 'animate-none')} />
+			<Spinner size="control" class={cn('text-muted-foreground', !refreshing && 'animate-none')} />
 		</div>
 	{/if}
 

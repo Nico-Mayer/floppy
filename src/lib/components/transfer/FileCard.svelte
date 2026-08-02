@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { FileEntry } from '$lib/ipc'
 	import { Button } from '$lib/components/ui/button'
+	import { cn } from '$lib/utils'
 	import FolderIcon from '@lucide/svelte/icons/folder'
 	import XIcon from '@lucide/svelte/icons/x'
 	import { ext, isPreviewable, previewURL } from './files'
@@ -8,9 +9,12 @@
 
 	let {
 		file,
+		arrived = false,
 		onremove
 	}: {
 		file: FileEntry
+		/** The user just added this tile, so it is seen arriving (`interaction`). */
+		arrived?: boolean
 		onremove: () => void
 	} = $props()
 
@@ -35,8 +39,15 @@
      That was the inconsistent-looking delete.
      h-full: the grid sizes rows to the tallest tile in the row, and without this
      a short tile would float at the top of its cell instead of filling it. -->
+<!-- animate-arrive, not a svelte transition: a CSS entrance does not hold the
+     grid cell the way an out-transition would, so it composes with the flip
+     above. `backwards` fill only — the tile's own background has to win once
+     the highlight has decayed. -->
 <div
-	class="group/tile flex h-full flex-col overflow-hidden rounded-2xl border bg-muted/30 transition-colors hover:border-send/40 hover:bg-muted/60"
+	class={cn(
+		'group/tile flex h-full flex-col overflow-hidden rounded-2xl border bg-muted/30 transition-colors hover:border-send/40 hover:bg-muted/60',
+		arrived && 'animate-arrive'
+	)}
 >
 	<!-- PREVIEW SLOT. Sized by aspect ratio, not a fixed height, so the tile grows
 	     and shrinks with its column instead of needing a breakpoint per layout.

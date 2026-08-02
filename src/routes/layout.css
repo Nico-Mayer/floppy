@@ -173,6 +173,11 @@
 	--animate-bob: bob 5s ease-in-out infinite;
 	--animate-pop: pop 0.3s ease both;
 	--animate-shake: shake 0.4s ease both;
+	/* `arrive` marks a row the user caused: it rises into place under a brief
+	   highlight that decays on its own. `backwards`, not `both` — the element's
+	   own background has to win once the highlight is gone, and a `both` fill
+	   would pin it transparent forever. */
+	--animate-arrive: arrive 1.2s ease-out backwards;
 	--color-sidebar-ring: var(--sidebar-ring);
 	--color-sidebar-border: var(--sidebar-border);
 	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -222,6 +227,21 @@
 			transform: translateX(5px);
 		}
 	}
+	@keyframes arrive {
+		0% {
+			opacity: 0;
+			transform: translateY(6px);
+			background-color: color-mix(in oklab, var(--color-primary) 14%, transparent);
+		}
+		30% {
+			opacity: 1;
+			transform: translateY(0);
+			background-color: color-mix(in oklab, var(--color-primary) 12%, transparent);
+		}
+		100% {
+			background-color: transparent;
+		}
+	}
 }
 
 @keyframes fade-in {
@@ -233,7 +253,24 @@
 	}
 }
 
-/* Loops stop, the pop becomes a fade, shake goes away entirely.
+/* `arrive` without the movement: the fade and the decaying highlight stay,
+   because the highlight is the information — it says which row is new. */
+@keyframes arrive-fade {
+	0% {
+		opacity: 0;
+		background-color: color-mix(in oklab, var(--color-primary) 14%, transparent);
+	}
+	30% {
+		opacity: 1;
+		background-color: color-mix(in oklab, var(--color-primary) 12%, transparent);
+	}
+	100% {
+		background-color: transparent;
+	}
+}
+
+/* Loops stop, the pop becomes a fade, shake goes away entirely, and arrive
+   keeps its highlight but loses its movement.
    Progress width transitions stay — that is information, not decoration. */
 @media (prefers-reduced-motion: reduce) {
 	.animate-bob,
@@ -242,6 +279,9 @@
 	}
 	.animate-pop {
 		animation: fade-in 0.3s ease both;
+	}
+	.animate-arrive {
+		animation: arrive-fade 1.2s ease-out backwards;
 	}
 }
 

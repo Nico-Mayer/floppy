@@ -50,7 +50,7 @@
 			<p class="font-mono text-xs tabular-nums">{detail}</p>
 		{/if}
 	{:else}
-		<Spinner class="size-8 text-(--tint-fg)" />
+		<Spinner size="panel" class="text-(--tint-fg)" />
 	{/if}
 	<p class="font-mono text-xs text-muted-foreground">{label}</p>
 </div>

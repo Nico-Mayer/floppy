@@ -1,9 +1,11 @@
 <script lang="ts">
 	import DeviceRow from '$lib/components/devices/DeviceRow.svelte'
 	import EnterCodeDialog from '$lib/components/devices/EnterCodeDialog.svelte'
+	import BlockedReason from '$lib/components/feedback/BlockedReason.svelte'
 	import { Button } from '$lib/components/ui/button'
 	import * as Empty from '$lib/components/ui/empty'
 	import * as Item from '$lib/components/ui/item'
+	import { Skeleton } from '$lib/components/ui/skeleton'
 	import type { DeviceInfo } from '$lib/ipc'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import { canScan, openSettings, scanner } from '$lib/scan.svelte'
@@ -32,6 +34,22 @@
 	} = $props()
 
 	let entering = $state(false)
+
+	// The rows already there once the list has loaded. A row that joins
+	// afterwards — a pairing completing — is seen arriving under the shared
+	// treatment; an initial render is calm (`interaction`). Taken after the
+	// first loaded render (so those rows test against a null baseline and stay
+	// calm), and even when that render is the empty state, so the very first
+	// device ever paired still arrives marked.
+	let baseline: Set<string> | null = null
+	$effect(() => {
+		if (pairing.loaded && baseline === null) {
+			baseline = new Set(pairing.devices.map((d) => d.fingerprint))
+		}
+	})
+	function arrived(fingerprint: string): boolean {
+		return baseline !== null && !baseline.has(fingerprint)
+	}
 
 	// Taking a code needs the broker; the rest of this page does not. So this is the
 	// one control that goes away when pairing is down, and it says why.
@@ -95,10 +113,10 @@
 	<div class="flex items-start justify-between gap-3">
 		<div class="flex min-w-0 flex-col gap-1">
 			<h2 class="text-base font-medium">Your devices</h2>
-			{#if !pairing.available}
-				<p class="text-sm text-muted-foreground">
-					Floppy can't add a device right now. Check your connection, then reopen the app.
-				</p>
+			{#if pairing.loaded && !pairing.available}
+				<BlockedReason
+					label="Floppy can't add a device right now. Check your connection, then reopen the app."
+				/>
 			{/if}
 		</div>
 		<!-- Only alongside the list. With nothing paired the empty state carries the
@@ -108,7 +126,20 @@
 		{/if}
 	</div>
 
-	{#if pairing.devices.length === 0}
+	{#if !pairing.loaded}
+		<!-- The list is still on its way, so it shows its shape: placeholder rows
+		     resembling the device rows, not a centred spinner (`interaction`). -->
+		<Item.Group aria-hidden="true">
+			{#each [0, 1] as row (row)}
+				<Item.Root variant="outline" size="sm">
+					<Skeleton class="size-8 rounded-lg" />
+					<Item.Content>
+						<Skeleton class="h-4 w-36 max-w-full" />
+					</Item.Content>
+				</Item.Root>
+			{/each}
+		</Item.Group>
+	{:else if pairing.devices.length === 0}
 		<Empty.Root class="border border-dashed py-8">
 			<Empty.Header>
 				<Empty.Media variant="icon">
@@ -126,6 +157,7 @@
 			{#each pairing.devices as device (device.fingerprint)}
 				<DeviceRow
 					{device}
+					arrived={arrived(device.fingerprint)}
 					renaming={renaming === device.fingerprint}
 					onrenamestart={() => (renaming = device.fingerprint)}
 					onrenamecancel={() => (renaming = null)}

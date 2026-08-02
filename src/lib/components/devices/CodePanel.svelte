@@ -1,15 +1,12 @@
 <script lang="ts">
+	import BusyButton from '$lib/components/feedback/BusyButton.svelte'
+	import CopyButton from '$lib/components/feedback/CopyButton.svelte'
 	import { QRCode } from '$lib/components/spell/qrcode'
-	import { Button } from '$lib/components/ui/button'
 	import * as ResponsiveDialog from '$lib/components/ui/responsive-dialog'
 	import { Spinner } from '$lib/components/ui/spinner'
-	import { haptics } from '$lib/haptics'
-	import { Clipboard, type PairCode } from '$lib/ipc'
+	import { type PairCode } from '$lib/ipc'
 	import { pairing } from '$lib/pairing-app.svelte'
-	import CheckIcon from '@lucide/svelte/icons/check'
-	import CopyIcon from '@lucide/svelte/icons/copy'
 	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw'
-	import { toast } from 'svelte-sonner'
 
 	// This device's half of a pairing: the other device scans this or types it. A
 	// panel opened from the page's heading rather than a section of the page,
@@ -25,7 +22,8 @@
 
 	let code = $state<PairCode | null>(null)
 	let making = $state(false)
-	let copied = $state(false)
+	/** Minting failed. Reported inline — the panel is the flow the user is inside. */
+	let failed = $state(false)
 	/** Whole seconds since this code was shown, ticked by the interval below. */
 	let elapsed = $state(0)
 	/** The other device redeemed this code, so it is gone whatever the clock says. */
@@ -37,13 +35,13 @@
 
 	async function showCode() {
 		making = true
-		copied = false
+		failed = false
 		used = false
 		elapsed = 0
 		try {
 			code = await pairing.showCode()
 		} catch {
-			toast.error("Couldn't make a code. Try again in a moment.")
+			failed = true
 		} finally {
 			making = false
 		}
@@ -62,6 +60,7 @@
 			tried = false
 			code = null
 			used = false
+			failed = false
 			elapsed = 0
 			return
 		}
@@ -96,18 +95,6 @@
 		open = false
 	})
 
-	async function copyCode() {
-		if (!code) return
-		try {
-			await Clipboard.SetText(code.code)
-			copied = true
-			void haptics.copied()
-			setTimeout(() => (copied = false), 2000)
-		} catch {
-			toast.error("Couldn't copy that.")
-		}
-	}
-
 	// Deliberately does not clear `code` first. Emptying it blanked the code line and
 	// dropped the row under it, so asking for a new code shuffled the panel; the old
 	// code just stays put until the new one replaces it in place.
@@ -130,7 +117,13 @@
 			     way, once it is showing, and after it has been spent, so nothing in the
 			     panel moves when a code is minted, replaced, or used up. -->
 			<div class="relative flex h-64 items-center justify-center">
-				{#if spent}
+				{#if failed}
+					<!-- Said here, where the user is looking, not as a toast over the
+					     panel. The row below offers the retry. -->
+					<p class="max-w-64 text-center text-sm text-destructive">
+						Couldn't make a code. Try again in a moment.
+					</p>
+				{:else if spent}
 					<!-- The dead code is gone rather than dimmed. What to do about it is the
 					     row below, which is the same row that was there a second ago. -->
 					<p class="text-sm text-muted-foreground">
@@ -150,7 +143,7 @@
 							{:else}
 								<div class="flex size-36 items-center justify-center">
 									{#if making}
-										<Spinner class="size-5 text-muted-foreground" />
+										<Spinner size="control" class="text-muted-foreground" />
 									{/if}
 								</div>
 							{/if}
@@ -181,26 +174,13 @@
 			     works is not worth a control of its own, since the panel replaces it the
 			     moment it runs out. -->
 			<div class="flex items-center gap-2">
-				{#if spent}
-					<Button class="flex-1" onclick={newCode} disabled={making}>
-						{#if making}
-							<Spinner data-icon="inline-start" />
-							Making a code…
-						{:else}
-							<RefreshCwIcon data-icon="inline-start" />
-							Show a new code
-						{/if}
-					</Button>
+				{#if failed || spent}
+					<BusyButton class="flex-1" pending={making} pendingLabel="Making a code…" onclick={newCode}>
+						<RefreshCwIcon data-icon="inline-start" />
+						Show a new code
+					</BusyButton>
 				{:else}
-					<Button variant="secondary" class="flex-1" disabled={!code} onclick={copyCode}>
-						{#if copied}
-							<CheckIcon data-icon="inline-start" />
-							Copied
-						{:else}
-							<CopyIcon data-icon="inline-start" />
-							Copy code
-						{/if}
-					</Button>
+					<CopyButton text={code?.code ?? ''} disabled={!code} />
 				{/if}
 			</div>
 		</ResponsiveDialog.Body>

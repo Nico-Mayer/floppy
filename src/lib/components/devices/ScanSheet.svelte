@@ -146,7 +146,7 @@
 					     it is a third of a second, and a spinner for a third of a second is
 					     worse than a surface that quietly becomes a view. -->
 				{:else if phase === 'caught'}
-					<Spinner class="size-8 text-muted-foreground" />
+					<Spinner size="panel" class="text-muted-foreground" />
 				{:else if phase === 'added'}
 					<span
 						class="flex size-16 animate-pop items-center justify-center rounded-full bg-receive/15 text-receive"

@@ -42,10 +42,12 @@ targets:
         LSRequiresIPhoneOS: true
         UILaunchStoryboardName: LaunchScreen
         UIRequiredDeviceCapabilities: [arm64, metal]
+        # Phones are portrait-only (`app-platform`): every screen is designed
+        # portrait-first and no landscape phone layout exists. iPad keeps
+        # rotation — it has the space for it, and App Review dislikes
+        # portrait-locked iPads.
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
-          - UIInterfaceOrientationLandscapeLeft
-          - UIInterfaceOrientationLandscapeRight
         UISupportedInterfaceOrientations~ipad:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationPortraitUpsideDown

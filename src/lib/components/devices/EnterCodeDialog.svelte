@@ -1,15 +1,16 @@
 <script lang="ts">
 	import { isCompleteCode } from '$lib/code'
 	import CodeInput from '$lib/components/CodeInput.svelte'
+	import BusyButton from '$lib/components/feedback/BusyButton.svelte'
 	import { Button } from '$lib/components/ui/button'
 	import * as Field from '$lib/components/ui/field'
 	import * as ResponsiveDialog from '$lib/components/ui/responsive-dialog'
-	import { Spinner } from '$lib/components/ui/spinner'
 	import { errorText } from '$lib/errors'
+	import { fast } from '$lib/motion'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import { canScan } from '$lib/scan.svelte'
 	import CameraIcon from '@lucide/svelte/icons/camera'
-	import { toast } from 'svelte-sonner'
+	import { fade } from 'svelte/transition'
 
 	// Typing the code the *other* device is showing.
 	//
@@ -22,9 +23,14 @@
 
 	let typed = $state('')
 	let connecting = $state(false)
+	/** The last attempt's failure. Inline — this surface is the flow the user is inside. */
+	let error = $state('')
 
 	$effect(() => {
-		if (!open) typed = ''
+		if (!open) {
+			typed = ''
+			error = ''
+		}
 	})
 
 	// A completed pairing is the reason this surface existed, and the new device is
@@ -40,10 +46,11 @@
 		const value = typed.trim()
 		if (!isCompleteCode(value) || connecting) return
 		connecting = true
+		error = ''
 		try {
 			await pairing.redeemCode(value, 'code')
 		} catch (e) {
-			toast.error(errorText(e))
+			error = errorText(e)
 		} finally {
 			// Clear either way. A code is single-use and short-lived, so once a try
 			// has failed the other device has to show a new one. Leaving the dead
@@ -68,16 +75,20 @@
 					<div class="flex-1">
 						<CodeInput id="pair-code" bind:value={typed} disabled={connecting} onsubmit={connect} />
 					</div>
-					<Button disabled={!isCompleteCode(typed) || connecting} onclick={connect}>
-						{#if connecting}
-							<Spinner data-icon="inline-start" />
-							Linking…
-						{:else}
-							Connect
-						{/if}
-					</Button>
+					<BusyButton
+						pending={connecting}
+						pendingLabel="Linking…"
+						disabled={!isCompleteCode(typed)}
+						onclick={connect}
+					>
+						Connect
+					</BusyButton>
 				</div>
 			</Field.Field>
+
+			{#if error}
+				<p class="text-sm text-destructive" transition:fade={{ duration: fast() }}>{error}</p>
+			{/if}
 
 			<!-- The way back to the camera, where there is one. Quiet, because someone
 			     who is here either chose to type or just came from the scanner. -->

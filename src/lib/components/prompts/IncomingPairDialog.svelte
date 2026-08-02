@@ -1,6 +1,8 @@
 <script lang="ts">
+	import BusyButton from '$lib/components/feedback/BusyButton.svelte'
 	import { Button } from '$lib/components/ui/button'
 	import * as ResponsiveDialog from '$lib/components/ui/responsive-dialog'
+	import { haptics } from '$lib/haptics'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import CheckIcon from '@lucide/svelte/icons/check'
 	import XIcon from '@lucide/svelte/icons/x'
@@ -21,6 +23,9 @@
 	// somewhere harmless, and both were the wrong shape of answer. A prompt with no
 	// field cannot raise a keyboard at all.
 	const open = $derived(pairing.request !== null)
+	// The prompt holds its place while the agreement runs: the confirm shows the
+	// work, and neither answer can be pressed twice (`feedback`).
+	const confirming = $derived(pairing.isPending('confirm'))
 
 	function onOpenChange(next: boolean) {
 		if (!next && pairing.request) pairing.dismissPair()
@@ -30,7 +35,9 @@
 	// the core sends what the peer calls itself, and the list is where it gets changed.
 	function confirm() {
 		const req = pairing.request
-		if (req) void pairing.confirmPair(req.suggestedName)
+		if (!req) return
+		void haptics.accepted()
+		void pairing.confirmPair(req.suggestedName)
 	}
 </script>
 
@@ -63,14 +70,21 @@
 		     actions on a phone, where the footer stacks and decline would otherwise
 		     sit 8px from a trust decision. -->
 		<ResponsiveDialog.Footer class="max-sm:gap-4">
-			<Button variant="outline" onclick={() => pairing.dismissPair()}>
+			<Button
+				variant="outline"
+				disabled={confirming}
+				onclick={() => {
+					void haptics.declined()
+					pairing.dismissPair()
+				}}
+			>
 				<XIcon data-icon="inline-start" />
 				Not now
 			</Button>
-			<Button onclick={confirm}>
+			<BusyButton pending={confirming} pendingLabel="Adding…" onclick={confirm}>
 				<CheckIcon data-icon="inline-start" />
 				Add
-			</Button>
+			</BusyButton>
 		</ResponsiveDialog.Footer>
 	</ResponsiveDialog.Content>
 </ResponsiveDialog.Root>

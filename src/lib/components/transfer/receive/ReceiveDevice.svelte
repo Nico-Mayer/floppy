@@ -1,6 +1,6 @@
 <script lang="ts">
+	import PendingHint from '$lib/components/feedback/PendingHint.svelte'
 	import DeviceGlyph from '../DeviceGlyph.svelte'
-	import WaitingHint from '../WaitingHint.svelte'
 	import { normal } from '$lib/motion'
 	import { fade } from 'svelte/transition'
 	import { formatBytes } from '../format'
@@ -31,5 +31,5 @@
 		</p>
 	</div>
 
-	<WaitingHint label="waiting for sender" />
+	<PendingHint label="waiting for sender" />
 </div>

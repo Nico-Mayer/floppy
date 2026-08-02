@@ -20,6 +20,7 @@ import {
 } from '$lib/ipc'
 import { goto } from '$app/navigation'
 import { resolve } from '$app/paths'
+import { SvelteSet } from 'svelte/reactivity'
 import { toast } from 'svelte-sonner'
 import { describeError, errorText } from './errors'
 import { app } from './transfer-app.svelte'
@@ -47,6 +48,34 @@ class PairingApp {
 	 * boolean cannot say without someone having to reset it.
 	 */
 	paired = $state(0)
+	/**
+	 * Whether the first device-list load has settled, success or not. Until it
+	 * has, an empty list means "still loading", and the Devices page shows
+	 * placeholder rows rather than the empty state.
+	 */
+	loaded = $state(false)
+
+	/**
+	 * Device actions currently in flight, keyed `action:fingerprint` (`confirm`
+	 * and `rename:self` stand alone). Held here rather than in a component
+	 * because a row, a dialog, and a panel can each start the same action, and
+	 * the state must survive any one of them closing (`feedback`).
+	 */
+	#pending = new SvelteSet<string>()
+
+	/** Whether a device action is still running, wherever it was started. */
+	isPending(key: string) {
+		return this.#pending.has(key)
+	}
+
+	async #track<T>(key: string, work: () => Promise<T>): Promise<T> {
+		this.#pending.add(key)
+		try {
+			return await work()
+		} finally {
+			this.#pending.delete(key)
+		}
+	}
 
 	/** Whether the pairing backend came up (broker reachable, identity loaded). */
 	get available() {
@@ -61,6 +90,8 @@ class PairingApp {
 			await this.refresh()
 		} catch {
 			// Pairing unavailable (service not started) — the panel shows a hint.
+		} finally {
+			this.loaded = true
 		}
 		const subs = [
 			events.pairingOfferEvent.listen((e) => (this.incoming = e.payload)),
@@ -78,8 +109,16 @@ class PairingApp {
 				toast.info(e.payload.busy ? "They're busy. Try again in a bit." : 'They turned it down')
 			}),
 			events.pairingError.listen((e) => {
-				this.#resetPendingSend()
-				toast.error(e.payload.message)
+				// A failure while a trusted send is still waiting on a yes is that
+				// send failing: it reports inline in the Send panel, where the user
+				// is already watching (`feedback`). Anything else is background news
+				// and toasts.
+				if (app.send.status === 'starting') {
+					app.send.reset()
+					app.send.error = { title: 'Could not send', message: e.payload.message }
+				} else {
+					toast.error(e.payload.message)
+				}
 			}),
 			// A device redeemed a code we are showing: hold it for the confirm
 			// prompt, and bring the Devices page up behind it for context.
@@ -101,6 +140,7 @@ class PairingApp {
 
 	async refresh() {
 		this.devices = (await TrustedDevices()) ?? []
+		this.loaded = true
 	}
 
 	/**
@@ -128,7 +168,7 @@ class PairingApp {
 		const next = name.trim()
 		if (!next) return
 		try {
-			await SetSelfName(next)
+			await this.#track('rename:self', () => SetSelfName(next))
 			this.selfName = next
 		} catch (e) {
 			toast.error(`Could not rename this device: ${errorText(e)}`)
@@ -150,11 +190,12 @@ class PairingApp {
 			totalBytes: offer.totalBytes
 		})
 		try {
-			await Accept(offer.transferId)
+			await this.#track('accept', () => Accept(offer.transferId))
 		} catch (e) {
+			// The prompt is gone and the user is watching the Receive panel by
+			// now, so the failure lands there rather than as a toast over it.
 			app.receive.stop()
-			const failure = describeError(e, 'receive')
-			toast.error(failure.title, { description: failure.message })
+			app.receive.error = describeError(e, 'receive')
 		}
 	}
 
@@ -163,7 +204,7 @@ class PairingApp {
 		const id = this.incoming.transferId
 		this.incoming = null
 		try {
-			await Decline(id)
+			await this.#track('decline', () => Decline(id))
 		} catch (e) {
 			toast.error(errorText(e))
 		}
@@ -184,33 +225,36 @@ class PairingApp {
 		app.send.beginTrusted({ fingerprint, name: device.name })
 		try {
 			// No toast here — the send panel already shows the connecting/waiting state.
-			await SendTo(fingerprint, paths)
+			await this.#track(`send:${fingerprint}`, () => SendTo(fingerprint, paths))
 		} catch (e) {
+			// Inline in the Send panel, the same as a code send failing: one screen,
+			// one place its failures land, whoever the target was (`feedback`).
 			app.send.reset()
-			const failure = describeError(e, 'send')
-			toast.error(failure.title, { description: failure.message })
+			app.send.error = describeError(e, 'send')
 		}
 	}
 
 	/**
 	 * Approve a device that redeemed our code, trusting it under `name`.
-	 * The pairing:paired event refreshes the list and toasts; clear the prompt.
+	 * The prompt stays open, its confirm showing the work, until the agreement
+	 * settles — the pairing:paired event then refreshes the list.
 	 */
 	async confirmPair(name: string) {
 		const req = this.request
-		if (!req) return
-		this.request = null
+		if (!req || this.isPending('confirm')) return
 		try {
-			await ConfirmPair(req.fingerprint, name)
+			await this.#track('confirm', () => ConfirmPair(req.fingerprint, name))
 		} catch (e) {
 			toast.error(`Could not add that device: ${errorText(e)}`)
+		} finally {
+			this.request = null
 		}
 	}
 
 	/** Turn down a device that redeemed our code. */
 	async dismissPair() {
 		const req = this.request
-		if (!req) return
+		if (!req || this.isPending('confirm')) return
 		this.request = null
 		try {
 			await DismissPair(req.fingerprint)
@@ -222,7 +266,7 @@ class PairingApp {
 	/** Rename a trusted device. Refresh either way so the list matches the store. */
 	async rename(fingerprint: string, name: string) {
 		try {
-			await RenameDevice(fingerprint, name)
+			await this.#track(`rename:${fingerprint}`, () => RenameDevice(fingerprint, name))
 		} catch (e) {
 			toast.error(`Could not rename that device: ${errorText(e)}`)
 		}
@@ -237,7 +281,7 @@ class PairingApp {
 	 */
 	async untrust(fingerprint: string) {
 		try {
-			await Untrust(fingerprint)
+			await this.#track(`untrust:${fingerprint}`, () => Untrust(fingerprint))
 		} catch (e) {
 			toast.error(`Could not remove that device: ${errorText(e)}`)
 		}

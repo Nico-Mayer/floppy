@@ -1,6 +1,6 @@
 <script lang="ts">
+	import PendingHint from '$lib/components/feedback/PendingHint.svelte'
 	import DeviceGlyph from '../DeviceGlyph.svelte'
-	import WaitingHint from '../WaitingHint.svelte'
 	import { normal } from '$lib/motion'
 	import { fade } from 'svelte/transition'
 
@@ -34,5 +34,5 @@
 		</p>
 	</div>
 
-	<WaitingHint label={accepted ? 'connecting' : 'waiting for a yes'} />
+	<PendingHint label={accepted ? 'connecting' : 'waiting for a yes'} />
 </div>

@@ -8,9 +8,9 @@
 	import { currentFile } from '../format'
 	import TransferCard from '../TransferCard.svelte'
 	import TransferProgress from '../TransferProgress.svelte'
+	import TransferComplete from '$lib/components/feedback/TransferComplete.svelte'
 	import { receiveBadge, receiveHeadline } from './labels'
 	import ReceiveCodeForm from './ReceiveCodeForm.svelte'
-	import ReceiveComplete from './ReceiveComplete.svelte'
 	import ReceiveDevice from './ReceiveDevice.svelte'
 	import ReceiveIdle from './ReceiveIdle.svelte'
 	import ReceiveSearching from './ReceiveSearching.svelte'
@@ -43,7 +43,11 @@
 			label={currentFile(receive.stats) || 'Getting your files…'}
 		/>
 	{:else if receive.status === 'done'}
-		<ReceiveComplete savedTo={receive.savedTo} target={receive.target} />
+		<TransferComplete
+			title={receive.target.kind === 'device' ? `Got them from ${receive.target.name}` : 'All done'}
+			description={receive.savedTo}
+			mono
+		/>
 	{:else}
 		<ReceiveIdle />
 	{/if}
@@ -58,7 +62,7 @@
 			     iOS Files → On My iPhone → Floppy), reachable from the OS file apps;
 			     there is no reliable in-app intent to jump there, so the button is
 			     hidden and "Get more files" carries the flow. The path is still
-			     shown by ReceiveComplete. -->
+			     shown by the completion screen. -->
 			{#if !isPhoneChrome}
 				<Button onclick={() => OpenPath(receive.savedTo)}>
 					<FolderOpenIcon />

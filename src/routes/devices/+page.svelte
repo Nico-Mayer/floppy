@@ -2,6 +2,7 @@
 	import CodePanel from '$lib/components/devices/CodePanel.svelte'
 	import DeviceList from '$lib/components/devices/DeviceList.svelte'
 	import SelfDeviceCard from '$lib/components/devices/SelfDeviceCard.svelte'
+	import BusyButton from '$lib/components/feedback/BusyButton.svelte'
 	import PageHeader from '$lib/components/shell/PageHeader.svelte'
 	import PageShell from '$lib/components/shell/PageShell.svelte'
 	import { Button } from '$lib/components/ui/button'
@@ -31,10 +32,15 @@
 	// Owned here rather than per row: one dialog for the list, whichever row asked.
 	let removing = $state<DeviceInfo | null>(null)
 
+	// The dialog holds its place while trust is being revoked, its confirm
+	// showing the work, and closes once the row is really gone (`feedback`).
+	const removePending = $derived(removing !== null && pairing.isPending(`untrust:${removing.fingerprint}`))
+
 	async function confirmRemove() {
 		const device = removing
+		if (!device || removePending) return
+		await pairing.untrust(device.fingerprint)
 		removing = null
-		if (device) await pairing.untrust(device.fingerprint)
 	}
 
 	/**
@@ -82,18 +88,26 @@
 
 <!-- Removing a device is destructive (it can't send without a code again), so
      confirm first. Centered dialog on desktop, bottom drawer on mobile. -->
-<ResponsiveDialog.Root open={removing !== null} onOpenChange={(next) => !next && (removing = null)}>
+<ResponsiveDialog.Root
+	open={removing !== null}
+	onOpenChange={(next) => !next && !removePending && (removing = null)}
+>
 	<ResponsiveDialog.Content class="sm:max-w-sm">
 		<ResponsiveDialog.Header>
 			<ResponsiveDialog.Title>Remove {removing?.name}?</ResponsiveDialog.Title>
 			<ResponsiveDialog.Description>You'll need a new code to send to it again.</ResponsiveDialog.Description>
 		</ResponsiveDialog.Header>
 		<ResponsiveDialog.Footer>
-			<Button variant="outline" onclick={() => (removing = null)}>Keep</Button>
-			<Button variant="destructive" onclick={confirmRemove}>
+			<Button variant="outline" disabled={removePending} onclick={() => (removing = null)}>Keep</Button>
+			<BusyButton
+				variant="destructive"
+				pending={removePending}
+				pendingLabel="Removing…"
+				onclick={confirmRemove}
+			>
 				<Trash2Icon data-icon="inline-start" />
 				Remove
-			</Button>
+			</BusyButton>
 		</ResponsiveDialog.Footer>
 	</ResponsiveDialog.Content>
 </ResponsiveDialog.Root>

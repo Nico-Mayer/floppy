@@ -1,33 +1,13 @@
 <script lang="ts">
 	import BorderBeam from '$lib/components/magic/border-beam/border-beam.svelte'
 	import { QRCode } from '$lib/components/spell/qrcode'
+	import CopyButton from '$lib/components/feedback/CopyButton.svelte'
+	import PendingHint from '$lib/components/feedback/PendingHint.svelte'
 	import * as InputGroup from '$lib/components/ui/input-group'
-	import WaitingHint from '../WaitingHint.svelte'
-	import { fast, motionOK, normal } from '$lib/motion'
-	import CheckIcon from '@lucide/svelte/icons/check'
-	import CopyIcon from '@lucide/svelte/icons/copy'
-	import { haptics } from '$lib/haptics'
-	import { Clipboard } from '$lib/ipc'
-	import { fade, scale } from 'svelte/transition'
+	import { motionOK, normal } from '$lib/motion'
+	import { fade } from 'svelte/transition'
 
 	let { code }: { code: string } = $props()
-
-	let copied = $state(false)
-	let copyResetTimer: ReturnType<typeof setTimeout>
-
-	async function copyCode() {
-		try {
-			// Native clipboard via the core — reliable in every webview,
-			// unlike navigator.clipboard (secure-context/permission quirks).
-			await Clipboard.SetText(code)
-		} catch {
-			await navigator.clipboard.writeText(code)
-		}
-		copied = true
-		void haptics.copied()
-		clearTimeout(copyResetTimer)
-		copyResetTimer = setTimeout(() => (copied = false), 2000)
-	}
 </script>
 
 <!-- 'waiting' for a code target: the phrase is live and anyone holding it can
@@ -61,22 +41,12 @@
 			<InputGroup.Root>
 				<InputGroup.Input readonly value={code} class="font-mono font-medium" />
 				<InputGroup.Addon align="inline-end">
-					<InputGroup.Button size="icon-xs" onclick={copyCode} aria-label="Copy code">
-						{#if copied}
-							<span in:scale={{ start: 0.6, duration: fast() }}>
-								<CheckIcon class="text-(--tint-fg)" />
-							</span>
-						{:else}
-							<span in:scale={{ start: 0.6, duration: fast() }}>
-								<CopyIcon />
-							</span>
-						{/if}
-					</InputGroup.Button>
+					<CopyButton text={code} variant="icon" />
 				</InputGroup.Addon>
 			</InputGroup.Root>
 			<p class="text-center text-xs text-muted-foreground @md:text-left">Works until you close Floppy.</p>
 		</div>
 	</div>
 
-	<WaitingHint label="waiting for them" />
+	<PendingHint label="waiting for them" />
 </div>

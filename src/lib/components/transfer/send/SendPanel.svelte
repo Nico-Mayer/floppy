@@ -1,6 +1,7 @@
 <script lang="ts">
+	import PendingHint from '$lib/components/feedback/PendingHint.svelte'
+	import TransferComplete from '$lib/components/feedback/TransferComplete.svelte'
 	import { Button } from '$lib/components/ui/button'
-	import { Spinner } from '$lib/components/ui/spinner'
 	import * as Tooltip from '$lib/components/ui/tooltip'
 	import { fast } from '$lib/motion'
 	import { pairing } from '$lib/pairing-app.svelte'
@@ -15,7 +16,6 @@
 	import AddFilesSheet from './AddFilesSheet.svelte'
 	import { sendBadge, sendHeadline } from './labels'
 	import SendCode from './SendCode.svelte'
-	import SendComplete from './SendComplete.svelte'
 	import SendDevice from './SendDevice.svelte'
 	import SendQueue from './SendQueue.svelte'
 	import SendTargetPicker from './SendTargetPicker.svelte'
@@ -118,7 +118,10 @@
 			label={currentFile(send.stats) || summary}
 		/>
 	{:else}
-		<SendComplete {summary} target={send.target} />
+		<TransferComplete
+			title="Sent {summary}"
+			description={send.target.kind === 'device' ? `to ${send.target.name}` : ''}
+		/>
 	{/if}
 
 	<!-- Every state that can be left offers the way out from here, so the exit is
@@ -153,16 +156,8 @@
 					     h-9 plus the coarse-pointer minimum are the Send button's own
 					     numbers, so the grid cell is the same height in both shapes and the
 					     crossfade moves nothing. -->
-					<div
-						role="status"
-						transition:fade={{ duration: fast() }}
-						class="flex h-9 w-full items-center justify-center gap-2 rounded-4xl border border-(--tint)/30 bg-(--tint)/10 px-4 text-sm font-medium text-(--tint) pointer-coarse:min-h-11"
-					>
-						<!-- aria-hidden takes the whole node out of the a11y tree, so the
-						     wrapper's role="status" announces the sentence once and not a
-						     stray "Loading" beside it. -->
-						<Spinner aria-hidden="true" class="size-4" />
-						getting files ready
+					<div transition:fade={{ duration: fast() }}>
+						<PendingHint variant="pill" label="getting files ready" />
 					</div>
 				{:else}
 					<!-- One line, not a stack: who the files go to and the button that sends

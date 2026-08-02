@@ -2,6 +2,7 @@
 	import DeviceAvatar from '$lib/components/devices/DeviceAvatar.svelte'
 	import InlineRename from '$lib/components/InlineRename.svelte'
 	import { Button } from '$lib/components/ui/button'
+	import { Spinner } from '$lib/components/ui/spinner'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import PencilIcon from '@lucide/svelte/icons/pencil'
 
@@ -17,6 +18,10 @@
 	let { editing = $bindable(false) }: { editing?: boolean } = $props()
 
 	let draft = $state('')
+
+	// A slow self-rename spins where the pencil was, so the write is seen
+	// working and cannot be started twice (`feedback`).
+	const renamePending = $derived(pairing.isPending('rename:self'))
 
 	function startEdit() {
 		draft = pairing.selfName
@@ -54,8 +59,18 @@
 				<p class="text-xs text-muted-foreground">Other devices see you as</p>
 				<p class="truncate font-medium">{pairing.selfName}</p>
 			</div>
-			<Button variant="ghost" size="icon" aria-label="Rename this device" onclick={startEdit}>
-				<PencilIcon />
+			<Button
+				variant="ghost"
+				size="icon"
+				aria-label="Rename this device"
+				disabled={renamePending}
+				onclick={startEdit}
+			>
+				{#if renamePending}
+					<Spinner />
+				{:else}
+					<PencilIcon />
+				{/if}
 			</Button>
 		{/if}
 	</div>
