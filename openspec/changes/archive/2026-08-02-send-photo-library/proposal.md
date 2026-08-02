@@ -17,10 +17,16 @@ can use unchanged. The work is wiring, not plumbing.
   the send queue, exactly as the Files row does.
 - The row loses its preview marker.
 - Photos **and videos** are offered, not photos alone.
-- Files are sent **as they are**. No transcoding, no HEIC-to-JPEG conversion, no re-encoding
-  of video. The point of the app is that what arrives is what was sent, byte for byte.
-- A picked HEIC therefore has no thumbnail in the queue grid — the `image` crate cannot decode
-  it — and keeps the generic tile with its extension badge. That is honest and costs nothing.
+- The app converts nothing. No transcoding, no HEIC-to-JPEG conversion, no re-encoding of
+  video. The point of the app is that what arrives is what was sent, byte for byte.
+- **iOS converts anyway, and we are living with it for now.** `tauri-plugin-dialog` 2.7.2 asks
+  `PHPicker` for a generic `public.image` under the default representation mode, which makes
+  iOS hand back a JPEG rendition of a HEIC. Fixing it means forking the plugin for two lines
+  of Swift, so the mechanism and the fix are written down in the design instead. Android is
+  unaffected.
+- A HEIC that does reach the queue unconverted has no thumbnail in the grid — the `image`
+  crate cannot decode it — and keeps the generic tile with its extension badge. That is honest
+  and costs nothing.
 - Cancelling the picker on Android leaves the queue untouched instead of surfacing an error.
   The Android dialog plugin rejects rather than resolving on cancel, which the existing Files
   path does not handle either; this change fixes it once, for both rows.

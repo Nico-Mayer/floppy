@@ -1,5 +1,4 @@
 <script lang="ts">
-	import StubMark from '$lib/components/shell/StubMark.svelte'
 	import { Button, buttonVariants } from '$lib/components/ui/button'
 	import * as Drawer from '$lib/components/ui/drawer'
 	import { isPhoneChrome } from '$lib/platform'
@@ -40,8 +39,8 @@
 	     a phone, so the dialog-or-drawer question is already answered and the
 	     indirection would only hide that. Default overlay layer — nothing here is
 	     raised unasked, so it has no business on the prompt layer.
-	     onAnimationEnd is what lets the Files row hand off to the native picker
-	     only once the sheet is actually gone. -->
+	     onAnimationEnd is what lets a row hand off to its native picker only once
+	     the sheet is actually gone. -->
 	<Drawer.Root bind:open={addFiles.open} onAnimationEnd={(open) => addFiles.settled(open)}>
 		<Drawer.Content>
 			<Drawer.Header>
@@ -64,14 +63,17 @@
 					Files
 				</Drawer.Close>
 
-				<!-- Not built yet, and not disabled either: a preview control stays
-				     operable so its states can be reviewed, and the marker sits on this
-				     row rather than on the title because the row above it works. -->
-				<Button variant="outline" class="h-14 justify-start gap-3 text-base">
+				<!-- "Photos" rather than "Photo library" to sit beside "Files": it is the
+				     word every phone puts on the app, and the gallery it opens holds
+				     videos too. Same Drawer.Close shape as the row above, for the same
+				     reason. -->
+				<Drawer.Close
+					class={cn(buttonVariants({ variant: 'outline' }), 'h-14 justify-start gap-3 text-base')}
+					onclick={() => addFiles.after(() => void app.send.pickPhotos())}
+				>
 					<ImageIcon class="size-5" />
-					Photo library
-					<StubMark class="ml-auto" />
-				</Button>
+					Photos
+				</Drawer.Close>
 			</div>
 		</Drawer.Content>
 	</Drawer.Root>

@@ -56,10 +56,10 @@ original, picker copy, blob store copy). `transfer-storage-hygiene` takes that t
 change is what makes that easy to hit, which is the argument for that ordering, not against
 this decision.
 
-### No transcoding, ever
+### We never transcode — but on iOS the picker does it before we see the file
 
-A picked HEIC is sent as HEIC. A picked HEVC video is sent as HEVC. No conversion to JPEG, no
-re-encode, no "helpful" downscale.
+The app converts nothing. No JPEG conversion, no re-encode, no "helpful" downscale, at any
+point between the picker and the wire.
 
 *Why, given it costs us something:* the app's proposition is that what arrives is what was
 sent, byte for byte, verified by BLAKE3. Transcoding breaks that at the source, and quietly:
@@ -67,11 +67,47 @@ the user picks a photo, and a different photo arrives. A recipient on Windows wh
 a HEIC has a real problem, but it is their problem to solve with a viewer, and it is a smaller
 problem than an app that silently degrades your originals.
 
-*What we accept:* `PREVIEW_EXTS` (`files.ts:11`, mirrored in `preview.rs:47`) has no `heic`,
-and the `image` crate has no decoder for it, so a picked HEIC shows the generic tile with its
-extension badge instead of a thumbnail. The tile already degrades this way for every format it
-cannot decode, so this needs no new code and no apology — it is the honest rendering of "we
-did not open this file".
+**On iOS that promise is currently broken upstream, and we are living with it.** Two lines in
+`tauri-plugin-dialog` 2.7.2 combine to hand us a JPEG where the user picked a HEIC:
+
+- `ios/Sources/DialogPlugin.swift:98` builds its `PHPickerConfiguration` without setting
+  `preferredAssetRepresentationMode`, so it stays `.automatic` — the mode that lets iOS
+  transcode an asset for compatibility.
+- `ios/Sources/FilePickerController.swift:220` then asks for the *generic* type,
+  `loadFileRepresentation(forTypeIdentifier: UTType.image.identifier)`.
+
+`.automatic` plus a generic `public.image` request is exactly the combination that makes iOS
+deliver a JPEG rendition, named `IMG_xxxx.jpeg`. The same mechanism can turn HEVC into H.264
+through the `UTType.movie` branch at `:197`. 2.7.2 is the latest release, so there is no
+upstream fix to pick up.
+
+*The decision:* leave the dependency alone. The fix is a two-line Swift change, but it is a
+two-line Swift change in someone else's crate, which means a fork, a `[patch.crates-io]` entry
+and a patch to re-apply on every bump — a standing maintenance cost for a platform behaviour
+Apple may well change. Written down so nobody has to rediscover it:
+
+```swift
+configuration.preferredAssetRepresentationMode = .current
+// and ask for the asset's own UTI rather than the generic one — .current alone
+// still transcodes when the requested type is generic:
+let typeId = result.itemProvider.registeredTypeIdentifiers
+    .first { UTType($0)?.conforms(to: .image) == true } ?? UTType.image.identifier
+```
+
+Android is unaffected: `ACTION_GET_CONTENT` returns the original `content://` item and converts
+nothing.
+
+*What follows, stated plainly:* on iOS a picked HEIC arrives as a JPEG with a `.jpeg` name, and
+its hash is the hash of that JPEG rather than of the asset in Photos. It thumbnails, because
+`.jpeg` is in `PREVIEW_EXTS`. That is a real gap against "what arrives is what was sent", it is
+the platform's doing rather than ours, and it is worth revisiting if Apple's default changes or
+the maintenance cost of a fork stops mattering.
+
+*Where the app's own honesty still shows:* `PREVIEW_EXTS` (`files.ts:11`, mirrored in
+`preview.rs:46`) has no `heic`, and the `image` crate has no decoder for it. So a HEIC that
+does reach the queue unconverted — from the Files row, or from Android — shows the generic tile
+with its extension badge rather than a thumbnail. The tile already degrades this way for every
+format it cannot decode, so this needs no new code and no apology.
 
 ### Android's Photo Picker via the dialog plugin, not a second plugin
 
@@ -142,8 +178,14 @@ never open the picker.
 
 ## Open Questions
 
-- Should the row read "Photos" rather than "Photo library" now that it also takes videos? The
-  copy rules favour the everyday word, and every phone OS calls the app "Photos".
+- ~~Should the row read "Photos" rather than "Photo library"?~~ **Settled: "Photos."** It sits
+  beside "Files", it is the word every phone puts on the app, and it does not promise a
+  library of photos alone now that the row takes video.
 - If a pick partially fails on iOS — one unsupported item in a selection of twenty — the plugin
   currently fails the whole batch. Is that the behaviour we want, or should the queue take
   what it can and say what it skipped?
+- Adding files and drawing previews both feel slow on a phone. Three causes, none of them this
+  change's to fix: iOS's transcode-then-copy on every pick (above), `preview.rs` decoding at
+  full resolution behind a global mutex on mobile and re-encoding as PNG, and `describe`
+  stream-copying a whole Android selection before the first tile appears. Its own change,
+  sibling to `transfer-storage-hygiene`.

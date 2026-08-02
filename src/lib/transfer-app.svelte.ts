@@ -1,6 +1,6 @@
 import { goto } from '$app/navigation'
 import { resolve } from '$app/paths'
-import { open } from '@tauri-apps/plugin-dialog'
+import { open, type OpenDialogOptions } from '@tauri-apps/plugin-dialog'
 import {
 	CancelReceive,
 	CancelSend,
@@ -73,16 +73,43 @@ class SendTransfer {
 		void haptics.removed()
 	}
 
-	/** True while the native picker is open, so a second click is ignored. */
+	/** True while a native picker is open, so a second click is ignored. */
 	#picking = false
 
-	async pickFiles() {
-		// The empty state is a big click target; one panel at a time.
+	pickFiles() {
+		return this.#pick({ multiple: true, title: 'Add files' })
+	}
+
+	/**
+	 * The phone's photo library — videos as well as photos, because a gallery
+	 * holds both and a clip too big to message is the thing people most want to
+	 * send from a phone. Only reachable from the phone sheet; there is no photo
+	 * library on a laptop.
+	 */
+	pickPhotos() {
+		return this.#pick({ multiple: true, pickerMode: 'media' })
+	}
+
+	/**
+	 * Open one native picker and queue whatever it hands back.
+	 *
+	 * One guard shared by both callers — the empty state is a big click target,
+	 * and two *different* pickers open at once is exactly what a guard per picker
+	 * would fail to catch.
+	 *
+	 * A picker that hands back nothing is a no-op whatever the reason: Android
+	 * reports a dismissed picker as a rejection while iOS and desktop resolve
+	 * with null, and telling a cancel from a failure would mean matching on a
+	 * message to show something nobody asked for.
+	 */
+	async #pick(options: OpenDialogOptions & { multiple: true }) {
 		if (this.#picking) return
 		this.#picking = true
 		try {
-			const selected = await open({ multiple: true, title: 'Add files' })
-			if (selected) await this.addPaths(Array.isArray(selected) ? selected : [selected])
+			const selected = await open(options)
+			if (selected) await this.addPaths(selected)
+		} catch {
+			// Chose nothing.
 		} finally {
 			this.#picking = false
 		}
