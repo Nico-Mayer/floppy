@@ -248,7 +248,8 @@ impl PairingService {
         // SPAKE2 — the redeemer speaks first.
         let (handshake, my_msg) = pake::start(&phrase, &room);
         mailbox.send(&my_msg).await?;
-        let peer_msg = timeout(PAIR_TIMEOUT, mailbox.recv()).await.map_err(|_| pair_wait_timeout())??;
+        let peer_msg =
+            timeout(PAIR_TIMEOUT, mailbox.recv()).await.map_err(|_| pair_wait_timeout())??;
         let key = handshake.finish(&peer_msg)?;
 
         // Seal and send our identity + self-name + how we redeemed.
@@ -263,12 +264,13 @@ impl PairingService {
         // Wait for the shower's reply: `0x01 ‖ sealed(identity)` on confirm, a
         // lone `0x00` on decline, or a lone `0x02` when it recognised us as
         // itself.
-        let reply = timeout(PAIR_TIMEOUT, mailbox.recv()).await.map_err(|_| pair_wait_timeout())??;
+        let reply =
+            timeout(PAIR_TIMEOUT, mailbox.recv()).await.map_err(|_| pair_wait_timeout())??;
         match reply.split_first() {
             Some((&REPLY_CONFIRM, sealed)) => {
                 let opened = pake::open(&key, sealed)?;
-                let peer: CodePairPayload =
-                    serde_json::from_slice(&opened).map_err(|e| format!("bad pairing reply: {e}"))?;
+                let peer: CodePairPayload = serde_json::from_slice(&opened)
+                    .map_err(|e| format!("bad pairing reply: {e}"))?;
                 let peer_key = PublicKey::decode(&peer.id)?;
                 let fingerprint = peer_key.fingerprint();
                 // The other side is us. Bail before touching trust: the store
@@ -369,8 +371,14 @@ impl PairingService {
 
         let (id, ticket, _served) = self.manager.start_send(paths).await?;
         let ts = now_unix();
-        let offer =
-            self.identity.sign_offer(&id, ts, file_count, total_bytes, &ticket, &self.self_name.get());
+        let offer = self.identity.sign_offer(
+            &id,
+            ts,
+            file_count,
+            total_bytes,
+            &ticket,
+            &self.self_name.get(),
+        );
         // Record who we are offering to before sending, so a simultaneous offer
         // from the same device is recognised as glare and a stray response is
         // matched to this transfer.
@@ -412,12 +420,8 @@ impl PairingService {
 
     /// Decline a pending offer: tell the sender so it can stop serving.
     pub async fn decline(&self, transfer_id: &str) -> Result<(), String> {
-        let offer = self
-            .pending
-            .lock()
-            .unwrap()
-            .remove(transfer_id)
-            .ok_or("no such incoming offer")?;
+        let offer =
+            self.pending.lock().unwrap().remove(transfer_id).ok_or("no such incoming offer")?;
         let resp = self.identity.sign_response(transfer_id, false, Some(DeclineReason::Manual));
         self.broker.send(&offer.from.fingerprint(), &Signal::Response(resp));
         Ok(())
@@ -531,8 +535,12 @@ async fn incoming_loop(mut l: Loop) {
         match msg {
             Incoming::Signal(Signal::Offer(offer)) => match offer.verify(&l.trust) {
                 Ok(()) => handle_offer(&l, offer),
-                Err(VerifyError::Untrusted) => tracing::warn!("pairing: offer from untrusted device"),
-                Err(VerifyError::BadSignature) => tracing::warn!("pairing: offer with bad signature"),
+                Err(VerifyError::Untrusted) => {
+                    tracing::warn!("pairing: offer from untrusted device")
+                }
+                Err(VerifyError::BadSignature) => {
+                    tracing::warn!("pairing: offer with bad signature")
+                }
             },
             Incoming::Signal(Signal::Response(resp)) => {
                 if resp.verify(&l.trust).is_err() {
@@ -717,7 +725,6 @@ mod tests {
         test_manager(dir, name, DUMMY_BROKER, emit).await
     }
 
-
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn trusted_send_receive_end_to_end() {
         let tmp = tempfile::tempdir().unwrap();
@@ -735,8 +742,22 @@ mod tests {
         let dir_a = tmp.path().join("id-a");
         let dir_b = tmp.path().join("id-b");
         let dummy_mailbox = "ws://127.0.0.1:1/ws".to_string();
-        let a = PairingService::new(&dir_a, a_mgr, broker.clone(), dummy_mailbox.clone(), Arc::new(a_events.clone())).unwrap();
-        let b = PairingService::new(&dir_b, b_mgr, broker.clone(), dummy_mailbox, Arc::new(b_events.clone())).unwrap();
+        let a = PairingService::new(
+            &dir_a,
+            a_mgr,
+            broker.clone(),
+            dummy_mailbox.clone(),
+            Arc::new(a_events.clone()),
+        )
+        .unwrap();
+        let b = PairingService::new(
+            &dir_b,
+            b_mgr,
+            broker.clone(),
+            dummy_mailbox,
+            Arc::new(b_events.clone()),
+        )
+        .unwrap();
 
         // Give both clients a moment to register with the broker.
         tokio::time::sleep(Duration::from_millis(200)).await;
@@ -785,8 +806,22 @@ mod tests {
         let b_mgr = manager(tmp.path(), "lb", Arc::new(b_done.clone())).await;
         let a_events = PairCollector::default();
         let b_events = PairCollector::default();
-        let a = PairingService::new(&tmp.path().join("lid-a"), a_mgr, broker.clone(), ws.clone(), Arc::new(a_events.clone())).unwrap();
-        let b = PairingService::new(&tmp.path().join("lid-b"), b_mgr, broker.clone(), ws.clone(), Arc::new(b_events.clone())).unwrap();
+        let a = PairingService::new(
+            &tmp.path().join("lid-a"),
+            a_mgr,
+            broker.clone(),
+            ws.clone(),
+            Arc::new(a_events.clone()),
+        )
+        .unwrap();
+        let b = PairingService::new(
+            &tmp.path().join("lid-b"),
+            b_mgr,
+            broker.clone(),
+            ws.clone(),
+            Arc::new(b_events.clone()),
+        )
+        .unwrap();
         tokio::time::sleep(Duration::from_millis(400)).await; // register with the real broker
 
         let b_fp = PublicKey::decode(&b.identity()).unwrap().fingerprint();
@@ -826,8 +861,22 @@ mod tests {
         let a_ev = PairCollector::default();
         let b_ev = PairCollector::default();
         let mailbox = "ws://127.0.0.1:1/ws".to_string();
-        let a = PairingService::new(&tmp.path().join("id-da"), a_mgr, broker.clone(), mailbox.clone(), Arc::new(a_ev.clone())).unwrap();
-        let b = PairingService::new(&tmp.path().join("id-db"), b_mgr, broker.clone(), mailbox, Arc::new(b_ev.clone())).unwrap();
+        let a = PairingService::new(
+            &tmp.path().join("id-da"),
+            a_mgr,
+            broker.clone(),
+            mailbox.clone(),
+            Arc::new(a_ev.clone()),
+        )
+        .unwrap();
+        let b = PairingService::new(
+            &tmp.path().join("id-db"),
+            b_mgr,
+            broker.clone(),
+            mailbox,
+            Arc::new(b_ev.clone()),
+        )
+        .unwrap();
         tokio::time::sleep(Duration::from_millis(200)).await;
 
         let b_fp = PublicKey::decode(&b.identity()).unwrap().fingerprint();
@@ -846,7 +895,8 @@ mod tests {
         // bytes — the sender only completes via B's completion signal.
         *b_done.0.lock().unwrap() = false;
         a.send_to(&b_fp, vec![src.clone()]).await.unwrap();
-        wait_until(Duration::from_secs(10), || b_ev.last_offer_id().is_some_and(|id| id != id1)).await;
+        wait_until(Duration::from_secs(10), || b_ev.last_offer_id().is_some_and(|id| id != id1))
+            .await;
         let id2 = b_ev.last_offer_id().unwrap();
         b.accept(&id2).await.unwrap();
         wait_until(Duration::from_secs(15), || *b_done.0.lock().unwrap()).await;
@@ -880,9 +930,30 @@ mod tests {
         let dummy = "ws://127.0.0.1:1/ws".to_string();
         let a_ev = PairCollector::default();
         let b_ev = PairCollector::default();
-        let a = PairingService::new(&tmp.path().join("ida"), manager(tmp.path(), "ma", Arc::new(DoneFlag::default())).await, broker.clone(), dummy.clone(), Arc::new(a_ev.clone())).unwrap();
-        let b = PairingService::new(&tmp.path().join("idb"), manager(tmp.path(), "mb", Arc::new(DoneFlag::default())).await, broker.clone(), dummy.clone(), Arc::new(b_ev.clone())).unwrap();
-        let c = PairingService::new(&tmp.path().join("idc"), manager(tmp.path(), "mc", Arc::new(DoneFlag::default())).await, broker.clone(), dummy, Arc::new(PairCollector::default())).unwrap();
+        let a = PairingService::new(
+            &tmp.path().join("ida"),
+            manager(tmp.path(), "ma", Arc::new(DoneFlag::default())).await,
+            broker.clone(),
+            dummy.clone(),
+            Arc::new(a_ev.clone()),
+        )
+        .unwrap();
+        let b = PairingService::new(
+            &tmp.path().join("idb"),
+            manager(tmp.path(), "mb", Arc::new(DoneFlag::default())).await,
+            broker.clone(),
+            dummy.clone(),
+            Arc::new(b_ev.clone()),
+        )
+        .unwrap();
+        let c = PairingService::new(
+            &tmp.path().join("idc"),
+            manager(tmp.path(), "mc", Arc::new(DoneFlag::default())).await,
+            broker.clone(),
+            dummy,
+            Arc::new(PairCollector::default()),
+        )
+        .unwrap();
         tokio::time::sleep(Duration::from_millis(400)).await; // all three register
 
         let a_fp = PublicKey::decode(&a.identity()).unwrap().fingerprint();
@@ -895,7 +966,8 @@ mod tests {
         a.send_to(&c_fp, vec![write_file(tmp.path(), "f.bin", &vec![1u8; 50_000])]).await.unwrap();
         b.send_to(&a_fp, vec![write_file(tmp.path(), "g.bin", &vec![2u8; 50_000])]).await.unwrap();
 
-        wait_until(Duration::from_secs(10), || b_ev.tags().iter().any(|t| t == "declined:true")).await;
+        wait_until(Duration::from_secs(10), || b_ev.tags().iter().any(|t| t == "declined:true"))
+            .await;
         assert!(a_ev.offer_id().is_none(), "a busy device must not surface the offer");
     }
 
@@ -908,9 +980,30 @@ mod tests {
         let dummy = "ws://127.0.0.1:1/ws".to_string();
         let a_ev = PairCollector::default();
         let c_ev = PairCollector::default();
-        let a = PairingService::new(&tmp.path().join("ida"), manager(tmp.path(), "ma", Arc::new(DoneFlag::default())).await, broker.clone(), dummy.clone(), Arc::new(a_ev.clone())).unwrap();
-        let b = PairingService::new(&tmp.path().join("idb"), manager(tmp.path(), "mb", Arc::new(DoneFlag::default())).await, broker.clone(), dummy.clone(), Arc::new(PairCollector::default())).unwrap();
-        let c = PairingService::new(&tmp.path().join("idc"), manager(tmp.path(), "mc", Arc::new(DoneFlag::default())).await, broker.clone(), dummy, Arc::new(c_ev.clone())).unwrap();
+        let a = PairingService::new(
+            &tmp.path().join("ida"),
+            manager(tmp.path(), "ma", Arc::new(DoneFlag::default())).await,
+            broker.clone(),
+            dummy.clone(),
+            Arc::new(a_ev.clone()),
+        )
+        .unwrap();
+        let b = PairingService::new(
+            &tmp.path().join("idb"),
+            manager(tmp.path(), "mb", Arc::new(DoneFlag::default())).await,
+            broker.clone(),
+            dummy.clone(),
+            Arc::new(PairCollector::default()),
+        )
+        .unwrap();
+        let c = PairingService::new(
+            &tmp.path().join("idc"),
+            manager(tmp.path(), "mc", Arc::new(DoneFlag::default())).await,
+            broker.clone(),
+            dummy,
+            Arc::new(c_ev.clone()),
+        )
+        .unwrap();
         tokio::time::sleep(Duration::from_millis(400)).await; // all three register
 
         let a_fp = PublicKey::decode(&a.identity()).unwrap().fingerprint();
@@ -924,7 +1017,8 @@ mod tests {
         wait_until(Duration::from_secs(10), || a_ev.offer_id().is_some()).await;
         c.send_to(&a_fp, vec![write_file(tmp.path(), "g.bin", &vec![2u8; 50_000])]).await.unwrap();
 
-        wait_until(Duration::from_secs(10), || c_ev.tags().iter().any(|t| t == "declined:true")).await;
+        wait_until(Duration::from_secs(10), || c_ev.tags().iter().any(|t| t == "declined:true"))
+            .await;
         let offers = a_ev.tags().iter().filter(|t| t.starts_with("offer:")).count();
         assert_eq!(offers, 1, "only the first prompt is kept");
     }
@@ -941,8 +1035,22 @@ mod tests {
         let b_ev = PairCollector::default();
         let a_term = Terminals::default();
         let b_term = Terminals::default();
-        let a = PairingService::new(&tmp.path().join("ida"), manager(tmp.path(), "ma", Arc::new(a_term.clone())).await, broker.clone(), dummy.clone(), Arc::new(a_ev.clone())).unwrap();
-        let b = PairingService::new(&tmp.path().join("idb"), manager(tmp.path(), "mb", Arc::new(b_term.clone())).await, broker.clone(), dummy, Arc::new(b_ev.clone())).unwrap();
+        let a = PairingService::new(
+            &tmp.path().join("ida"),
+            manager(tmp.path(), "ma", Arc::new(a_term.clone())).await,
+            broker.clone(),
+            dummy.clone(),
+            Arc::new(a_ev.clone()),
+        )
+        .unwrap();
+        let b = PairingService::new(
+            &tmp.path().join("idb"),
+            manager(tmp.path(), "mb", Arc::new(b_term.clone())).await,
+            broker.clone(),
+            dummy,
+            Arc::new(b_ev.clone()),
+        )
+        .unwrap();
         tokio::time::sleep(Duration::from_millis(200)).await;
 
         let a_fp = PublicKey::decode(&a.identity()).unwrap().fingerprint();
@@ -957,11 +1065,8 @@ mod tests {
         let _ = tokio::join!(a.send_to(&b_fp, vec![f1]), b.send_to(&a_fp, vec![f2]));
 
         // Lower fingerprint wins (sends); higher yields and receives.
-        let (loser, loser_ev, winner_term, loser_term) = if a_fp < b_fp {
-            (&b, &b_ev, &a_term, &b_term)
-        } else {
-            (&a, &a_ev, &b_term, &a_term)
-        };
+        let (loser, loser_ev, winner_term, loser_term) =
+            if a_fp < b_fp { (&b, &b_ev, &a_term, &b_term) } else { (&a, &a_ev, &b_term, &a_term) };
 
         wait_until(Duration::from_secs(10), || loser_ev.offer_id().is_some()).await;
         let offer_id = loser_ev.offer_id().unwrap();
@@ -986,8 +1091,24 @@ mod tests {
         let b_mgr = manager(tmp.path(), "pb", Arc::new(DoneFlag::default())).await;
         let a_ev = PairCollector::default();
         let b_ev = PairCollector::default();
-        let a = PairingService::new(&tmp.path().join("id-a"), a_mgr, fp.clone(), mailbox.clone(), Arc::new(a_ev.clone())).unwrap();
-        let b = Arc::new(PairingService::new(&tmp.path().join("id-b"), b_mgr, fp.clone(), mailbox.clone(), Arc::new(b_ev.clone())).unwrap());
+        let a = PairingService::new(
+            &tmp.path().join("id-a"),
+            a_mgr,
+            fp.clone(),
+            mailbox.clone(),
+            Arc::new(a_ev.clone()),
+        )
+        .unwrap();
+        let b = Arc::new(
+            PairingService::new(
+                &tmp.path().join("id-b"),
+                b_mgr,
+                fp.clone(),
+                mailbox.clone(),
+                Arc::new(b_ev.clone()),
+            )
+            .unwrap(),
+        );
 
         let a_fp = PublicKey::decode(&a.identity()).unwrap().fingerprint();
         let b_fp = PublicKey::decode(&b.identity()).unwrap().fingerprint();
@@ -1003,14 +1124,21 @@ mod tests {
             a_ev.tags().iter().any(|t| t == &format!("request:{b_fp}"))
         })
         .await;
-        assert!(!a.trusted_devices().iter().any(|d| d.fingerprint() == b_fp), "A must not trust B before confirm");
+        assert!(
+            !a.trusted_devices().iter().any(|d| d.fingerprint() == b_fp),
+            "A must not trust B before confirm"
+        );
 
         // A confirms with a chosen name → trust becomes mutual.
         a.confirm_pair(&b_fp, "my-phone").unwrap();
         redeem.await.unwrap().expect("redeem completes");
 
         let a_view = a.trusted_devices().into_iter().find(|d| d.fingerprint() == b_fp);
-        assert_eq!(a_view.map(|d| d.label()), Some("my-phone".to_string()), "A trusts B under the chosen name");
+        assert_eq!(
+            a_view.map(|d| d.label()),
+            Some("my-phone".to_string()),
+            "A trusts B under the chosen name"
+        );
         assert!(b.trusted_devices().iter().any(|d| d.fingerprint() == a_fp), "B trusts A");
         assert!(a_ev.tags().iter().any(|t| t.starts_with("paired")), "A emits paired");
         assert!(b_ev.tags().iter().any(|t| t.starts_with("paired")), "B emits paired");
@@ -1019,7 +1147,10 @@ mod tests {
         let code2 = a.show_pair_code().unwrap().code;
         let b3 = b.clone();
         let redeem2 = tokio::spawn(async move { b3.redeem_pair_code(&code2, "code").await });
-        wait_until(Duration::from_secs(10), || a.pending_confirms.lock().unwrap().contains_key(&b_fp)).await;
+        wait_until(Duration::from_secs(10), || {
+            a.pending_confirms.lock().unwrap().contains_key(&b_fp)
+        })
+        .await;
         a.dismiss_pair(&b_fp);
         let declined = redeem2.await.unwrap().expect_err("redeemer learns it was declined");
         // A real decline must not be dressed up as a self-pair.
@@ -1047,13 +1178,29 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let fp = mock_fp_broker().await;
         let mailbox = mock_mailbox_broker().await;
-        let a = pair_svc(tmp.path(), "la", &tmp.path().join("id-a"), &fp, &mailbox, PairCollector::default()).await;
+        let a = pair_svc(
+            tmp.path(),
+            "la",
+            &tmp.path().join("id-a"),
+            &fp,
+            &mailbox,
+            PairCollector::default(),
+        )
+        .await;
 
         let shown = a.show_pair_code().unwrap();
 
-        assert_eq!(shown.seconds as u64, PAIR_TIMEOUT.as_secs(), "the reported lifetime is the enforced one");
+        assert_eq!(
+            shown.seconds as u64,
+            PAIR_TIMEOUT.as_secs(),
+            "the reported lifetime is the enforced one"
+        );
         // Still an ordinary code: normalizes and picks a room like any other.
-        assert!(code::room(&code::normalize(&shown.code)).is_some(), "not a usable code: {}", shown.code);
+        assert!(
+            code::room(&code::normalize(&shown.code)).is_some(),
+            "not a usable code: {}",
+            shown.code
+        );
     }
 
     /// Showing a code and then redeeming it on the same install used to pair the
@@ -1066,7 +1213,8 @@ mod tests {
         let fp = mock_fp_broker().await;
         let mailbox = mock_mailbox_broker().await;
         let ev = PairCollector::default();
-        let a = pair_svc(tmp.path(), "sa", &tmp.path().join("id-a"), &fp, &mailbox, ev.clone()).await;
+        let a =
+            pair_svc(tmp.path(), "sa", &tmp.path().join("id-a"), &fp, &mailbox, ev.clone()).await;
 
         let code = a.show_pair_code().unwrap().code;
         let err = a.redeem_pair_code(&code, "code").await.expect_err("self-pair is refused");
@@ -1074,7 +1222,11 @@ mod tests {
         assert!(err.contains("this device's own code"), "wrong message: {err}");
         assert!(a.trusted_devices().is_empty(), "nothing was added to the device list");
         // The user was never asked to approve anything.
-        assert!(!ev.tags().iter().any(|t| t.starts_with("request:")), "no confirm was raised: {:?}", ev.tags());
+        assert!(
+            !ev.tags().iter().any(|t| t.starts_with("request:")),
+            "no confirm was raised: {:?}",
+            ev.tags()
+        );
         assert!(a.pending_confirms.lock().unwrap().is_empty());
         // The finished session forgot its code (the timeout path clears it on
         // the same line).
@@ -1115,7 +1267,8 @@ mod tests {
         let fp = mock_fp_broker().await;
         let mailbox = mock_mailbox_broker().await;
         let ev = PairCollector::default();
-        let a = pair_svc(tmp.path(), "ra", &tmp.path().join("id-a"), &fp, &mailbox, ev.clone()).await;
+        let a =
+            pair_svc(tmp.path(), "ra", &tmp.path().join("id-a"), &fp, &mailbox, ev.clone()).await;
 
         let phrase = a.show_pair_code().unwrap().code;
         let normalized = code::normalize(&phrase);
@@ -1136,9 +1289,17 @@ mod tests {
         mb.send(&pake::seal(&key, &payload).unwrap()).await.unwrap();
 
         let reply = mb.recv().await.unwrap();
-        assert_eq!(reply.as_slice(), &[REPLY_SAME_DEVICE], "shower answers same-device, not confirm/decline");
+        assert_eq!(
+            reply.as_slice(),
+            &[REPLY_SAME_DEVICE],
+            "shower answers same-device, not confirm/decline"
+        );
         assert!(a.trusted_devices().is_empty(), "nothing was added");
-        assert!(!ev.tags().iter().any(|t| t.starts_with("request:")), "no confirm was raised: {:?}", ev.tags());
+        assert!(
+            !ev.tags().iter().any(|t| t.starts_with("request:")),
+            "no confirm was raised: {:?}",
+            ev.tags()
+        );
     }
 
     async fn wait_until<F: Fn() -> bool>(timeout: Duration, cond: F) {
@@ -1151,5 +1312,4 @@ mod tests {
         }
         panic!("condition not met within {timeout:?}");
     }
-
 }

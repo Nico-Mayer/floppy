@@ -71,8 +71,8 @@ impl TrustStore {
         let mut purged = false;
         match std::fs::read(&path) {
             Ok(data) => {
-                let list: Vec<TrustedDevice> =
-                    serde_json::from_slice(&data).map_err(|e| format!("parsing trust store: {e}"))?;
+                let list: Vec<TrustedDevice> = serde_json::from_slice(&data)
+                    .map_err(|e| format!("parsing trust store: {e}"))?;
                 for d in list {
                     let fp = d.fingerprint();
                     if fp == own_fingerprint {
@@ -137,10 +137,9 @@ impl TrustStore {
                 return Err("that is this device's own identity".into());
             }
             let advertised = advertised_name.trim().to_string();
-            devices
-                .entry(fp)
-                .and_modify(|d| d.advertised_name = advertised.clone())
-                .or_insert(TrustedDevice { key, advertised_name: advertised, local_override: None });
+            devices.entry(fp).and_modify(|d| d.advertised_name = advertised.clone()).or_insert(
+                TrustedDevice { key, advertised_name: advertised, local_override: None },
+            );
         }
         self.save()
     }
@@ -148,7 +147,11 @@ impl TrustStore {
     /// Refresh a trusted device's advertised self-name (e.g. from an incoming
     /// offer). A device with a local override is left untouched so the user's
     /// chosen name wins. Unknown fingerprints are ignored. Persists on a change.
-    pub fn refresh_advertised(&self, fingerprint: &str, advertised_name: &str) -> Result<(), String> {
+    pub fn refresh_advertised(
+        &self,
+        fingerprint: &str,
+        advertised_name: &str,
+    ) -> Result<(), String> {
         {
             let mut devices = self.devices.lock().unwrap();
             let Some(device) = devices.get_mut(fingerprint) else { return Ok(()) };
@@ -200,7 +203,8 @@ impl TrustStore {
     fn save(&self) -> Result<(), String> {
         let Some(path) = &self.path else { return Ok(()) };
         let list: Vec<TrustedDevice> = self.devices.lock().unwrap().values().cloned().collect();
-        let blob = serde_json::to_vec_pretty(&list).map_err(|e| format!("marshaling trust store: {e}"))?;
+        let blob =
+            serde_json::to_vec_pretty(&list).map_err(|e| format!("marshaling trust store: {e}"))?;
         write_file_atomic(path, &blob).map_err(|e| format!("writing trust store: {e}"))
     }
 }

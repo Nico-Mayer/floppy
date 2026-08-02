@@ -6,9 +6,7 @@ The Tauri 2 application platform: a Rust core that exposes transfer and pairing
 operations as typed commands and events, a SvelteKit static-SPA frontend, plugin-backed
 OS integration, image previews, and desktop plus mobile (iOS/Android) targets built from
 one core.
-
 ## Requirements
-
 ### Requirement: Tauri 2 application shell
 
 The application SHALL run on Tauri 2 with a Rust core. The core SHALL expose transfer and
@@ -311,6 +309,17 @@ environment, resolving picked files to readable paths, foreground-gated notifica
 mobile chrome — SHALL hold on iOS through the same shared code, not a second
 implementation.
 
+Every copy a pick creates SHALL be reachable by the app's own reaping, whoever made it. Where
+a platform picker writes its own copy outside the directory the app reaps, the app SHALL bring
+that copy under the reaped directory without moving bytes, and SHALL do so only when the file
+is provably inside the app's own sandbox storage — a picked file that is not shall be left
+where it is, so a picker that opens a file in place can never have the user's own file moved
+out from under them.
+
+Sandbox copies SHALL be reaped when the send queue is emptied and when a send completes. They
+SHALL NOT be reaped when a send is cancelled, since the queue survives a cancellation and its
+entries must keep pointing at readable files.
+
 #### Scenario: Android transfer end to end
 
 - **WHEN** the app is built and run on Android (device or emulator)
@@ -345,10 +354,31 @@ implementation.
 - **THEN** the app resolves it through the same path-resolution shim used on Android
 - **AND** the file is readable, sendable, and previewable without an iOS-specific code path
 
+#### Scenario: A picker's own copy is brought under the reaped directory
+
+- **WHEN** a platform picker returns a file it has already copied into the app's sandbox,
+  outside the directory the app reaps
+- **THEN** the app relocates it into the reaped directory without copying its bytes
+- **AND** the file stays readable, sendable, and previewable
+
+#### Scenario: A file outside the app's sandbox is never relocated
+
+- **WHEN** a pick resolves to a path that is not inside the app's own cache or temporary
+  storage
+- **THEN** the app leaves it exactly where it is and sends it from there
+
 #### Scenario: Sandbox copies are reaped
 
-- **WHEN** the send queue is cleared or the transfer ends
+- **WHEN** the send queue is cleared, or a send completes
 - **THEN** any sandbox copies made for that queue are deleted
+- **AND** the completion summary still names what was sent, because it reads the queue's
+  entries and not their bytes
+
+#### Scenario: A cancelled send keeps its copies
+
+- **WHEN** a send is cancelled
+- **THEN** the queue is unchanged and its sandbox copies are still readable, so the same files
+  can be sent again without re-picking them
 
 #### Scenario: Notification while the app is backgrounded
 
@@ -372,3 +402,4 @@ implementation.
 - **WHEN** the app renders on a phone
 - **THEN** content is inset clear of the status bar, notch, and gesture areas
 - **AND** desktop-only window controls are not shown
+

@@ -1,0 +1,10 @@
+# The repo had no rustfmt config, so `cargo fmt --check` measured it against
+# rustfmt's defaults and called every file dirty — which is why it was never run
+# and never clean. These two settings describe the style the code is already
+# written in, so formatting becomes a no-op rather than a rewrite.
+#
+# max_width: this is already a 100-column codebase (75 lines of 7194 exceed it).
+# use_small_heuristics = "Max": keep short struct literals, calls, and match arms
+# on one line, which is what the code does everywhere. The default splits them.
+max_width = 100
+use_small_heuristics = "Max"

@@ -19,12 +19,14 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use error::CommandError;
-use tauri_plugin_log::log;
-use events::{CodeEvent, DeepLink, DoneEvent, ErrorEvent, PairingAccepted, PairingDeclined,
-    PairingError, PairingOfferEvent, PairingPaired, PairingRequest, ProgressEvent, TransferKind};
-use specta_typescript::Number;
+use events::{
+    CodeEvent, DeepLink, DoneEvent, ErrorEvent, PairingAccepted, PairingDeclined, PairingError,
+    PairingOfferEvent, PairingPaired, PairingRequest, ProgressEvent, TransferKind,
+};
 use pairing::{PairCode, PairingEmitter, PairingEvent, PairingService};
+use specta_typescript::Number;
 use tauri::{AppHandle, Manager as _, State};
+use tauri_plugin_log::log;
 use tauri_specta::{collect_commands, collect_events, Builder, Event as _};
 use transport::{Config, Kind, Manager, RelayConfig};
 
@@ -90,7 +92,8 @@ impl TauriPairingEmitter {
         if self.foreground.load(Ordering::Relaxed) {
             return;
         }
-        let files = if file_count <= 1 { "a file".to_string() } else { format!("{file_count} files") };
+        let files =
+            if file_count <= 1 { "a file".to_string() } else { format!("{file_count} files") };
         let who = if from_name.is_empty() { "Someone".to_string() } else { from_name };
         let title = format!("{who} wants to send you {files}");
         let body = if total_bytes > 0 { format_bytes(total_bytes) } else { String::new() };
@@ -139,9 +142,7 @@ impl transport::Emitter for TauriEmitter {
         use transport::Event as E;
         let app = &self.app;
         let _ = match event {
-            E::Code { id, kind, code } => {
-                CodeEvent { id, kind: kind_to_ts(kind), code }.emit(app)
-            }
+            E::Code { id, kind, code } => CodeEvent { id, kind: kind_to_ts(kind), code }.emit(app),
             E::Progress { id, kind, stats } => {
                 match kind {
                     Kind::Send => self.last.lock().unwrap().send_total = stats.total,
@@ -164,7 +165,8 @@ impl transport::Emitter for TauriEmitter {
             E::Done { id, kind, dest } => {
                 // Event first, notification after: the panel must not wait on
                 // anything the notification does.
-                let emitted = DoneEvent { id, kind: kind_to_ts(kind), dest: dest.clone() }.emit(app);
+                let emitted =
+                    DoneEvent { id, kind: kind_to_ts(kind), dest: dest.clone() }.emit(app);
                 self.notify_done(kind, &dest);
                 emitted
             }
@@ -228,10 +230,8 @@ impl TauriEmitter {
 fn route_deep_link(app: &AppHandle, url: &str) {
     let Some(rest) = url.trim().strip_prefix("floppy://") else { return };
     if let Some(query) = rest.strip_prefix("receive?").or_else(|| rest.strip_prefix("receive/?")) {
-        if let Some(code) = query
-            .split('&')
-            .find_map(|p| p.strip_prefix("code="))
-            .map(|c| c.replace('+', " "))
+        if let Some(code) =
+            query.split('&').find_map(|p| p.strip_prefix("code=")).map(|c| c.replace('+', " "))
         {
             let _ = DeepLink { code }.emit(app);
         }
@@ -274,7 +274,11 @@ fn resolve_all(app: &AppHandle, paths: Vec<String>) -> Result<Vec<PathBuf>, Comm
 
 #[tauri::command]
 #[specta::specta]
-async fn send(app: AppHandle, manager: State<'_, Manager>, paths: Vec<String>) -> Result<(), CommandError> {
+async fn send(
+    app: AppHandle,
+    manager: State<'_, Manager>,
+    paths: Vec<String>,
+) -> Result<(), CommandError> {
     // The transfer id is tracked internally; the UI keys off the code/progress
     // events, so the command just reports start success/failure.
     manager.send(resolve_all(&app, paths)?).await?;
@@ -360,7 +364,9 @@ async fn identity(pairing: State<'_, PairingService>) -> Result<String, CommandE
 
 #[tauri::command]
 #[specta::specta]
-async fn trusted_devices(pairing: State<'_, PairingService>) -> Result<Vec<DeviceInfo>, CommandError> {
+async fn trusted_devices(
+    pairing: State<'_, PairingService>,
+) -> Result<Vec<DeviceInfo>, CommandError> {
     Ok(pairing
         .trusted_devices()
         .into_iter()
@@ -401,13 +407,19 @@ async fn self_name(pairing: State<'_, PairingService>) -> Result<String, Command
 /// or transfer.
 #[tauri::command]
 #[specta::specta]
-async fn set_self_name(pairing: State<'_, PairingService>, name: String) -> Result<(), CommandError> {
+async fn set_self_name(
+    pairing: State<'_, PairingService>,
+    name: String,
+) -> Result<(), CommandError> {
     Ok(pairing.set_self_name(&name)?)
 }
 
 #[tauri::command]
 #[specta::specta]
-async fn untrust(pairing: State<'_, PairingService>, fingerprint: String) -> Result<(), CommandError> {
+async fn untrust(
+    pairing: State<'_, PairingService>,
+    fingerprint: String,
+) -> Result<(), CommandError> {
     Ok(pairing.untrust(&fingerprint)?)
 }
 
@@ -426,7 +438,10 @@ async fn confirm_pair(
 /// Discard a pending pairing without trusting the peer.
 #[tauri::command]
 #[specta::specta]
-async fn dismiss_pair(pairing: State<'_, PairingService>, fingerprint: String) -> Result<(), CommandError> {
+async fn dismiss_pair(
+    pairing: State<'_, PairingService>,
+    fingerprint: String,
+) -> Result<(), CommandError> {
     pairing.dismiss_pair(&fingerprint);
     Ok(())
 }
@@ -444,14 +459,20 @@ async fn rename_device(
 
 #[tauri::command]
 #[specta::specta]
-async fn accept(pairing: State<'_, PairingService>, transfer_id: String) -> Result<(), CommandError> {
+async fn accept(
+    pairing: State<'_, PairingService>,
+    transfer_id: String,
+) -> Result<(), CommandError> {
     pairing.accept(&transfer_id).await?;
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
-async fn decline(pairing: State<'_, PairingService>, transfer_id: String) -> Result<(), CommandError> {
+async fn decline(
+    pairing: State<'_, PairingService>,
+    transfer_id: String,
+) -> Result<(), CommandError> {
     Ok(pairing.decline(&transfer_id).await?)
 }
 
@@ -529,16 +550,11 @@ fn resolve_dest_root(app: &AppHandle, fallback: &Path) -> PathBuf {
     // Downloads dir, which has no such container.
     #[cfg(target_os = "ios")]
     {
-        app.path()
-            .document_dir()
-            .unwrap_or_else(|_| fallback.to_path_buf())
+        app.path().document_dir().unwrap_or_else(|_| fallback.to_path_buf())
     }
     #[cfg(not(target_os = "ios"))]
     {
-        app.path()
-            .download_dir()
-            .unwrap_or_else(|_| fallback.to_path_buf())
-            .join("floppy")
+        app.path().download_dir().unwrap_or_else(|_| fallback.to_path_buf()).join("floppy")
     }
 }
 
@@ -568,12 +584,11 @@ fn android_publish(app: &AppHandle) -> Option<transport::Publish> {
 
     let app = app.clone();
     Some(Arc::new(move |dest: &Path| -> io::Result<PathBuf> {
-        let to_io = |ctx: String| move |e| io::Error::new(io::ErrorKind::Other, format!("{ctx}: {e}"));
+        let to_io = |ctx: String| move |e| io::Error::other(format!("{ctx}: {e}"));
 
-        let folder = dest
-            .file_name()
-            .and_then(|s| s.to_str())
-            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "receive folder has no name"))?;
+        let folder = dest.file_name().and_then(|s| s.to_str()).ok_or_else(|| {
+            io::Error::new(io::ErrorKind::InvalidInput, "receive folder has no name")
+        })?;
 
         let afs = app.android_fs();
         let store = afs.public_storage();
@@ -591,16 +606,13 @@ fn android_publish(app: &AppHandle) -> Option<transport::Publish> {
             let uri = store
                 .create_new_file_with_pending(None, PublicGeneralPurposeDir::Download, &rel, None)
                 .map_err(to_io(format!("create {}", rel.display())))?;
-            let mut out = afs
-                .open_file_writable(&uri)
-                .map_err(to_io(format!("open {}", rel.display())))?;
+            let mut out =
+                afs.open_file_writable(&uri).map_err(to_io(format!("open {}", rel.display())))?;
             let mut src = std::fs::File::open(entry.path())?;
             io::copy(&mut src, &mut out)?;
             out.flush()?;
             drop(out);
-            store
-                .set_pending(&uri, false)
-                .map_err(to_io(format!("finalize {}", rel.display())))?;
+            store.set_pending(&uri, false).map_err(to_io(format!("finalize {}", rel.display())))?;
             // Best-effort media-store index; a failure here only delays the file
             // showing up in the gallery/Downloads app, it is already written.
             let _ = store.scan(&uri);
@@ -642,12 +654,13 @@ pub fn run() {
     // carried to the running instance, so `floppy://` links keep working; all
     // this callback owes is to bring the existing window forward.
     #[cfg(desktop)]
-    let tauri_builder = tauri_builder.plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
-        if let Some(win) = app.get_webview_window("main") {
-            let _ = win.set_focus();
-            let _ = win.unminimize();
-        }
-    }));
+    let tauri_builder =
+        tauri_builder.plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
+            if let Some(win) = app.get_webview_window("main") {
+                let _ = win.set_focus();
+                let _ = win.unminimize();
+            }
+        }));
 
     // Every `tracing::` call in the core reaches the OS log through this: stdout
     // (logcat on Android, oslog on iOS) plus a rotated file in the platform log
@@ -755,13 +768,12 @@ pub fn run() {
             }
 
             // Build the transfer core and make it available to the commands.
-            // The blob store lives in app data (on-disk => resume by hash);
-            // received files land under the platform download dir/floppy.
+            // The blob store lives in app data and is cleared on every launch —
+            // it is scratch space for a transfer, not an archive, so resume by
+            // hash holds within a session and not across a restart. Received
+            // files land under the platform download dir/floppy.
             let handle = app.handle().clone();
-            let data_dir = app
-                .path()
-                .app_data_dir()
-                .unwrap_or_else(|_| std::env::temp_dir());
+            let data_dir = app.path().app_data_dir().unwrap_or_else(|_| std::env::temp_dir());
             // One resolver picks the user-visible root per platform (desktop
             // Downloads, iOS Documents, Android public Downloads); the datetime
             // layout is identical on top of it.
@@ -813,15 +825,15 @@ pub fn run() {
             // finished transfer folder there; every other platform exports in
             // place (`None`).
             let publish = android_publish(app.handle());
-            let manager =
-                tauri::async_runtime::block_on(Manager::new_with_publish(config, emitter, publish))?;
+            let manager = tauri::async_runtime::block_on(Manager::new_with_publish(
+                config, emitter, publish,
+            ))?;
 
             // Trusted-device pairing: identity + trust store under app data, and
             // the fingerprint-routing broker (the mailbox URL's `/ws` → `/fp`).
-            let fp_broker_url = broker_url.strip_suffix("/ws").map_or_else(
-                || format!("{broker_url}/fp"),
-                |base| format!("{base}/fp"),
-            );
+            let fp_broker_url = broker_url
+                .strip_suffix("/ws")
+                .map_or_else(|| format!("{broker_url}/fp"), |base| format!("{base}/fp"));
             let pairing_emitter = Arc::new(TauriPairingEmitter {
                 app: handle.clone(),
                 foreground: foreground.clone(),

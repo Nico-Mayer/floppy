@@ -75,11 +75,8 @@ impl RateTracker {
         self.last_sent = done;
         self.last_sample = Some(now);
 
-        let percent = if total > 0 {
-            ((done as f64 / total as f64) * 100.0).min(100.0)
-        } else {
-            0.0
-        };
+        let percent =
+            if total > 0 { ((done as f64 / total as f64) * 100.0).min(100.0) } else { 0.0 };
         let remaining = total.saturating_sub(done);
 
         Some(Stats {

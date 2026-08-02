@@ -134,4 +134,3 @@ pub struct PairingError {
 pub struct DeepLink {
     pub code: String,
 }
-

@@ -11,7 +11,8 @@
 // the task's future (prompt QUIC reset) and emits no terminal event.
 //
 // No process-working-directory games (croc needed them; iroh does not) and no
-// per-code folder for resume — iroh-blobs resumes by BLAKE3 hash from the store.
+// per-code folder for resume — iroh-blobs resumes by BLAKE3 hash from the store,
+// which is cleared at launch, so resume is a within-session property.
 
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -22,6 +23,7 @@ use iroh::endpoint::presets;
 use iroh::endpoint::Connection;
 use iroh::protocol::Router;
 use iroh::{Endpoint, RelayMode};
+use iroh_blobs::api::blobs::{AddPathOptions, ExportMode, ExportOptions, ImportMode};
 use iroh_blobs::api::{Store, TempTag};
 use iroh_blobs::format::collection::Collection;
 use iroh_blobs::get::request::get_verified_size;
@@ -70,8 +72,8 @@ pub enum RelayConfig {
 /// Manager construction config.
 #[derive(Debug, Clone)]
 pub struct Config {
-    /// On-disk blob store dir. `None` uses an in-memory store (tests; no resume
-    /// across process restarts).
+    /// On-disk blob store dir, cleared when the Manager is built. `None` uses an
+    /// in-memory store (tests that need no on-disk behaviour).
     pub store_path: Option<PathBuf>,
     /// The user-visible root received files are written under, one
     /// datetime-stamped folder per transfer: `dest_root/<datetime>[ from <device>]/`.
@@ -222,6 +224,27 @@ impl Manager {
         tokio::spawn(async move { warm.online().await });
         let store = match &config.store_path {
             Some(path) => {
+                // Start from an empty store. The store is scratch space for a
+                // transfer, not an archive: a send imports its files by
+                // reference and a receive exports its files out, so what a
+                // finished transfer leaves is bookkeeping — outboards, entries,
+                // and the partial content of anything that failed. None of it is
+                // reclaimed on its own. iroh-blobs 0.103 keeps `gc_run_once` and
+                // `Blobs::delete` private (`store/mod.rs` exports only
+                // `GcConfig`), so the only collection it offers is a background
+                // timer; wiping the directory before the store opens does the
+                // same job with no task to run and no API to route around.
+                //
+                // Launch is the only moment this is safe, and it is also enough:
+                // nothing is in flight, and the store still accumulates normally
+                // for the whole session, so a receive that fails and is retried
+                // minutes later still resumes from what it already fetched.
+                // Resume across a restart is what this gives up.
+                if let Err(e) = std::fs::remove_dir_all(path) {
+                    if e.kind() != std::io::ErrorKind::NotFound {
+                        tracing::warn!(path = %path.display(), error = %e, "store: could not clear");
+                    }
+                }
                 std::fs::create_dir_all(path)?;
                 Blobs::Fs(FsStore::load(path).await?)
             }
@@ -237,9 +260,7 @@ impl Manager {
         };
         let (event_sender, event_rx) = EventSender::channel(64, mask);
         let blobs = BlobsProtocol::new(store.store(), Some(event_sender));
-        let router = Router::builder(endpoint.clone())
-            .accept(iroh_blobs::ALPN, blobs)
-            .spawn();
+        let router = Router::builder(endpoint.clone()).accept(iroh_blobs::ALPN, blobs).spawn();
 
         let inner = Arc::new(Inner {
             endpoint,
@@ -271,7 +292,10 @@ impl Manager {
     /// bytes, but emits nothing — the caller decides what the UI sees (the
     /// ticket for a raw share, a code phrase for quick share, or a signed offer
     /// for a trusted device).
-    pub async fn start_send(&self, paths: Vec<PathBuf>) -> Result<(String, String, u64), StartError> {
+    pub async fn start_send(
+        &self,
+        paths: Vec<PathBuf>,
+    ) -> Result<(String, String, u64), StartError> {
         if paths.is_empty() {
             return Err(StartError::NoFiles);
         }
@@ -311,7 +335,11 @@ impl Manager {
 
         // Reap this send if it sits idle past the TTL (never accepted, or a peer
         // that vanished mid-fetch) so it does not hold the slot and its pins.
-        tokio::spawn(expire_send_loop(Arc::downgrade(&self.inner), id.clone(), self.inner.send_ttl));
+        tokio::spawn(expire_send_loop(
+            Arc::downgrade(&self.inner),
+            id.clone(),
+            self.inner.send_ttl,
+        ));
 
         tracing::info!(id = %id, files = paths.len(), total, "send: serving");
         Ok((id, ticket.to_string(), total))
@@ -490,7 +518,8 @@ impl Manager {
                                 });
                             }) as CompleteCb
                         });
-                    run_receive(inner.clone(), ticket, dest, run_id, cancel, done, on_complete).await;
+                    run_receive(inner.clone(), ticket, dest, run_id, cancel, done, on_complete)
+                        .await;
                 }
                 Some(Err(err)) => {
                     inner.slots.lock().unwrap().recv = None;
@@ -644,7 +673,21 @@ async fn build_collection(store: &Store, paths: &[PathBuf]) -> anyhow::Result<Im
             .file_name()
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_else(|| "file".into());
-        let tag = store.blobs().add_path(path).temp_tag().await?;
+        // TryReference, not the `add_path` default of Copy: the store records
+        // the file where it lies instead of duplicating it, so serving a 4 GB
+        // video costs no second 4 GB. What Copy bought was immunity to the
+        // source changing under us mid-send; without it a changed file fails the
+        // receiver's BLAKE3 verification, which is loud rather than silent. The
+        // store may still inline a file below its threshold, which is correct.
+        let tag = store
+            .blobs()
+            .add_path_with_opts(AddPathOptions {
+                path: path.clone(),
+                format: BlobFormat::Raw,
+                mode: ImportMode::TryReference,
+            })
+            .temp_tag()
+            .await?;
         entries.push((name.clone(), tag.hash()));
         names.push(name);
         pins.push(tag);
@@ -681,7 +724,11 @@ async fn run_receive(
         None => {} // cancelled: emit nothing, leave partial data for resume
         Some(Ok(reported)) => {
             tracing::info!(id = %id, "receive: complete");
-            inner.emit(Event::Done { id: id.clone(), kind: Kind::Receive, dest: reported.to_string_lossy().into_owned() });
+            inner.emit(Event::Done {
+                id: id.clone(),
+                kind: Kind::Receive,
+                dest: reported.to_string_lossy().into_owned(),
+            });
             // Tell the sender we have it all — its passive send may not otherwise
             // know (a deduped/resumed receive moves fewer bytes than it holds).
             if let Some(cb) = on_complete {
@@ -782,13 +829,23 @@ async fn do_receive(
     // exports to a path it opens itself, so on every platform this writes to a
     // real (on Android, app-private) path first; the `publish` hook then moves
     // the folder to its user-visible home.
+    //
+    // TryReference, not the default Copy: this moves the file out of the store
+    // rather than writing a second copy of it, so a finished receive costs one
+    // copy on disk instead of two. The store is left referencing the exported
+    // path, which is why collection has to happen after the publish hook — that
+    // hook deletes the folder being referenced.
     std::fs::create_dir_all(dest)
         .map_err(|e| TransferError::new(TransferErrorCode::Storage, e.to_string()))?;
     for (name, hash) in collection.iter() {
         let target = dest.join(sanitize_name(name));
         store
             .blobs()
-            .export(*hash, &target)
+            .export_with_opts(ExportOptions {
+                hash: *hash,
+                mode: ExportMode::TryReference,
+                target: target.clone(),
+            })
             .await
             .map_err(|e| TransferError::new(TransferErrorCode::Storage, e.to_string()))?;
     }
@@ -812,11 +869,7 @@ async fn do_receive(
 /// blobs of a collection (the hash-seq root and the metadata blob) before the
 /// bulk transfer starts.
 async fn fetch_blob(store: &Store, conn: &Connection, hash: Hash) -> Result<(), TransferError> {
-    store
-        .remote()
-        .fetch(conn.clone(), HashAndFormat::raw(hash))
-        .await
-        .map_err(classify_get_err)?;
+    store.remote().fetch(conn.clone(), HashAndFormat::raw(hash)).await.map_err(classify_get_err)?;
     Ok(())
 }
 
@@ -888,8 +941,7 @@ async fn provider_pump(mut rx: mpsc::Receiver<ProviderMessage>, inner: Weak<Inne
                         offset = p.end_offset;
                         // Only surface progress for file content, not probes.
                         if let Some(index) = current {
-                            let name =
-                                names.get(index as usize - 1).cloned().unwrap_or_default();
+                            let name = names.get(index as usize - 1).cloned().unwrap_or_default();
                             if let Some(stats) = tracker.sample(
                                 Instant::now(),
                                 content + offset,
@@ -1071,10 +1123,9 @@ async fn rendezvous_receive(
     let sealed = mailbox.recv().await.map_err(broker_err)?;
     let plaintext = pake::open(&key, &sealed).map_err(|_| wrong_code_err())?;
     let ticket = String::from_utf8(plaintext).map_err(|_| wrong_code_err())?;
-    let ticket = ticket
-        .trim()
-        .parse::<BlobTicket>()
-        .map_err(|_| TransferError::new(TransferErrorCode::BadTicket, "The sender's ticket was invalid."))?;
+    let ticket = ticket.trim().parse::<BlobTicket>().map_err(|_| {
+        TransferError::new(TransferErrorCode::BadTicket, "The sender's ticket was invalid.")
+    })?;
     Ok((ticket, mailbox, key))
 }
 
@@ -1094,7 +1145,10 @@ fn broker_err(msg: String) -> TransferError {
 /// rejecting, the AEAD failing to open, or a garbled ticket. Deliberately does
 /// not distinguish, so a wrong code reveals nothing.
 fn wrong_code_err() -> TransferError {
-    TransferError::new(TransferErrorCode::Other, "That code does not match the sender. Check it and try again.")
+    TransferError::new(
+        TransferErrorCode::Other,
+        "That code does not match the sender. Check it and try again.",
+    )
 }
 
 fn classify_connect_err(err: iroh::endpoint::ConnectError) -> TransferError {
@@ -1225,7 +1279,9 @@ mod tests {
             .unwrap();
         assert_eq!(last_progress, 100.0);
         // Done is the terminal event.
-        assert!(!events[done_at + 1..].iter().any(|e| matches!(e, Event::Done { .. } | Event::Failed { .. })));
+        assert!(!events[done_at + 1..]
+            .iter()
+            .any(|e| matches!(e, Event::Done { .. } | Event::Failed { .. })));
     }
 
     /// Every progress snapshot of `kind`, in order.
@@ -1259,7 +1315,9 @@ mod tests {
         wait_for(&re, |e| e.iter().any(|x| matches!(x, Event::Done { .. }))).await;
         wait_for(&se, |e| e.iter().any(|x| matches!(x, Event::Done { .. }))).await;
 
-        for (side, stats) in [("send", progress_of(&se, Kind::Send)), ("recv", progress_of(&re, Kind::Receive))] {
+        for (side, stats) in
+            [("send", progress_of(&se, Kind::Send)), ("recv", progress_of(&re, Kind::Receive))]
+        {
             assert!(!stats.is_empty(), "{side}: no progress events");
             for s in &stats {
                 assert_eq!(s.file_count, 2, "{side}: wrong file count in {s:?}");
@@ -1308,7 +1366,9 @@ mod tests {
         // A loopback QUIC transfer does not exceed a few hundred MB/s; anything
         // near this bound means the rate was measured over a ~0 time gap.
         const IMPOSSIBLE_BPS: f64 = 5e9;
-        for (side, stats) in [("send", progress_of(&se, Kind::Send)), ("recv", progress_of(&re, Kind::Receive))] {
+        for (side, stats) in
+            [("send", progress_of(&se, Kind::Send)), ("recv", progress_of(&re, Kind::Receive))]
+        {
             assert!(
                 stats.len() <= 40,
                 "{side}: {} progress events for one transfer — updates are not paced",
@@ -1359,7 +1419,10 @@ mod tests {
         // The same file, sent and received twice over.
         for round in 1..=2 {
             sender.send(vec![src.clone()]).await.unwrap();
-            wait_for(&se, |e| e.iter().filter(|x| matches!(x, Event::Code { .. })).count() >= round).await;
+            wait_for(&se, |e| {
+                e.iter().filter(|x| matches!(x, Event::Code { .. })).count() >= round
+            })
+            .await;
             let ticket = se
                 .events()
                 .iter()
@@ -1370,15 +1433,16 @@ mod tests {
                 .next_back()
                 .unwrap();
             receiver.receive(ticket).await.unwrap();
-            wait_for(&re, |e| e.iter().filter(|x| matches!(x, Event::Done { .. })).count() >= round).await;
+            wait_for(&re, |e| {
+                e.iter().filter(|x| matches!(x, Event::Done { .. })).count() >= round
+            })
+            .await;
             wait_for_manager_idle(&receiver).await;
         }
 
         let root = tmp.path().join("r-dl");
-        let copies: Vec<PathBuf> = walk(&root)
-            .into_iter()
-            .filter(|p| p.file_name().unwrap() == "shared.bin")
-            .collect();
+        let copies: Vec<PathBuf> =
+            walk(&root).into_iter().filter(|p| p.file_name().unwrap() == "shared.bin").collect();
         assert_eq!(copies.len(), 2, "each receive gets its own folder: {copies:?}");
         for copy in &copies {
             let folder = copy.parent().unwrap();
@@ -1525,16 +1589,95 @@ mod tests {
 
         let files: std::collections::HashMap<_, _> = walk(&tmp.path().join("r-dl"))
             .into_iter()
-            .map(|p| (p.file_name().unwrap().to_string_lossy().into_owned(), std::fs::read(&p).unwrap()))
+            .map(|p| {
+                (p.file_name().unwrap().to_string_lossy().into_owned(), std::fs::read(&p).unwrap())
+            })
             .collect();
         assert_eq!(files.get("one.txt").map(|v| v.len()), Some(50_000));
         assert_eq!(files.get("two.txt").map(|v| v.len()), Some(70_000));
+    }
+
+    /// Total bytes of every file under `dir`, for the storage-cost assertions.
+    fn dir_bytes(dir: &Path) -> u64 {
+        walk(dir).iter().filter_map(|p| std::fs::metadata(p).ok()).map(|m| m.len()).sum()
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn a_send_does_not_copy_its_payload_into_the_store() {
+        // ImportMode::TryReference: the store records where the file lies rather
+        // than duplicating it, so importing must cost far less than the payload.
+        // The outboard is ~1/256 of the content, so half the payload is a wide
+        // margin that still fails loudly if the default Copy mode comes back.
+        let tmp = tempfile::tempdir().unwrap();
+        let payload = vec![9u8; 4_000_000];
+        let src = write_file(tmp.path(), "big.bin", &payload);
+
+        let se = Collector::default();
+        let sender = manager(tmp.path(), "s", Arc::new(se.clone())).await;
+        sender.send(vec![src]).await.unwrap();
+        wait_for(&se, |e| e.iter().any(|x| matches!(x, Event::Code { .. }))).await;
+
+        let store_bytes = dir_bytes(&tmp.path().join("s"));
+        assert!(
+            store_bytes < payload.len() as u64 / 2,
+            "store grew by {store_bytes} for a {} byte payload — imported by copy, not reference",
+            payload.len()
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn a_receive_exports_without_leaving_a_copy_behind() {
+        // ExportMode::TryReference moves the file out of the store instead of
+        // writing a second copy. The exported bytes must still be exact — moving
+        // rather than copying must not change what arrives.
+        let tmp = tempfile::tempdir().unwrap();
+        let payload = vec![3u8; 4_000_000];
+        let src = write_file(tmp.path(), "moved.bin", &payload);
+
+        let se = Collector::default();
+        let re = Collector::default();
+        let sender = manager(tmp.path(), "s", Arc::new(se.clone())).await;
+        let receiver = manager(tmp.path(), "r", Arc::new(re.clone())).await;
+
+        sender.send(vec![src]).await.unwrap();
+        wait_for(&se, |e| e.iter().any(|x| matches!(x, Event::Code { .. }))).await;
+        receiver.receive(ticket_of(&se.events())).await.unwrap();
+        wait_for(&re, |e| e.iter().any(|x| matches!(x, Event::Done { .. }))).await;
+
+        let exported = walk(&tmp.path().join("r-dl"));
+        assert_eq!(exported.len(), 1, "expected one exported file");
+        assert_eq!(std::fs::read(&exported[0]).unwrap(), payload, "exported bytes differ");
+
+        let store_bytes = dir_bytes(&tmp.path().join("r"));
+        assert!(
+            store_bytes < payload.len() as u64 / 2,
+            "receive store holds {store_bytes} bytes after export — exported by copy, not reference"
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn building_a_manager_clears_the_store() {
+        // The store is scratch space, not an archive: whatever a previous run of
+        // the app left behind is gone before the store opens.
+        let tmp = tempfile::tempdir().unwrap();
+        let store = tmp.path().join("s");
+        std::fs::create_dir_all(store.join("leftover")).unwrap();
+        std::fs::write(store.join("leftover").join("stale.bin"), vec![1u8; 100_000]).unwrap();
+
+        let _sender = manager(tmp.path(), "s", Arc::new(Collector::default())).await;
+
+        assert!(!store.join("leftover").exists(), "a previous run's content survived launch");
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn re_receive_is_idempotent_resume() {
         // Receiving the same ticket twice into the same on-disk store completes
         // both times — the second reuses the content already held (resume path).
+        //
+        // This is also the within-session resume test. The store is cleared when
+        // the Manager is built, so reuse holds for the life of a session and not
+        // across a restart; both receives here run against one Manager, which is
+        // exactly the case resume exists for (retry after a dropped connection).
         let tmp = tempfile::tempdir().unwrap();
         let src = write_file(tmp.path(), "r.bin", &vec![4u8; 400_000]);
         let se = Collector::default();

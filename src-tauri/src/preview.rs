@@ -56,10 +56,7 @@ pub fn path_from_uri(uri: &tauri::http::Uri) -> String {
 }
 
 fn ext_of(path: &str) -> String {
-    Path::new(path)
-        .extension()
-        .map(|e| e.to_string_lossy().to_lowercase())
-        .unwrap_or_default()
+    Path::new(path).extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default()
 }
 
 fn content_type(ext: &str) -> &'static str {
@@ -141,7 +138,12 @@ fn thumbnail(path: &str) -> Option<Vec<u8>> {
     Some(buf.into_inner())
 }
 
-fn cached(code: StatusCode, etag: &str, content_type: Option<&str>, body: Vec<u8>) -> Response<Vec<u8>> {
+fn cached(
+    code: StatusCode,
+    etag: &str,
+    content_type: Option<&str>,
+    body: Vec<u8>,
+) -> Response<Vec<u8>> {
     let mut b = Response::builder()
         .status(code)
         .header("ETag", etag)

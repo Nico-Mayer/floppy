@@ -104,7 +104,8 @@ impl Identity {
         getrandom::fill(&mut sign_seed).map_err(|e| format!("rng: {e}"))?;
         getrandom::fill(&mut kex_seed).map_err(|e| format!("rng: {e}"))?;
         let kex = StaticSecret::from(kex_seed); // clamps on use (RFC 7748)
-        let disk = DiskIdentity { sign_seed: sign_seed.to_vec(), kex_priv: kex.to_bytes().to_vec() };
+        let disk =
+            DiskIdentity { sign_seed: sign_seed.to_vec(), kex_priv: kex.to_bytes().to_vec() };
         let blob = serde_json::to_vec(&disk).map_err(|e| format!("marshaling identity: {e}"))?;
         write_file_atomic(path, &blob).map_err(|e| format!("writing identity: {e}"))?;
         Self::from_disk(disk)
@@ -115,7 +116,10 @@ impl Identity {
             disk.sign_seed.as_slice().try_into().map_err(|_| "bad signing seed length")?;
         let kex_priv: [u8; KEY_LEN] =
             disk.kex_priv.as_slice().try_into().map_err(|_| "bad kex key length")?;
-        Ok(Identity { signing: SigningKey::from_bytes(&sign_seed), kex: StaticSecret::from(kex_priv) })
+        Ok(Identity {
+            signing: SigningKey::from_bytes(&sign_seed),
+            kex: StaticSecret::from(kex_priv),
+        })
     }
 
     /// The device's public identity — safe to share (QR, trust store).

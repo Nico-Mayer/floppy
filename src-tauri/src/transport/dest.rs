@@ -30,10 +30,7 @@ pub(crate) fn receive_dest(root: &Path, peer: Option<&str>, now: &str) -> PathBu
     if !first.exists() {
         return first;
     }
-    (2..1000)
-        .map(|n| root.join(format!("{name}-{n}")))
-        .find(|p| !p.exists())
-        .unwrap_or(first)
+    (2..1000).map(|n| root.join(format!("{name}-{n}"))).find(|p| !p.exists()).unwrap_or(first)
 }
 
 /// One safe path component: no separators, no traversal, no characters Windows

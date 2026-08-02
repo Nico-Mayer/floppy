@@ -103,7 +103,13 @@ async fn serve_once(
     let (mut write, mut read) = ws.split();
 
     // Register and await the ok.
-    let reg = Wire { typ: "register".into(), key: Some(key.into()), sig: Some(sig.into()), to: None, blob: None };
+    let reg = Wire {
+        typ: "register".into(),
+        key: Some(key.into()),
+        sig: Some(sig.into()),
+        to: None,
+        blob: None,
+    };
     write.send(json(&reg)).await.map_err(|e| format!("register: {e}"))?;
     match read.next().await {
         Some(Ok(Message::Text(t))) => {

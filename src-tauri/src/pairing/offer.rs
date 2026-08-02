@@ -108,7 +108,12 @@ impl Identity {
 
     /// Build and sign a response. `reason` accompanies a decline (`accept =
     /// false`) and is `None` on an accept.
-    pub fn sign_response(&self, transfer_id: &str, accept: bool, reason: Option<DeclineReason>) -> Response {
+    pub fn sign_response(
+        &self,
+        transfer_id: &str,
+        accept: bool,
+        reason: Option<DeclineReason>,
+    ) -> Response {
         let mut r = Response {
             from: self.public(),
             transfer_id: transfer_id.to_string(),

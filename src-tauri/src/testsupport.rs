@@ -142,10 +142,14 @@ pub async fn mock_mailbox_broker() -> String {
 
                 // Relay each message to the other party, or buffer it if the peer
                 // has not joined yet.
-                while let Some(Ok(Message::Text(t))) = futures_util::StreamExt::next(&mut read).await
+                while let Some(Ok(Message::Text(t))) =
+                    futures_util::StreamExt::next(&mut read).await
                 {
-                    let m: In = serde_json::from_str(&t)
-                        .unwrap_or(In { typ: String::new(), room: None, data: None });
+                    let m: In = serde_json::from_str(&t).unwrap_or(In {
+                        typ: String::new(),
+                        room: None,
+                        data: None,
+                    });
                     if m.typ != "msg" {
                         continue;
                     }
@@ -225,7 +229,8 @@ pub async fn mock_fp_broker() -> String {
                 let _ = tx.send(Message::text(r#"{"type":"ok"}"#.to_string()));
 
                 // Relay signals by target fingerprint.
-                while let Some(Ok(Message::Text(t))) = futures_util::StreamExt::next(&mut read).await
+                while let Some(Ok(Message::Text(t))) =
+                    futures_util::StreamExt::next(&mut read).await
                 {
                     let m: In = serde_json::from_str(&t).unwrap_or(In {
                         typ: String::new(),

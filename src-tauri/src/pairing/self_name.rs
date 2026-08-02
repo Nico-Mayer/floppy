@@ -92,9 +92,9 @@ const ADJECTIVES: &[&str] = &[
 ];
 
 const ANIMALS: &[&str] = &[
-    "otter", "panda", "koala", "fox", "lynx", "heron", "finch", "gecko", "moth", "wren",
-    "seal", "hare", "newt", "crane", "robin", "bison", "tapir", "quail", "swan", "vole",
-    "puffin", "badger", "marten", "beaver", "ferret", "raven", "mole", "shrew", "stoat", "wombat",
+    "otter", "panda", "koala", "fox", "lynx", "heron", "finch", "gecko", "moth", "wren", "seal",
+    "hare", "newt", "crane", "robin", "bison", "tapir", "quail", "swan", "vole", "puffin",
+    "badger", "marten", "beaver", "ferret", "raven", "mole", "shrew", "stoat", "wombat",
 ];
 
 /// A random `AdjectiveAnimal` self-name in PascalCase, e.g. `BraveOtter`.

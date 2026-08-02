@@ -153,6 +153,31 @@ class SendTransfer {
 		}
 	}
 
+	/**
+	 * The other side has it all. The queue stays for the completion summary, but
+	 * the sandbox copies behind it do not: they have been delivered, and on a
+	 * phone a queue of videos is the biggest thing the app is holding.
+	 *
+	 * Safe to reap here because the done screen reads only the in-memory entries
+	 * (names and sizes for the summary), never the bytes. Not done on cancel —
+	 * cancelling keeps the queue so the same files can be sent again, and those
+	 * entries have to keep pointing at readable files.
+	 */
+	complete() {
+		this.status = 'done'
+		void ClearInputCache().catch(() => {})
+	}
+
+	/**
+	 * Clear the queue and everything behind it.
+	 *
+	 * Only ever call this when no send is serving. The core imports files by
+	 * reference, so the blob store points at these sandbox copies rather than
+	 * holding its own — deleting them under a live passive send would leave the
+	 * receiver fetching a file that is no longer there. Today's callers are safe:
+	 * the done screen's "send something else", and two trusted-send failure paths
+	 * that can only run before the send slot was claimed.
+	 */
 	reset() {
 		this.#clearTransfer()
 		this.files = []
@@ -328,7 +353,7 @@ class TransferApp {
 				}
 			}),
 			events.doneEvent.listen((e) => {
-				if (e.payload.kind === 'send') this.send.status = 'done'
+				if (e.payload.kind === 'send') this.send.complete()
 				else this.receive.complete(e.payload.dest)
 				// One success note, whichever direction finished. Fire and forget: a
 				// buzz must never hold up or fail a transfer's completion.

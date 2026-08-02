@@ -76,7 +76,11 @@ context: |
     progress stream → export files. Cancel drops the task (prompt QUIC reset) and
     emits **no** terminal event.
   - Resume is by BLAKE3 hash from the on-disk store; there is no per-code folder
-    and correctness never depends on the process working directory.
+    and correctness never depends on the process working directory. The store is
+    scratch space, not an archive: it is cleared when the Manager is built, so
+    resume holds within a session (retry after a dropped connection) and not
+    across a restart. Files are imported by reference and exported by reference,
+    so a transfer never costs a second copy of its own payload.
   - Destination: one folder per transfer, `<dest_root>/<YYYY-MM-DD HH-MM-SS>`
     with ` from <device>` appended for a trusted sender (`transport/dest.rs`).
     `dest_root` resolves per platform to the user-visible download location
