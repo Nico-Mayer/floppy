@@ -1,11 +1,14 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button'
+	import { Spinner } from '$lib/components/ui/spinner'
 	import * as Tooltip from '$lib/components/ui/tooltip'
+	import { fast } from '$lib/motion'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import { app } from '$lib/transfer-app.svelte'
 	import SendIcon from '@lucide/svelte/icons/send'
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert'
 	import XIcon from '@lucide/svelte/icons/x'
+	import { fade } from 'svelte/transition'
 	import { currentFile } from '../format'
 	import TransferCard from '../TransferCard.svelte'
 	import TransferProgress from '../TransferProgress.svelte'
@@ -123,19 +126,60 @@
 	     already on its way to idle. -->
 	{#snippet actions()}
 		{#if send.status === 'idle' && send.files.length > 0}
-			<!-- One line, not a stack: who the files go to and the button that sends
-			     them are one sentence, and the ~110px the stacked version cost is a
-			     whole row of tiles in the queue above. The picker takes the leftover
-			     width and truncates; Send keeps its content width at the trailing
-			     edge, where the thumb is. Adding files is not weighed against Send
-			     here either — that moved into the queue grid itself (SendQueue's
-			     last tile). -->
-			<div class="flex items-center gap-2">
-				<SendTargetPicker bind:value={() => selection, (next) => (send.picked = next)} />
-				<Button onclick={dispatchSend}>
-					<SendIcon />
-					Send
-				</Button>
+			<!-- The idle zone has two shapes, and they swap in place: the send row, and
+			     the report that a pick has not come back yet.
+			     Only with files queued. A pick over an empty queue reports under the
+			     mascot instead (see SendQueue) — there is no Send to block there, and
+			     this zone collapses when it renders nothing, so putting the report here
+			     would make the whole zone appear and shove the empty card up.
+			     One grid cell holds both. A transition needs the outgoing element in the
+			     DOM until it finishes, and as two siblings of the flex column that would
+			     stack them for the length of the crossfade and shove the queue up a row.
+			     Stacked in one cell they overlap instead, and the cell keeps the taller
+			     one's height — which is the same height, see the h-9 below. -->
+			<div class="grid *:col-start-1 *:row-start-1">
+				{#if send.picking}
+					<!-- A pick that has not come back yet, which on a phone is seconds and
+					     not an instant: iOS takes the picker sheet away before it starts
+					     loading what was chosen and says nothing at all until every item is
+					     ready. This is the only place the app says so, and it is here
+					     because it has to do two things at once. It is the biggest thing on
+					     the screen that is not the queue, at the bottom edge where the eye
+					     already is after a pick. And it *is* the Send slot, so a send
+					     cannot be started over an incomplete queue — no disabled button to
+					     keep in step with anything, the control simply is not there yet.
+					     Not a button: nothing here is pressable, and a dimmed disabled
+					     button would be quieter than the row it replaced, not louder.
+					     h-9 plus the coarse-pointer minimum are the Send button's own
+					     numbers, so the grid cell is the same height in both shapes and the
+					     crossfade moves nothing. -->
+					<div
+						role="status"
+						transition:fade={{ duration: fast() }}
+						class="flex h-9 w-full items-center justify-center gap-2 rounded-4xl border border-(--tint)/30 bg-(--tint)/10 px-4 text-sm font-medium text-(--tint) pointer-coarse:min-h-11"
+					>
+						<!-- aria-hidden takes the whole node out of the a11y tree, so the
+						     wrapper's role="status" announces the sentence once and not a
+						     stray "Loading" beside it. -->
+						<Spinner aria-hidden="true" class="size-4" />
+						getting files ready
+					</div>
+				{:else}
+					<!-- One line, not a stack: who the files go to and the button that sends
+					     them are one sentence, and the ~110px the stacked version cost is a
+					     whole row of tiles in the queue above. The picker takes the leftover
+					     width and truncates; Send keeps its content width at the trailing
+					     edge, where the thumb is. Adding files is not weighed against Send
+					     here either — that moved into the queue grid itself (SendQueue's
+					     last tile). -->
+					<div class="flex items-center gap-2" transition:fade={{ duration: fast() }}>
+						<SendTargetPicker bind:value={() => selection, (next) => (send.picked = next)} />
+						<Button onclick={dispatchSend}>
+							<SendIcon />
+							Send
+						</Button>
+					</div>
+				{/if}
 			</div>
 		{:else if send.status === 'starting' || send.status === 'waiting' || send.status === 'sending'}
 			<!-- Cancelling an offer the peer has not answered yet only stops us

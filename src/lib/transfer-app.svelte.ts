@@ -74,7 +74,21 @@ class SendTransfer {
 	}
 
 	/** True while a native picker is open, so a second click is ignored. */
-	#picking = false
+	#picking = $state(false)
+
+	/**
+	 * The same flag, for the Send screen's idle surfaces to show they are working.
+	 *
+	 * It has to be read from outside because the wait is invisible otherwise: iOS
+	 * dismisses the picker sheet *before* it starts loading what was chosen, and
+	 * reports nothing at all until every item is ready, so the app sits on screen
+	 * doing nothing visible for as long as a big selection takes. Nothing finer
+	 * than a boolean is available — the platform hands back the whole selection at
+	 * once or not at all, so there is no count to show and no progress to track.
+	 */
+	get picking() {
+		return this.#picking
+	}
 
 	pickFiles() {
 		return this.#pick({ multiple: true, title: 'Add files' })

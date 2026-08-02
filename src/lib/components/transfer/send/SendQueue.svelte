@@ -1,11 +1,13 @@
 <script lang="ts">
 	import * as Empty from '$lib/components/ui/empty'
+	import { Spinner } from '$lib/components/ui/spinner'
 	import { fast } from '$lib/motion'
 	import { isPhoneChrome } from '$lib/platform'
 	import { app } from '$lib/transfer-app.svelte'
 	import { cn } from '$lib/utils'
 	import PlusIcon from '@lucide/svelte/icons/plus'
 	import { flip } from 'svelte/animate'
+	import { fade } from 'svelte/transition'
 	import FileCard from '../FileCard.svelte'
 	import Mascot from '../Mascot.svelte'
 	import { addFiles } from './add-files.svelte'
@@ -34,19 +36,44 @@
 			<Empty.Media class="@md:mb-0">
 				<Mascot accent="send" class="size-20 @md:size-24" />
 			</Empty.Media>
-			<!-- A phone has no drag-and-drop at all: the webview never reports one, so
-			     inviting a drop there names something that cannot happen. The wording
-			     follows the platform and not the width, so a desktop window dragged
-			     narrow keeps the drag copy, because it can still take a drop. -->
-			<div class="flex min-w-0 flex-col items-center gap-2">
-				<Empty.Title>{isPhoneChrome ? 'Add files to send' : 'Drop your files here'}</Empty.Title>
-				<Empty.Description>
-					{#if isPhoneChrome}
-						photos or files, your pick
-					{:else}
-						or <span class="underline underline-offset-2"> browse </span>
-					{/if}
-				</Empty.Description>
+			<!-- The copy has two shapes, crossfading in one grid cell rather than as two
+			     siblings of this flex column — an outgoing element lives until its
+			     transition ends, and stacked it would grow the header mid-fade. -->
+			<div class="grid *:col-start-1 *:row-start-1">
+				{#if send.picking}
+					<!-- The empty state says it here rather than in the anchored action zone,
+					     which is where the queue view says it. The two views have different
+					     problems: with files queued the report has to stand in the Send slot
+					     so a half-arrived selection cannot be sent, and with nothing queued
+					     there is no Send to block and no action zone to put it in — showing
+					     one would make the zone appear and shove this card up as it did.
+					     Under the mascot is where the eye already is on this screen. -->
+					<div
+						role="status"
+						transition:fade={{ duration: fast() }}
+						class="flex min-w-0 flex-col items-center gap-2"
+					>
+						<!-- aria-hidden keeps the spinner out of the a11y tree so the wrapper's
+						     role="status" announces the sentence once, with no stray "Loading". -->
+						<Spinner aria-hidden="true" class="size-6 text-muted-foreground" />
+						<Empty.Description>getting files ready</Empty.Description>
+					</div>
+				{:else}
+					<!-- A phone has no drag-and-drop at all: the webview never reports one, so
+					     inviting a drop there names something that cannot happen. The wording
+					     follows the platform and not the width, so a desktop window dragged
+					     narrow keeps the drag copy, because it can still take a drop. -->
+					<div transition:fade={{ duration: fast() }} class="flex min-w-0 flex-col items-center gap-2">
+						<Empty.Title>{isPhoneChrome ? 'Add files to send' : 'Drop your files here'}</Empty.Title>
+						<Empty.Description>
+							{#if isPhoneChrome}
+								photos or files, your pick
+							{:else}
+								or <span class="underline underline-offset-2"> browse </span>
+							{/if}
+						</Empty.Description>
+					</div>
+				{/if}
 			</div>
 		</Empty.Header>
 	</Empty.Root>

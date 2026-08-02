@@ -24,6 +24,15 @@ class AddFiles {
 
 	/** Ask for files: the sheet on a phone, the file picker everywhere else. */
 	start() {
+		// One guard for all three surfaces, here rather than repeated on each of
+		// them, for the same reason the branch below lives here. It cannot live in
+		// transfer-app instead: its own re-entry check refuses a second *pick*, and
+		// on a phone this opens the drawer, which that check never sees.
+		//
+		// The wait it guards is a real one — a big photo selection takes seconds to
+		// come back (see `picking`) — and it is the action zone that says so, so a
+		// surface that quietly does nothing here has already been explained.
+		if (app.send.picking) return
 		if (isPhoneChrome) this.open = true
 		else void app.send.pickFiles()
 	}
