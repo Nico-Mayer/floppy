@@ -24,6 +24,19 @@ import { sounds } from './sounds'
  */
 export type Mode = 'send' | 'receive'
 
+/**
+ * The two waits the panels admit to, kept together because they are the same
+ * judgement made twice: a transfer that has sat this long without the other side
+ * appearing is probably not going to work, and the screen should say so rather
+ * than spin forever.
+ *
+ * A trusted send is waiting on a person to tap yes; a code receive is hunting for
+ * a peer that may never have existed. Neither has anything else on screen to
+ * explain the silence, so both break it after the same wait.
+ */
+const NO_ANSWER_HINT_DELAY = 15_000
+const MISTYPED_CODE_HINT_DELAY = 15_000
+
 class SendTransfer {
 	status = $state<SendStatus>('idle')
 	/**
@@ -50,6 +63,9 @@ class SendTransfer {
 	 * belongs to.
 	 */
 	picked = $state('code')
+	/** Set once a trusted send has gone unanswered for suspiciously long. */
+	noAnswer = $state(false)
+	#hintTimer: ReturnType<typeof setTimeout> | undefined
 
 	get busy() {
 		return this.status !== 'idle' && this.status !== 'done'
@@ -145,6 +161,7 @@ class SendTransfer {
 		this.target = { kind: 'code' }
 		this.progress = 0
 		this.stats = null
+		this.#clearHint()
 		this.status = 'starting'
 		try {
 			// Quick share: the core generates a human code phrase and runs the
@@ -168,7 +185,11 @@ class SendTransfer {
 		this.target = { kind: 'device', ...device }
 		this.progress = 0
 		this.stats = null
+		this.#clearHint()
 		this.status = 'starting'
+		// Only this target waits on an answer, so only this one arms the hint: a code
+		// send publishes a phrase and there is no yes outstanding to explain.
+		this.#hintTimer = setTimeout(() => (this.noAnswer = true), NO_ANSWER_HINT_DELAY)
 	}
 
 	/**
@@ -178,6 +199,7 @@ class SendTransfer {
 	 * the only things that move it off 'starting'.
 	 */
 	accepted() {
+		this.#clearHint()
 		if (this.status === 'starting') this.status = 'waiting'
 	}
 
@@ -206,6 +228,7 @@ class SendTransfer {
 	 * entries have to keep pointing at readable files.
 	 */
 	complete() {
+		this.#clearHint()
 		this.status = 'done'
 		void ClearInputCache().catch(() => {})
 	}
@@ -242,19 +265,20 @@ class SendTransfer {
 	}
 
 	#clearTransfer() {
+		this.#clearHint()
 		this.code = ''
 		this.target = { kind: 'code' }
 		this.progress = 0
 		this.stats = null
 		this.status = 'idle'
 	}
-}
 
-/**
- * How long a receive may sit unconnected before the UI suggests the code might
- * be wrong. A receive waits for its peer forever, so nothing else ever says so.
- */
-const MISTYPED_CODE_HINT_DELAY = 15_000
+	#clearHint() {
+		clearTimeout(this.#hintTimer)
+		this.#hintTimer = undefined
+		this.noAnswer = false
+	}
+}
 
 class ReceiveTransfer {
 	status = $state<ReceiveStatus>('idle')

@@ -8,9 +8,9 @@
 	import { currentFile } from '../format'
 	import TransferCard from '../TransferCard.svelte'
 	import TransferProgress from '../TransferProgress.svelte'
-	import TransferComplete from '$lib/components/feedback/TransferComplete.svelte'
+	import StatusHero from '$lib/components/feedback/StatusHero.svelte'
 	import ReceiveCodeForm from './ReceiveCodeForm.svelte'
-	import ReceiveDevice from './ReceiveDevice.svelte'
+	import { receiveConnectLabel } from './labels'
 	import ReceiveIdle from './ReceiveIdle.svelte'
 	import ReceiveSearching from './ReceiveSearching.svelte'
 
@@ -24,11 +24,10 @@
 		<TransferProgress label="Stopping…" />
 	{:else if receive.status === 'connecting'}
 		{#if receive.target.kind === 'device'}
-			<ReceiveDevice
-				name={receive.target.name}
-				files={receive.target.fileCount}
-				totalBytes={receive.target.totalBytes}
-			/>
+			<!-- Always 'pending': the check means an answer arrived, and this side
+			     answered before the screen existed. The spinner stays until the first
+			     bytes land and the gauge takes over. -->
+			<StatusHero mark="pending" label={receiveConnectLabel(receive.target.name)} />
 		{:else}
 			<ReceiveSearching />
 		{/if}
@@ -42,7 +41,8 @@
 		<!-- No path here (`feedback`): the destination is a folder name nobody typed and
 		     the screen that ends the flow should not be an absolute path. Where the files
 		     are is answered by Open folder below on desktop, and by Settings anywhere. -->
-		<TransferComplete
+		<StatusHero
+			mark="success"
 			title={receive.target.kind === 'device' ? `Got them from ${receive.target.name}` : 'All done'}
 		/>
 	{:else}

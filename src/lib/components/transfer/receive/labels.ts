@@ -32,7 +32,14 @@ export function receiveHeadline(status: ReceiveStatus, target: ReceiveTarget): s
 	}
 }
 
-/** "3 files" / "1 file" — a count with the right plural. */
-export function fileCount(n: number): string {
-	return `${n} ${n === 1 ? 'file' : 'files'}`
+/**
+ * The one line under the mark on a device receive: who this is with. Mirrors
+ * sendConnectLabel — the mark carries the state and the label carries the name.
+ *
+ * There is no answered form here. The offer was accepted on this device before
+ * this screen existed, so nothing is waiting on a yes and the mark stays the
+ * spinner until bytes arrive.
+ */
+export function receiveConnectLabel(name: string): string {
+	return `connecting to ${name}`
 }

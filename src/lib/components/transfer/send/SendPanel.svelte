@@ -1,6 +1,6 @@
 <script lang="ts">
 	import PendingHint from '$lib/components/feedback/PendingHint.svelte'
-	import TransferComplete from '$lib/components/feedback/TransferComplete.svelte'
+	import StatusHero from '$lib/components/feedback/StatusHero.svelte'
 	import { Button } from '$lib/components/ui/button'
 	import { fast } from '$lib/motion'
 	import { pairing } from '$lib/pairing-app.svelte'
@@ -13,8 +13,8 @@
 	import TransferCard from '../TransferCard.svelte'
 	import TransferProgress from '../TransferProgress.svelte'
 	import AddFilesButton from './AddFilesButton.svelte'
+	import { NO_ANSWER_HINT, sendConnectLabel } from './labels'
 	import SendCode from './SendCode.svelte'
-	import SendDevice from './SendDevice.svelte'
 	import SendQueue from './SendQueue.svelte'
 	import SendTargetPicker from './SendTargetPicker.svelte'
 
@@ -78,15 +78,26 @@
 		</div>
 	{:else if send.status === 'cancelling'}
 		<TransferProgress label="Stopping…" />
-	{:else if send.status === 'starting'}
+	{:else if send.status === 'starting' || send.status === 'waiting'}
+		<!-- One branch for both, and that is the point: a device send renders the same
+		     view whether it is still waiting on a yes or already connecting, so the
+		     answer landing changes the mark and the label and nothing else. Split
+		     across two `{:else if}` blocks it was the same component from two block
+		     positions, which Svelte destroys and recreates — replaying the entrance
+		     fade and re-laying-out the card in the middle of the flow.
+		     A code send genuinely has two screens here (its files are still being
+		     prepared, then the phrase is up), so those stay two. -->
 		{#if send.target.kind === 'device'}
-			<SendDevice name={send.target.name} accepted={false} />
-		{:else}
+			<!-- The mark carries the answer: a spinner while the yes is outstanding, a
+			     check the moment it lands. No title — this is a live status, and a bold
+			     headline here would say what the mark already says. -->
+			<StatusHero
+				mark={send.status === 'waiting' ? 'success' : 'pending'}
+				label={sendConnectLabel(send.status === 'waiting', send.target.name)}
+				hint={send.status === 'starting' && send.noAnswer ? NO_ANSWER_HINT : ''}
+			/>
+		{:else if send.status === 'starting'}
 			<TransferProgress label="Preparing your files" />
-		{/if}
-	{:else if send.status === 'waiting'}
-		{#if send.target.kind === 'device'}
-			<SendDevice name={send.target.name} accepted={true} />
 		{:else}
 			<SendCode code={send.code} />
 		{/if}
@@ -97,9 +108,10 @@
 			label={currentFile(send.stats) || summary}
 		/>
 	{:else}
-		<TransferComplete
+		<StatusHero
+			mark="success"
 			title="Sent {summary}"
-			description={send.target.kind === 'device' ? `to ${send.target.name}` : ''}
+			label={send.target.kind === 'device' ? `to ${send.target.name}` : ''}
 		/>
 	{/if}
 

@@ -16,6 +16,23 @@ import type { SendStatus, SendTarget } from '../types'
  * the queue intact.
  */
 
+/**
+ * The aside that appears once a trusted send has waited too long (the wait itself
+ * is NO_ANSWER_HINT_DELAY, in transfer-app.svelte.ts). Just the thing to check:
+ * the label above it already says who we are waiting for, so saying "no answer
+ * yet" here would only be that line again.
+ */
+export const NO_ANSWER_HINT = 'make sure Floppy is open over there'
+
+/**
+ * The one line under the mark on a device send: who this is with. The mark says
+ * which state we are in (spinner while we wait, check once they say yes), so the
+ * label never repeats it and never explains the pairing model.
+ */
+export function sendConnectLabel(accepted: boolean, name: string): string {
+	return accepted ? `connecting to ${name}` : `waiting for ${name}`
+}
+
 /** Lowercase status line in the top bar: what is happening right now. */
 export function sendHeadline(status: SendStatus, target: SendTarget, fileCount: number): string {
 	switch (status) {

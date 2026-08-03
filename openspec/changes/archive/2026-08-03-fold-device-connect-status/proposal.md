@@ -27,11 +27,12 @@ drift apart.
   The explanatory sentences go away. The mark says what state we are in and the label says who with.
 - After 15 seconds still waiting on a yes, a second quiet line appears with the one thing to check. A
   trusted send otherwise gives no sign that nothing is coming.
-- The view is built from the primitives the completion screen already uses (`Empty.Media
-  variant="icon"` + `Empty.Title`), so the connecting screen and the done screen are visibly the same
-  surface with a different mark in it.
-- `DeviceGlyph.svelte` is deleted; `SendDevice.svelte` and `ReceiveDevice.svelte` collapse into one
-  shared component used by both panels.
+- The connecting screen and the completion screen become **one component**, `StatusHero`, since they
+  were already the same surface with a different mark in it. It takes a mark (`pending` | `success`)
+  and up to three text rows, each optional: a bold title for a flow that ended, a quiet label, and the
+  late-arriving hint. The completion screen picks up the bigger mark along the way.
+- `DeviceGlyph.svelte`, `SendDevice.svelte`, `ReceiveDevice.svelte` and `TransferComplete.svelte` are
+  all deleted in favour of it.
 - Connection and progress stay two screens. This view hands off to the existing gauge at the first
   progress report and carries no gauge or byte figure of its own.
 
@@ -52,12 +53,14 @@ drift apart.
 Frontend only, and smaller than what it deletes. No Rust, no IPC, no broker, no new dependency:
 `PairingAccepted` and the existing send/receive statuses already carry every phase this view renders.
 
+- `src/lib/components/feedback/StatusHero.svelte` — new, and the only screen in this family.
 - `src/lib/components/transfer/send/SendDevice.svelte`, `receive/ReceiveDevice.svelte`,
-  `DeviceGlyph.svelte` — replaced by one shared connecting view.
+  `DeviceGlyph.svelte`, `feedback/TransferComplete.svelte` — all deleted, replaced by it.
 - `src/lib/components/transfer/send/SendPanel.svelte` — the `starting`/`waiting` branches for a device
   target collapse into one, which is what stops the remount. `ReceivePanel.svelte` follows.
 - `src/lib/components/transfer/send/labels.ts`, `receive/labels.ts` — the new label copy joins the
   state table that already lives there.
 - `src/lib/transfer-app.svelte.ts` — `SendTransfer` gains the long-wait flag and timer, mirroring
   `ReceiveTransfer`'s existing `tooSlow`.
-- No change to the shared pending primitive, the gauge, or the completion screen.
+- No change to the shared pending primitive or the gauge. The completion screen keeps its copy and its
+  actions; only its mark grows and its element changes.
