@@ -1,8 +1,12 @@
 {
   "$schema": "../gen/schemas/mobile-schema.json",
   "identifier": "mobile",
-  "description": "Two phone-only capabilities. Haptic feedback on the few moments where something is handed to you or taken away: a code copied, a file removed, a transfer finished, an offer answered, a mode swipe committed. There is no desktop equivalent, and the frontend gates every call on a coarse pointer and swallows failures. And the camera, for reading the QR another device is showing when adding a device; a refused camera is an ordinary state and leaves typing the code as a complete path.",
+  "description": "Two phone-only capabilities. Haptic feedback on the few moments where something is handed to you, taken away, or arrives for you (the list lives in lib/haptics.ts). The plugin ships no `default` permission set, so the two commands are allowed by name. There is no desktop equivalent, and the frontend gates every call on a coarse pointer and swallows failures. And the camera, for reading the QR another device is showing when adding a device; a refused camera is an ordinary state and leaves typing the code as a complete path.",
   "platforms": ["android", "iOS"],
   "windows": ["main"],
-  "permissions": ["haptics:default", "barcode-scanner:default"]
+  "permissions": [
+    "haptics:allow-impact-feedback",
+    "haptics:allow-notification-feedback",
+    "barcode-scanner:default"
+  ]
 }

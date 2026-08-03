@@ -1,0 +1,22 @@
+{
+	"/": [
+		"src/routes/+page.ts",
+		"src/routes/+layout.ts",
+		"src/routes/+layout.ts"
+	],
+	"/account": [
+		"src/routes/+layout.ts"
+	],
+	"/devices": [
+		"src/routes/+layout.ts"
+	],
+	"/receive": [
+		"src/routes/+layout.ts"
+	],
+	"/send": [
+		"src/routes/+layout.ts"
+	],
+	"/settings": [
+		"src/routes/+layout.ts"
+	]
+}

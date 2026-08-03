@@ -23,6 +23,7 @@ import { resolve } from '$app/paths'
 import { SvelteSet } from 'svelte/reactivity'
 import { toast } from 'svelte-sonner'
 import { describeError, errorText } from './errors'
+import { haptics } from './haptics'
 import { app } from './transfer-app.svelte'
 
 /**
@@ -94,7 +95,12 @@ class PairingApp {
 			this.loaded = true
 		}
 		const subs = [
-			events.pairingOfferEvent.listen((e) => (this.incoming = e.payload)),
+			events.pairingOfferEvent.listen((e) => {
+				this.incoming = e.payload
+				// Something arrived that waits on an answer. Fire and forget, and only
+				// in the foreground: backgrounded, the OS notification is the alert.
+				void haptics.arrived()
+			}),
 			events.pairingAccepted.listen(() => {
 				// Move the send panel off "waiting for a yes" into the accepted state;
 				// progress events then carry it to sending/done. Route to Send so the
@@ -102,10 +108,12 @@ class PairingApp {
 				// incoming prompt. The panel visibly progressing is the "yes"; no toast.
 				app.send.accepted()
 				this.incoming = null
+				void haptics.peerAccepted()
 				void goto(resolve('/send'))
 			}),
 			events.pairingDeclined.listen((e) => {
 				this.#resetPendingSend()
+				void haptics.failed()
 				toast.info(e.payload.busy ? "They're busy. Try again in a bit." : 'They turned it down')
 			}),
 			events.pairingError.listen((e) => {
@@ -113,6 +121,7 @@ class PairingApp {
 				// send failing: it reports inline in the Send panel, where the user
 				// is already watching (`feedback`). Anything else is background news
 				// and toasts.
+				void haptics.failed()
 				if (app.send.status === 'starting') {
 					app.send.stop()
 					app.send.error = { title: 'Could not send', message: e.payload.message }
@@ -124,6 +133,7 @@ class PairingApp {
 			// prompt, and bring the Devices page up behind it for context.
 			events.pairingRequest.listen((e) => {
 				this.request = e.payload
+				void haptics.arrived()
 				void goto(resolve('/devices'))
 			}),
 			// A pairing completed on this device (either side): show it on the
@@ -131,6 +141,7 @@ class PairingApp {
 			// arrival is the confirmation, so no toast.
 			events.pairingPaired.listen(() => {
 				this.paired += 1
+				void haptics.paired()
 				void this.refresh()
 				void goto(resolve('/devices'))
 			})

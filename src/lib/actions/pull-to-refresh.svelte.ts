@@ -20,6 +20,8 @@
 // keeps going to the element it started on — so the finger may leave the scroller
 // without window-level listeners.
 
+import { haptics } from '$lib/haptics'
+
 export type PullToRefreshParams = {
 	/** Reload. The indicator stays up until this settles, and briefly after. */
 	onrefresh: () => void | Promise<void>
@@ -58,10 +60,15 @@ export function pullToRefresh(node: HTMLElement, params: PullToRefreshParams) {
 	// null while undecided, then true once this is committed to being a pull.
 	let pulling: boolean | null = null
 	let busy = false
+	// Latched on the first crossing of the trigger distance, so the tick that
+	// says "release will commit" fires once per touch, not on every wobble back
+	// and forth across the line.
+	let ticked = false
 
 	function reset() {
 		touchId = null
 		pulling = null
+		ticked = false
 		current.onpull?.(0)
 	}
 
@@ -116,6 +123,11 @@ export function pullToRefresh(node: HTMLElement, params: PullToRefreshParams) {
 			// inverting into a push.
 			current.onpull?.(0)
 			return
+		}
+
+		if (dy >= PULL_TRIGGER && !ticked) {
+			ticked = true
+			void haptics.pullTriggered()
 		}
 
 		// Resist past the maximum instead of stopping dead, so the limit is felt.

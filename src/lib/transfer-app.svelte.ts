@@ -434,6 +434,9 @@ class TransferApp {
 					this.receive.error = describeTransferError(e.payload.code, e.payload.message, 'receive')
 					if (this.receive.status !== 'done') this.receive.stop()
 				}
+				// One failure note, whichever side broke. A local cancel emits no
+				// terminal event, so it stays silent by construction.
+				void haptics.failed()
 			})
 		]
 		return () => subs.forEach((sub) => sub.then((unlisten) => unlisten()))

@@ -130,14 +130,8 @@
 						{used ? 'That code has been used.' : 'That code has run out.'}
 					</p>
 				{:else}
-					<!-- No card around this. The panel is already a surface with its own edge,
-					     and a card inside it was a second border saying the same thing.
-					     The code's line keeps its reserved height, because the longest code
-					     this app can generate is 34 characters and code text may not go below
-					     16px on a coarse pointer (`interaction`): it wraps into space that was
-					     already there rather than moving the QR. -->
 					<div class="flex w-full flex-col items-center">
-						<div class="bg-qr-background rounded-2xl border p-3">
+						<div class="rounded-2xl border p-3">
 							{#if code}
 								<QRCode value={code.code} class="size-36" />
 							{:else}

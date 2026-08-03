@@ -1,8 +1,8 @@
 <script lang="ts">
-	import BorderBeam from '$lib/components/magic/border-beam/border-beam.svelte'
-	import { QRCode } from '$lib/components/spell/qrcode'
 	import CopyButton from '$lib/components/feedback/CopyButton.svelte'
 	import PendingHint from '$lib/components/feedback/PendingHint.svelte'
+	import BorderBeam from '$lib/components/magic/border-beam/border-beam.svelte'
+	import { QRCode } from '$lib/components/spell/qrcode'
 	import * as InputGroup from '$lib/components/ui/input-group'
 	import { motionOK, normal } from '$lib/motion'
 	import { fade } from 'svelte/transition'
@@ -25,14 +25,8 @@
 	     QR; in a regular-width card it recedes beside the phrase. Container
 	     variants, not viewport: the card is the layout unit. -->
 	<div class="flex w-full max-w-md flex-col items-center gap-5 @md:max-w-lg @md:flex-row @md:gap-6">
-		<!-- The padding is the QR quiet zone; both it and the code share
-		     --qr-background so the seam is invisible. bgColor must be opaque —
-		     the finder patterns paint their inner ring with it, and a transparent
-		     one turns them into solid blobs. The beam travelling the border is
-		     the "still waiting for your peer" tell — it stops the moment this
-		     screen is replaced. -->
-		<div class="bg-qr-background relative shrink-0 rounded-2xl border p-4 @md:p-3">
-			<QRCode value={code} class="size-44 @md:size-32" />
+		<div class="relative shrink-0 rounded-2xl border p-4 @md:p-3">
+			<QRCode bgColor="var(--background)" value={code} class="size-44 @md:size-32" />
 			{#if motionOK()}
 				<BorderBeam size={70} duration={5} colorFrom="var(--tint)" colorTo="var(--tint-fg)" />
 			{/if}
