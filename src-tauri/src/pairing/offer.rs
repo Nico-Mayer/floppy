@@ -80,6 +80,17 @@ pub struct Completion {
     pub sig: Vec<u8>,
 }
 
+/// The sender's signed "never mind" for an offer it cancelled before the
+/// receiver answered. Dismisses the receiver's prompt instead of leaving it to
+/// wait out its TTL. Authenticated like a completion, so a third party cannot
+/// dismiss a prompt it did not raise.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Revocation {
+    pub from: PublicKey,
+    pub transfer_id: String,
+    pub sig: Vec<u8>,
+}
+
 impl Identity {
     /// Build and sign an offer. `ts` is passed in (not read from the clock) so
     /// the caller owns time and tests stay deterministic.
@@ -134,6 +145,17 @@ impl Identity {
         };
         c.sig = self.sign(&c.signing_bytes());
         c
+    }
+
+    /// Build and sign a revocation for a cancelled, unanswered offer.
+    pub fn sign_revocation(&self, transfer_id: &str) -> Revocation {
+        let mut r = Revocation {
+            from: self.public(),
+            transfer_id: transfer_id.to_string(),
+            sig: Vec::new(),
+        };
+        r.sig = self.sign(&r.signing_bytes());
+        r
     }
 }
 
@@ -221,6 +243,31 @@ impl Completion {
     }
 }
 
+impl Revocation {
+    pub fn verify(&self, trust: &TrustStore) -> Result<(), VerifyError> {
+        if !trust.trusted(&self.from) {
+            return Err(VerifyError::Untrusted);
+        }
+        if verify(&self.from, &self.signing_bytes(), &self.sig) {
+            Ok(())
+        } else {
+            Err(VerifyError::BadSignature)
+        }
+    }
+
+    /// The bytes the signature covers. The trailing domain byte separates a
+    /// revocation from a completion (0xC0) and a response over the same
+    /// transfer id, so no signature can be replayed as another kind.
+    fn signing_bytes(&self) -> Vec<u8> {
+        let mut b = Vec::new();
+        append_bytes(&mut b, &self.from.sign);
+        append_bytes(&mut b, &self.from.kex);
+        append_bytes(&mut b, self.transfer_id.as_bytes());
+        b.push(0xC1);
+        b
+    }
+}
+
 /// Length-prefixed append (u32 BE length + bytes), matching the Go signing
 /// encoding so the scheme is unambiguous and deterministic.
 fn append_bytes(b: &mut Vec<u8>, p: &[u8]) {
@@ -278,6 +325,34 @@ mod tests {
         let mut forged = attacker.sign_offer("t1", 1, 1, 1, "attacker-ticket", "attacker-self");
         forged.from = sender.public();
         assert_eq!(forged.verify(&trust), Err(VerifyError::BadSignature));
+    }
+
+    #[test]
+    fn revocation_round_trip_and_forgery_rejected() {
+        let sender = ident();
+        let trust = TrustStore::in_memory();
+        trust.add(sender.public(), "sender").unwrap();
+        let r = sender.sign_revocation("t1");
+        assert_eq!(r.verify(&trust), Ok(()));
+
+        // A stranger's revocation is untrusted.
+        let stranger = ident();
+        let spoof = stranger.sign_revocation("t1");
+        assert_eq!(spoof.verify(&trust), Err(VerifyError::Untrusted));
+
+        // A trusted sender's revocation re-targeted at another transfer fails.
+        let mut moved = sender.sign_revocation("t1");
+        moved.transfer_id = "t2".into();
+        assert_eq!(moved.verify(&trust), Err(VerifyError::BadSignature));
+
+        // A completion signature cannot be replayed as a revocation.
+        let completion = sender.sign_completion("t1");
+        let cross = Revocation {
+            from: completion.from.clone(),
+            transfer_id: completion.transfer_id.clone(),
+            sig: completion.sig.clone(),
+        };
+        assert_eq!(cross.verify(&trust), Err(VerifyError::BadSignature));
     }
 
     #[test]

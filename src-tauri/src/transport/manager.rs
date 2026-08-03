@@ -29,7 +29,7 @@ use iroh_blobs::format::collection::Collection;
 use iroh_blobs::get::request::get_verified_size;
 use iroh_blobs::hashseq::HashSeq;
 use iroh_blobs::provider::events::{
-    EventMask, EventSender, ProviderMessage, RequestMode, RequestUpdate,
+    AbortReason, EventMask, EventSender, ProviderMessage, RequestMode, RequestUpdate,
 };
 use iroh_blobs::store::fs::FsStore;
 use iroh_blobs::store::mem::MemStore;
@@ -92,6 +92,12 @@ pub struct Config {
     /// single send slot forever. Reset by any progress, so an active transfer is
     /// never cut off. Expiry emits no `Done` (nothing was delivered).
     pub send_ttl: Duration,
+    /// How long a code receive may spend on the rendezvous (mailbox join, PAKE,
+    /// sealed ticket) before it fails with a timeout instead of waiting forever
+    /// on a room nobody is serving (an expired code, a cancelled sender, a
+    /// sender whose connection died). The exchange is three tiny round-trips;
+    /// the app uses 30s.
+    pub rendezvous_timeout: Duration,
 }
 
 /// Platform hook that "publishes" a freshly-exported transfer folder to its
@@ -160,6 +166,7 @@ struct Inner {
     dest_root: PathBuf,
     broker_url: String,
     send_ttl: Duration,
+    rendezvous_timeout: Duration,
     /// Optional per-platform "publish exported folder → user-visible home" hook
     /// (Android public Downloads). `None` on desktop/iOS: the export path is final.
     publish: Option<Publish>,
@@ -251,11 +258,15 @@ impl Manager {
             None => Blobs::Mem(MemStore::new()),
         };
 
-        // Serve-side events: NotifyLog gives per-request transfer events
-        // (Started/Progress/Completed/Aborted) with no reply required.
+        // Serve-side events: InterceptLog gives per-request transfer events
+        // (Started/Progress/Completed/Aborted) AND a per-request allow/deny —
+        // the provider holds each get until the pump answers, which is how a
+        // cancelled send stops honouring new fetches even though its content
+        // still sits in the store until relaunch. The pump must therefore
+        // answer every request promptly (a plain lock read), or serving stalls.
         let mask = EventMask {
-            get: RequestMode::NotifyLog,
-            get_many: RequestMode::NotifyLog,
+            get: RequestMode::InterceptLog,
+            get_many: RequestMode::InterceptLog,
             ..EventMask::DEFAULT
         };
         let (event_sender, event_rx) = EventSender::channel(64, mask);
@@ -269,6 +280,7 @@ impl Manager {
             dest_root: config.dest_root,
             broker_url: config.broker_url,
             send_ttl: config.send_ttl,
+            rendezvous_timeout: config.rendezvous_timeout,
             publish,
             _router: router,
             slots: Mutex::new(Slots::default()),
@@ -488,11 +500,15 @@ impl Manager {
         let run_id = id.clone();
         tokio::spawn(async move {
             // Rendezvous (respecting cancel) to obtain the ticket, then hand off
-            // to the shared fetch/export path.
+            // to the shared fetch/export path. Bounded: a room nobody is serving
+            // must become a typed failure, not a forever-silent connecting state.
             let outcome = tokio::select! {
                 biased;
                 _ = cancel.cancelled() => None,
-                r = rendezvous_receive(&inner, &normalized, &room) => Some(r),
+                r = tokio::time::timeout(
+                    inner.rendezvous_timeout,
+                    rendezvous_receive(&inner, &normalized, &room),
+                ) => Some(r.unwrap_or_else(|_| Err(no_answer_err()))),
             };
             match outcome {
                 None => {
@@ -878,11 +894,12 @@ async fn fetch_blob(store: &Store, conn: &Connection, hash: Hash) -> Result<(), 
 /// Manager is dropped.
 async fn provider_pump(mut rx: mpsc::Receiver<ProviderMessage>, inner: Weak<Inner>) {
     while let Some(msg) = rx.recv().await {
-        // Both get variants carry the same per-request update stream (`rx`).
-        // Inlined so the irpc receiver type never has to be named.
-        let update_rx = match msg {
-            ProviderMessage::GetRequestReceivedNotify(m) => m.rx,
-            ProviderMessage::GetManyRequestReceivedNotify(m) => m.rx,
+        // Both get variants carry a reply channel (the provider is holding the
+        // request on it) and the per-request update stream (`rx`). Inlined so
+        // the irpc receiver type never has to be named.
+        let (reply, update_rx) = match msg {
+            ProviderMessage::GetRequestReceived(m) => (m.tx, m.rx),
+            ProviderMessage::GetManyRequestReceived(m) => (m.tx, m.rx),
             _ => continue,
         };
         let inner = inner.clone();
@@ -892,16 +909,24 @@ async fn provider_pump(mut rx: mpsc::Receiver<ProviderMessage>, inner: Weak<Inne
         // stay tight — anything slow here (a blocking log, a contended lock)
         // lets the provider's bounded update channel fill and abort the serve.
         let Some(inner_arc) = inner.upgrade() else { return };
-        // Snapshot the active send once — a stale request with no active send is
-        // ignored. Keeps the per-update loop lock-free so it drains fast enough
+        // Snapshot the active send once — this is also the gate: a request with
+        // no live send behind it (cancelled, expired, finished, or never
+        // started) is refused, not served from the still-populated store. The
+        // snapshot keeps the per-update loop lock-free so it drains fast enough
         // that the provider's bounded update channel never fills.
-        let (id, total, cancel_tok, names) = {
+        let live = {
             let slots = inner_arc.slots.lock().unwrap();
-            match &slots.send {
-                Some(s) => (s.id.clone(), s.total, s.cancel.clone(), s.names.clone()),
-                None => continue,
-            }
+            slots
+                .send
+                .as_ref()
+                .filter(|s| !s.cancelled)
+                .map(|s| (s.id.clone(), s.total, s.cancel.clone(), s.names.clone()))
         };
+        let Some((id, total, cancel_tok, names)) = live else {
+            reply.send(Err(AbortReason::Permission)).await.ok();
+            continue;
+        };
+        reply.send(Ok(())).await.ok();
         tokio::spawn(async move {
             let file_count = names.len() as u64;
             let mut tracker = RateTracker::new();
@@ -1068,12 +1093,26 @@ fn finish_send(inner: &Inner, id: &str, total: u64, file_count: u64) {
 
 // ---- quick-share rendezvous (SPAKE2 over the broker mailbox) ----
 
-/// Sender side: join the mailbox, run SPAKE2, and hand the receiver the iroh
-/// ticket sealed under the derived key. Then hold the mailbox open until the
-/// receiver returns a sealed "done", which finishes a deduped or resumed send
-/// whose byte counter never reaches the total. The wait ends the moment the
-/// send finishes by any path (`done` fires from the byte-count path, a cancel,
-/// or the send-slot TTL), so it can never outlive the send.
+/// Ceiling for the sender's mailbox reconnect backoff.
+const REJOIN_BACKOFF_MAX: Duration = Duration::from_secs(15);
+
+/// Sender side: serve the code's mailbox room for the send's whole life.
+///
+/// One shot used to be enough only for the happy path: a receiver's failed
+/// attempt (wrong words, matching digits) consumed the exchange, and its retry
+/// found a room nobody was serving. Instead, every incoming frame is handled as
+/// either the receiver's sealed completion (under any key this send has derived
+/// — finishes a deduped or resumed send whose byte counter never reaches the
+/// total) or the first PAKE message of a fresh attempt, which gets its own
+/// exchange and the ticket sealed under its own key. A frame that is neither
+/// (garbage from a stray joiner) is ignored, never a failure of the send.
+///
+/// The mailbox connection itself is expendable: after the first successful join
+/// (whose failure still fails the share — the code was never deliverable), a
+/// dropped connection is rejoined with capped backoff, so a sender that was
+/// backgrounded past the broker's keepalive serves its code again on resume.
+/// Everything ends the moment `done` fires (completion, cancel, or the
+/// send-slot TTL), so this can never outlive the send.
 async fn rendezvous_send(
     inner: &Inner,
     code: &str,
@@ -1082,28 +1121,77 @@ async fn rendezvous_send(
     done: CancellationToken,
 ) -> Result<(), TransferError> {
     let room = codegen::room(code).ok_or_else(|| TransferError::of(TransferErrorCode::Other))?;
-    let mut mailbox = client::join(&inner.broker_url, &room).await.map_err(broker_err)?;
-    let (handshake, my_msg) = pake::start(code, &room);
-    mailbox.send(&my_msg).await.map_err(broker_err)?;
-    let peer_msg = mailbox.recv().await.map_err(broker_err)?;
-    let key = handshake.finish(&peer_msg).map_err(|_| wrong_code_err())?;
-    let sealed = pake::seal(&key, ticket.as_bytes())
-        .map_err(|_| TransferError::of(TransferErrorCode::Other))?;
-    mailbox.send(&sealed).await.map_err(broker_err)?;
+    let mut mailbox = Some(client::join(&inner.broker_url, &room).await.map_err(broker_err)?);
 
-    // The ticket is delivered — the PAKE cannot fail the send from here. Wait for
-    // the receiver's completion, but stop as soon as the send finishes some other
-    // way. A frame that opens under the shared key is the ack; anything else (a
-    // dropped connection, an unopenable frame) just ends the wait.
-    tokio::select! {
-        _ = done.cancelled() => {}
-        frame = mailbox.recv() => {
-            if frame.is_ok_and(|f| pake::open(&key, &f).is_ok()) {
-                finish_send_by_id(inner, id);
+    // Session keys of every attempt served so far, so a completion sealed under
+    // an earlier attempt's key still lands after a later attempt rotated it.
+    let mut keys: Vec<[u8; 32]> = Vec::new();
+    let mut backoff = Duration::from_secs(1);
+
+    loop {
+        // (Re)join when the previous connection was lost. The room may briefly
+        // count our dead connection as an occupant; that clears on the broker's
+        // keepalive, so "full" is just another retry.
+        let mut mb = match mailbox.take() {
+            Some(mb) => mb,
+            None => {
+                let joined = tokio::select! {
+                    biased;
+                    _ = done.cancelled() => return Ok(()),
+                    r = client::join(&inner.broker_url, &room) => r,
+                };
+                match joined {
+                    Ok(mb) => {
+                        backoff = Duration::from_secs(1);
+                        mb
+                    }
+                    Err(err) => {
+                        tracing::debug!(id = %id, error = %err, "quick share: rejoin failed, backing off");
+                        tokio::select! {
+                            biased;
+                            _ = done.cancelled() => return Ok(()),
+                            _ = tokio::time::sleep(backoff) => {}
+                        }
+                        backoff = (backoff * 2).min(REJOIN_BACKOFF_MAX);
+                        continue;
+                    }
+                }
             }
+        };
+
+        // Serve frames until the connection drops or the send ends. The
+        // receiver always speaks first (it sends its PAKE half on join), so
+        // there is nothing to post up front and no half-spent exchange to hold
+        // between frames: each incoming frame gets a fresh one.
+        loop {
+            let frame = tokio::select! {
+                biased;
+                _ = done.cancelled() => return Ok(()),
+                f = mb.recv() => f,
+            };
+            let Ok(frame) = frame else { break }; // lost — rejoin
+
+            // The receiver's completion, under any attempt's key: the send is
+            // fully delivered even if its byte counter never tripped.
+            if keys.iter().any(|k| pake::open(k, &frame).is_ok()) {
+                finish_send_by_id(inner, id);
+                return Ok(());
+            }
+
+            // Otherwise this is (at best) the first PAKE message of a fresh
+            // attempt: answer with our half, then the ticket sealed under this
+            // attempt's key — in that order, it is the order the receiver
+            // consumes them in. A frame that fails the handshake is a stray —
+            // ignored, the send keeps serving.
+            let (handshake, my_msg) = pake::start(code, &room);
+            let Ok(key) = handshake.finish(&frame) else { continue };
+            let Ok(sealed) = pake::seal(&key, ticket.as_bytes()) else { continue };
+            if mb.send(&my_msg).await.is_err() || mb.send(&sealed).await.is_err() {
+                break; // lost — rejoin; the receiver will retry or time out
+            }
+            keys.push(key);
         }
     }
-    Ok(())
 }
 
 /// Receiver side: join the mailbox, run SPAKE2, and decrypt the sender's ticket.
@@ -1139,6 +1227,15 @@ fn broker_err(msg: String) -> TransferError {
             "Could not reach the rendezvous server. Check your connection and try again.",
         )
     }
+}
+
+/// The rendezvous ran out of time: nobody is serving that code's room (expired,
+/// cancelled, or a sender that dropped off and has not rejoined).
+fn no_answer_err() -> TransferError {
+    TransferError::new(
+        TransferErrorCode::Timeout,
+        "No answer for that code. Make sure the other device is still showing it, then try again.",
+    )
 }
 
 /// The single message for every "code did not match" failure — the PAKE
@@ -1177,7 +1274,8 @@ fn classify_get_err(err: iroh_blobs::get::GetError) -> TransferError {
 mod tests {
     use super::*;
     use crate::testsupport::{
-        mock_mailbox_broker, test_manager, test_manager as quick_manager, walk, write_file,
+        mock_mailbox_broker, mock_mailbox_broker_with_control, test_manager,
+        test_manager as quick_manager, walk, write_file,
         DUMMY_BROKER,
     };
     use crate::transport::event::Stats;
@@ -1783,6 +1881,7 @@ mod tests {
                 bind_addr: Some("127.0.0.1:0".into()),
                 broker_url: "ws://127.0.0.1:1/ws".into(),
                 send_ttl: ttl,
+                rendezvous_timeout: Duration::from_secs(30),
             },
             Arc::new(se.clone()),
         )
@@ -1962,5 +2061,274 @@ mod tests {
             !re.events().iter().any(|e| matches!(e, Event::Done { .. })),
             "wrong code must not complete a transfer"
         );
+        // And it is the wrong-code failure, not the rendezvous timeout — the
+        // sender is right there, the words just did not match.
+        assert!(
+            re.events().iter().any(|e| matches!(
+                e,
+                Event::Failed { error, .. } if error.code != TransferErrorCode::Timeout
+            )),
+            "a wrong code fails the exchange, it does not time out"
+        );
+    }
+
+    /// After a cancel, a peer that still holds the ticket gets refused: the
+    /// content may sit in the store until relaunch, but the provider no longer
+    /// honours requests with no live send behind them.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn a_cancelled_send_refuses_new_fetches() {
+        let tmp = tempfile::tempdir().unwrap();
+        let src = write_file(tmp.path(), "gone.bin", &vec![2u8; 200_000]);
+
+        let se = Collector::default();
+        let re = Collector::default();
+        let sender = manager(tmp.path(), "s", Arc::new(se.clone())).await;
+        let receiver = manager(tmp.path(), "r", Arc::new(re.clone())).await;
+
+        sender.send(vec![src]).await.unwrap();
+        wait_for(&se, |e| e.iter().any(|x| matches!(x, Event::Code { .. }))).await;
+        let ticket = ticket_of(&se.events());
+
+        sender.cancel(Kind::Send);
+
+        receiver.receive(ticket).await.unwrap();
+        wait_for(&re, |e| {
+            e.iter().any(|x| matches!(x, Event::Failed { kind: Kind::Receive, .. }))
+        })
+        .await;
+        assert!(
+            !re.events().iter().any(|e| matches!(e, Event::Done { .. })),
+            "a cancelled send must not deliver"
+        );
+    }
+
+    /// The retry-after-typo regression: a failed attempt (wrong words, right
+    /// digits) used to consume the sender's one-shot exchange and orphan the
+    /// code — the retry then hung forever. The sender now serves a fresh
+    /// exchange per attempt, so the retry completes.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn failed_attempt_does_not_orphan_the_code() {
+        let tmp = tempfile::tempdir().unwrap();
+        let broker = mock_mailbox_broker().await;
+        let payload = vec![5u8; 150_000];
+        let src = write_file(tmp.path(), "retry.bin", &payload);
+
+        let se = Collector::default();
+        let re = Collector::default();
+        let sender = quick_manager(tmp.path(), "s", &broker, Arc::new(se.clone())).await;
+        let receiver = quick_manager(tmp.path(), "r", &broker, Arc::new(re.clone())).await;
+
+        sender.quick_share(vec![src]).await.unwrap();
+        wait_for(&se, |e| e.iter().any(|x| matches!(x, Event::Code { .. }))).await;
+        let phrase = ticket_of(&se.events());
+
+        // Attempt 1: right digits, wrong words — fails the exchange.
+        let room = phrase.split('-').next().unwrap();
+        receiver.quick_receive(&format!("{room}-wrong-wrong-wrong")).await.unwrap();
+        wait_for(&re, |e| e.iter().any(|x| matches!(x, Event::Failed { .. }))).await;
+        wait_for_manager_idle(&receiver).await;
+
+        // Attempt 2: the correct code, same send — must complete.
+        receiver.quick_receive(&phrase).await.unwrap();
+        wait_for(&re, |e| e.iter().any(|x| matches!(x, Event::Done { .. }))).await;
+        let got = walk(&tmp.path().join("r-dl"))
+            .into_iter()
+            .find(|p| p.file_name().unwrap() == "retry.bin")
+            .map(|p| std::fs::read(&p).unwrap());
+        assert_eq!(got.as_deref(), Some(&payload[..]));
+    }
+
+    /// A stray joiner spraying junk into the room neither fails the send nor
+    /// spends the code: the real receiver still completes afterwards.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn garbage_in_the_room_does_not_kill_the_send() {
+        let tmp = tempfile::tempdir().unwrap();
+        let broker = mock_mailbox_broker().await;
+        let src = write_file(tmp.path(), "tough.bin", &vec![4u8; 120_000]);
+
+        let se = Collector::default();
+        let re = Collector::default();
+        let sender = quick_manager(tmp.path(), "s", &broker, Arc::new(se.clone())).await;
+        let receiver = quick_manager(tmp.path(), "r", &broker, Arc::new(re.clone())).await;
+
+        sender.quick_share(vec![src]).await.unwrap();
+        wait_for(&se, |e| e.iter().any(|x| matches!(x, Event::Code { .. }))).await;
+        let phrase = ticket_of(&se.events());
+        let room = codegen::room(&codegen::normalize(&phrase)).unwrap();
+
+        // A party that knows the room (the public digits) but not the code
+        // sends a frame that is not even a PAKE message.
+        let mut stray = client::join(&broker, &room).await.unwrap();
+        stray.send(b"definitely not a pake message").await.unwrap();
+        tokio::time::sleep(Duration::from_millis(150)).await;
+        drop(stray);
+
+        assert!(
+            !se.events().iter().any(|e| matches!(e, Event::Failed { .. })),
+            "junk must not fail the send: {:?}",
+            se.events()
+        );
+
+        receiver.quick_receive(&phrase).await.unwrap();
+        wait_for(&re, |e| e.iter().any(|x| matches!(x, Event::Done { .. }))).await;
+    }
+
+    /// A completion sealed under an EARLIER attempt's key still finishes the
+    /// send after later attempts rotated the ring — the receiver that fetched
+    /// may ack long after someone else poked the room.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn completion_under_an_earlier_key_still_finishes_the_send() {
+        let tmp = tempfile::tempdir().unwrap();
+        let broker = mock_mailbox_broker().await;
+        let src = write_file(tmp.path(), "ring.bin", &vec![1u8; 60_000]);
+
+        let se = Collector::default();
+        let sender = quick_manager(tmp.path(), "s", &broker, Arc::new(se.clone())).await;
+        sender.quick_share(vec![src]).await.unwrap();
+        wait_for(&se, |e| e.iter().any(|x| matches!(x, Event::Code { .. }))).await;
+        let phrase = ticket_of(&se.events());
+        let normalized = codegen::normalize(&phrase);
+        let room = codegen::room(&normalized).unwrap();
+
+        // A hand-driven receive: run the PAKE, take the sealed ticket, and
+        // vanish without acking (a receiver whose mailbox dropped mid-fetch).
+        let run_attempt = |broker: String, room: String, code: String| async move {
+            let mut mb = client::join(&broker, &room).await.unwrap();
+            let (hs, msg) = pake::start(&code, &room);
+            mb.send(&msg).await.unwrap();
+            let peer = mb.recv().await.unwrap();
+            let key = hs.finish(&peer).unwrap();
+            let sealed = mb.recv().await.unwrap();
+            pake::open(&key, &sealed).unwrap(); // the ticket — proves the attempt worked
+            key
+        };
+        let key1 =
+            run_attempt(broker.clone(), room.clone(), normalized.clone()).await;
+        // A second attempt rotates the ring past key1.
+        let _key2 = run_attempt(broker.clone(), room.clone(), normalized.clone()).await;
+
+        // The first receiver's ack arrives last, sealed under its own old key.
+        let mut mb = client::join(&broker, &room).await.unwrap();
+        mb.send(&pake::seal(&key1, b"done").unwrap()).await.unwrap();
+        wait_for(&se, |e| {
+            e.iter().any(|x| matches!(x, Event::Done { kind: Kind::Send, .. }))
+        })
+        .await;
+    }
+
+    /// The sender's rendezvous survives its broker connection being cut (the
+    /// backgrounded-phone case): it rejoins the room, and a receiver arriving
+    /// after the cut still completes. Once the send is cancelled, the room is
+    /// left and stays left.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn sender_rejoins_after_a_dropped_connection_and_leaves_on_cancel() {
+        let tmp = tempfile::tempdir().unwrap();
+        let (broker, control) = mock_mailbox_broker_with_control().await;
+        let payload = vec![6u8; 100_000];
+        let src = write_file(tmp.path(), "resume.bin", &payload);
+
+        let se = Collector::default();
+        let re = Collector::default();
+        let sender = quick_manager(tmp.path(), "s", &broker, Arc::new(se.clone())).await;
+        let receiver = quick_manager(tmp.path(), "r", &broker, Arc::new(re.clone())).await;
+
+        sender.quick_share(vec![src]).await.unwrap();
+        wait_for(&se, |e| e.iter().any(|x| matches!(x, Event::Code { .. }))).await;
+        let phrase = ticket_of(&se.events());
+        let room = codegen::room(&codegen::normalize(&phrase)).unwrap();
+
+        // Cut the sender's connection (keepalive eviction / broker restart);
+        // the rendezvous loop rejoins.
+        for _ in 0..200 {
+            if control.peers(&room).await == 1 {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(25)).await;
+        }
+        control.kill_room(&room).await;
+        for _ in 0..200 {
+            if control.peers(&room).await == 1 {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(25)).await;
+        }
+        assert_eq!(control.peers(&room).await, 1, "the sender must rejoin its room");
+
+        // A receiver arriving after the cut completes normally.
+        receiver.quick_receive(&phrase).await.unwrap();
+        wait_for(&re, |e| e.iter().any(|x| matches!(x, Event::Done { .. }))).await;
+
+        // A new share, then a cancel: the room empties and stays empty (no
+        // rejoin for a send that ended).
+        let src2 = write_file(tmp.path(), "gone.bin", &vec![7u8; 50_000]);
+        wait_for_manager_idle(&sender).await;
+        sender.quick_share(vec![src2]).await.unwrap();
+        wait_for(&se, |e| {
+            e.iter().filter(|x| matches!(x, Event::Code { .. })).count() >= 2
+        })
+        .await;
+        let phrase2 = se
+            .events()
+            .iter()
+            .rev()
+            .find_map(|e| match e {
+                Event::Code { code, .. } => Some(code.clone()),
+                _ => None,
+            })
+            .unwrap();
+        let room2 = codegen::room(&codegen::normalize(&phrase2)).unwrap();
+        for _ in 0..200 {
+            if control.peers(&room2).await == 1 {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(25)).await;
+        }
+        sender.cancel(Kind::Send);
+        for _ in 0..200 {
+            if control.peers(&room2).await == 0 {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(25)).await;
+        }
+        // Past the first rejoin backoff: still nobody serving the dead code.
+        tokio::time::sleep(Duration::from_millis(1200)).await;
+        assert_eq!(control.peers(&room2).await, 0, "a cancelled send must not rejoin");
+    }
+
+    /// A code nobody is sharing on (expired, cancelled, or a sender that
+    /// dropped off) fails with the typed timeout instead of sitting in the
+    /// connecting state forever, and frees the receive slot for a retry.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn receive_with_no_sender_times_out_with_a_typed_error() {
+        let tmp = tempfile::tempdir().unwrap();
+        let broker = mock_mailbox_broker().await;
+        let re = Collector::default();
+        // Built by hand for a short rendezvous bound; everything else matches
+        // the shared test manager.
+        let receiver = Manager::new(
+            Config {
+                store_path: Some(tmp.path().join("t")),
+                dest_root: tmp.path().join("t-dl"),
+                relay: RelayConfig::DisableRelay,
+                bind_addr: Some("127.0.0.1:0".into()),
+                broker_url: broker.clone(),
+                send_ttl: Duration::from_secs(300),
+                rendezvous_timeout: Duration::from_millis(400),
+            },
+            Arc::new(re.clone()),
+        )
+        .await
+        .unwrap();
+
+        receiver.quick_receive("1234-lonely-empty-room").await.unwrap();
+        wait_for(&re, |e| {
+            e.iter().any(|x| matches!(
+                x,
+                Event::Failed { kind: Kind::Receive, error, .. }
+                    if error.code == TransferErrorCode::Timeout
+            ))
+        })
+        .await;
+        assert!(!receiver.is_busy(), "the failed receive must free its slot");
     }
 }

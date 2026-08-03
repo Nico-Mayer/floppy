@@ -103,6 +103,14 @@ pub struct PairingDeclined {
     pub busy: bool,
 }
 
+/// The peer cancelled a trusted-device offer this device had not answered yet;
+/// the incoming prompt for it should be dismissed.
+#[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
+#[serde(rename_all = "camelCase")]
+pub struct PairingRevoked {
+    pub transfer_id: String,
+}
+
 /// A device redeemed a code this device is showing and awaits confirmation
 /// before it is trusted. `sas` is the short auth string to compare; `via` is how
 /// the peer redeemed ("qr" | "code") — the UI shows the SAS only for "code".

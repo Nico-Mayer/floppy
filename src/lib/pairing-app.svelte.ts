@@ -111,6 +111,14 @@ class PairingApp {
 				void haptics.peerAccepted()
 				void goto(resolve('/send'))
 			}),
+			events.pairingRevoked.listen((e) => {
+				// The sender pulled the offer back: drop the prompt if it is the one
+				// on screen. An id we are not showing (already answered, or a prompt
+				// that expired on its own) changes nothing.
+				if (this.incoming?.transferId !== e.payload.transferId) return
+				this.incoming = null
+				toast.info('They stopped the send')
+			}),
 			events.pairingDeclined.listen((e) => {
 				this.#resetPendingSend()
 				void haptics.failed()

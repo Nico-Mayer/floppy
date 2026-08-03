@@ -21,7 +21,7 @@ use std::sync::Arc;
 use error::CommandError;
 use events::{
     CodeEvent, DeepLink, DoneEvent, ErrorEvent, PairingAccepted, PairingDeclined, PairingError,
-    PairingOfferEvent, PairingPaired, PairingRequest, ProgressEvent, TransferKind,
+    PairingOfferEvent, PairingPaired, PairingRequest, PairingRevoked, ProgressEvent, TransferKind,
 };
 use pairing::{PairCode, PairingEmitter, PairingEvent, PairingService};
 use specta_typescript::Number;
@@ -77,6 +77,7 @@ impl PairingEmitter for TauriPairingEmitter {
             P::Request { fingerprint, suggested_name, sas, via } => {
                 PairingRequest { fingerprint, suggested_name, sas, via }.emit(app)
             }
+            P::Revoked { transfer_id } => PairingRevoked { transfer_id }.emit(app),
             P::Paired { name } => PairingPaired { name }.emit(app),
             P::Error { message } => PairingError { message }.emit(app),
         };
@@ -300,7 +301,13 @@ async fn receive(manager: State<'_, Manager>, code: String) -> Result<(), Comman
 
 #[tauri::command]
 #[specta::specta]
-async fn cancel_send(manager: State<'_, Manager>) -> Result<(), CommandError> {
+async fn cancel_send(
+    manager: State<'_, Manager>,
+    pairing: State<'_, PairingService>,
+) -> Result<(), CommandError> {
+    // Revoke first, then free the slot: the target's prompt should be dismissed
+    // whether or not the unwind takes a moment. A no-op for a code send.
+    pairing.cancel_outgoing();
     manager.cancel(Kind::Send);
     Ok(())
 }
@@ -535,6 +542,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
             PairingAccepted,
             PairingDeclined,
             PairingRequest,
+            PairingRevoked,
             PairingPaired,
             PairingError,
             DeepLink,
@@ -807,6 +815,7 @@ pub fn run() {
                 // A passive send that no one accepts stops serving after this,
                 // freeing the slot and unpinning its files.
                 send_ttl: std::time::Duration::from_secs(300),
+                rendezvous_timeout: std::time::Duration::from_secs(30),
             };
             let broker_url = config.broker_url.clone();
 

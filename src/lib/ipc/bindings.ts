@@ -78,6 +78,7 @@ export const events = {
 	pairingOfferEvent: makeEvent<PairingOfferEvent>("pairing-offer-event"),
 	pairingPaired: makeEvent<PairingPaired>("pairing-paired"),
 	pairingRequest: makeEvent<PairingRequest>("pairing-request"),
+	pairingRevoked: makeEvent<PairingRevoked>("pairing-revoked"),
 	progressEvent: makeEvent<ProgressEvent>("progress-event"),
 };
 
@@ -189,6 +190,14 @@ export type PairingRequest = {
 	suggestedName: string,
 	sas: string,
 	via: string,
+};
+
+/**
+ *  The peer cancelled a trusted-device offer this device had not answered yet;
+ *  the incoming prompt for it should be dismissed.
+ */
+export type PairingRevoked = {
+	transferId: string,
 };
 
 /**  Byte/file progress for the active transfer. */

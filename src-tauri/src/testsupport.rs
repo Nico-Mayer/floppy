@@ -33,6 +33,7 @@ pub async fn test_manager(
             bind_addr: Some("127.0.0.1:0".into()),
             broker_url: broker_url.to_string(),
             send_ttl: Duration::from_secs(300),
+            rendezvous_timeout: Duration::from_secs(30),
         },
         emit,
     )
@@ -64,37 +65,76 @@ pub fn walk(dir: &Path) -> Vec<PathBuf> {
     out
 }
 
+#[derive(serde::Deserialize)]
+struct MailboxIn {
+    #[serde(rename = "type")]
+    typ: String,
+    room: Option<String>,
+    data: Option<String>,
+}
+
+#[derive(Default)]
+struct MailboxRoom {
+    peers: Vec<tokio::sync::mpsc::UnboundedSender<tokio_tungstenite::tungstenite::Message>>,
+    buffered: Vec<String>,
+}
+
+type MailboxRooms =
+    Arc<tokio::sync::Mutex<std::collections::HashMap<String, MailboxRoom>>>;
+
+/// Test-side control over the mock mailbox broker: kill a room's connections
+/// (the broker's keepalive evicting a dead peer, or a deploy dropping everyone)
+/// and inspect how many parties a room currently holds.
+#[derive(Clone)]
+pub struct MailboxControl(MailboxRooms);
+
+impl MailboxControl {
+    /// Close every connection in `room`, as the real broker's keepalive (or a
+    /// restart) would. Each client sees a normal close and, for the sender's
+    /// rendezvous loop, that means: rejoin.
+    pub async fn kill_room(&self, room: &str) {
+        use tokio_tungstenite::tungstenite::Message;
+        if let Some(rm) = self.0.lock().await.get_mut(room) {
+            for p in rm.peers.drain(..) {
+                let _ = p.send(Message::Close(None));
+            }
+            rm.buffered.clear();
+        }
+    }
+
+    /// How many parties `room` currently holds.
+    pub async fn peers(&self, room: &str) -> usize {
+        self.0.lock().await.get(room).map_or(0, |rm| rm.peers.len())
+    }
+}
+
 /// In-process stand-in for the Go broker's code-mailbox mode (`broker/mailbox.go`):
 /// join a room, pair up to two clients in it, and relay `msg` blobs between them.
-/// Caps a room at two parties and replies `{"type":"full"}` to a third join, and
+/// Caps a room at two parties and replies `{"type":"full"}` to a third join,
 /// buffers a party's blobs until the peer arrives so SPAKE2's first message is
-/// not lost to a connect race — the same behavior `rendezvous/client.rs` expects.
+/// not lost to a connect race, and removes a party from its room when its
+/// connection ends (the Go broker's `defer s.leave`), so a retry can take the
+/// freed slot — the same behavior `rendezvous/client.rs` expects.
 /// Returns the `ws://…/ws` URL.
 pub async fn mock_mailbox_broker() -> String {
+    mock_mailbox_broker_with_control().await.0
+}
+
+/// `mock_mailbox_broker`, plus a [`MailboxControl`] for tests that need to cut
+/// connections or inspect room occupancy. One mock either way.
+pub async fn mock_mailbox_broker_with_control() -> (String, MailboxControl) {
     use futures_util::{SinkExt, StreamExt as _};
     use std::collections::HashMap;
     use tokio::sync::mpsc;
     use tokio::sync::Mutex as AsyncMutex;
     use tokio_tungstenite::tungstenite::Message;
 
-    #[derive(serde::Deserialize)]
-    struct In {
-        #[serde(rename = "type")]
-        typ: String,
-        room: Option<String>,
-        data: Option<String>,
-    }
-
-    #[derive(Default)]
-    struct RoomState {
-        peers: Vec<mpsc::UnboundedSender<Message>>,
-        buffered: Vec<String>,
-    }
+    use MailboxIn as In;
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
-    let rooms: Arc<AsyncMutex<HashMap<String, RoomState>>> =
-        Arc::new(AsyncMutex::new(HashMap::new()));
+    let rooms: MailboxRooms = Arc::new(AsyncMutex::new(HashMap::new()));
+    let control = MailboxControl(rooms.clone());
 
     fn relay_frame(data: &str) -> Message {
         Message::text(serde_json::json!({ "type": "msg", "data": data }).to_string())
@@ -167,10 +207,20 @@ pub async fn mock_mailbox_broker() -> String {
                         }
                     }
                 }
+
+                // The connection ended: leave the room (broker/mailbox.go's
+                // `defer s.leave`), freeing the slot for a retry.
+                let mut g = rooms.lock().await;
+                if let Some(rm) = g.get_mut(&room) {
+                    rm.peers.retain(|p| !p.same_channel(&tx));
+                    if rm.peers.is_empty() {
+                        g.remove(&room);
+                    }
+                }
             });
         }
     });
-    format!("ws://{addr}/ws")
+    (format!("ws://{addr}/ws"), control)
 }
 
 /// In-process stand-in for the Go broker's fingerprint mode (`broker/fproute.go`):

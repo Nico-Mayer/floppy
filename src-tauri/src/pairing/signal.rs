@@ -6,7 +6,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::pairing::offer::{Completion, Offer, Response};
+use crate::pairing::offer::{Completion, Offer, Response, Revocation};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
@@ -15,6 +15,8 @@ pub enum Signal {
     Response(Response),
     /// The receiver finished an accepted transfer; completes the passive send.
     Completed(Completion),
+    /// The sender cancelled an unanswered offer; dismisses the receiver's prompt.
+    Revoked(Revocation),
 }
 
 impl Signal {

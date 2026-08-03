@@ -110,6 +110,8 @@ pub enum PairingEvent {
     /// how the peer redeemed ("qr" | "code") — the UI shows the SAS only for a
     /// typed code.
     Request { fingerprint: String, suggested_name: String, sas: String, via: String },
+    /// The peer cancelled an offer we had not answered yet; dismiss its prompt.
+    Revoked { transfer_id: String },
     /// A pairing completed; `name` is the newly trusted device.
     Paired { name: String },
     /// A pairing/signalling error to surface (e.g. device offline).
@@ -388,6 +390,18 @@ impl PairingService {
         Ok(id)
     }
 
+    /// Cancel the outgoing offer, if one is still waiting on an answer: send the
+    /// target a signed revocation so its prompt is dismissed, and forget the
+    /// offer so a stale response for it is ignored. A no-op when nothing is
+    /// outstanding (a code send, or the offer was already answered), so the
+    /// cancel command can call this unconditionally.
+    pub fn cancel_outgoing(&self) {
+        let Some(out) = self.outgoing.lock().unwrap().take() else { return };
+        tracing::info!(id = %out.transfer_id, "pairing: revoking cancelled offer");
+        let revocation = self.identity.sign_revocation(&out.transfer_id);
+        self.broker.send(&out.fingerprint, &Signal::Revoked(revocation));
+    }
+
     /// Accept a pending offer: sign a response, tell the sender, and fetch the
     /// offer's ticket (dialing the verified NodeId). Typed error for the same
     /// reason as `send_to`: a busy device must stay recognisable as busy.
@@ -397,7 +411,11 @@ impl PairingService {
             .lock()
             .unwrap()
             .remove(transfer_id)
-            .ok_or_else(|| CommandError::other("no such incoming offer"))?;
+            // Also what an accept that raced a revocation sees: the prompt is
+            // gone, whether it expired or the sender pulled it back.
+            .ok_or_else(|| {
+                CommandError::other("That request isn't open anymore. Ask them to send it again.")
+            })?;
         let resp = self.identity.sign_response(transfer_id, true, None);
         let fingerprint = offer.from.fingerprint();
         self.broker.send(&fingerprint, &Signal::Response(resp));
@@ -566,6 +584,20 @@ async fn incoming_loop(mut l: Loop) {
                     l.manager.cancel(crate::transport::Kind::Send);
                 }
             }
+            Incoming::Signal(Signal::Revoked(r)) => {
+                // The sender cancelled an offer we are still showing: verified,
+                // drop it and tell the UI, so the prompt does not wait out its
+                // TTL for a transfer that can no longer happen. An id that is
+                // not pending (already answered, expired, or never seen) is a
+                // no-op — in particular it never touches a running transfer.
+                if r.verify(&l.trust).is_err() {
+                    tracing::warn!("pairing: revocation failed verification");
+                    continue;
+                }
+                if l.pending.lock().unwrap().remove(&r.transfer_id).is_some() {
+                    l.emit.emit(PairingEvent::Revoked { transfer_id: r.transfer_id });
+                }
+            }
             Incoming::Signal(Signal::Completed(c)) => {
                 // The receiver has it all: finish the matching passive send. A
                 // forged or untrusted completion never matches a live send once
@@ -678,6 +710,7 @@ mod tests {
                 PairingEvent::Offer { transfer_id, .. } => format!("offer:{transfer_id}"),
                 PairingEvent::Accepted => "accepted".into(),
                 PairingEvent::Declined { busy } => format!("declined:{busy}"),
+                PairingEvent::Revoked { transfer_id } => format!("revoked:{transfer_id}"),
                 PairingEvent::Request { fingerprint, .. } => format!("request:{fingerprint}"),
                 PairingEvent::Paired { name } => format!("paired:{name}"),
                 PairingEvent::Error { message } => format!("error:{message}"),
@@ -1300,6 +1333,135 @@ mod tests {
             "no confirm was raised: {:?}",
             ev.tags()
         );
+    }
+
+    /// Cancelling an unanswered offer revokes it at the receiver: the prompt is
+    /// dropped, an accept that lost the race fails cleanly, and a fresh offer to
+    /// the same device is surfaced instead of ghost-declined as busy.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn cancelled_offer_is_revoked_and_reoffer_surfaces() {
+        let tmp = tempfile::tempdir().unwrap();
+        let broker = mock_fp_broker().await;
+        let dummy = "ws://127.0.0.1:1/ws".to_string();
+        let a_ev = PairCollector::default();
+        let b_ev = PairCollector::default();
+        let a_mgr = manager(tmp.path(), "ra", Arc::new(DoneFlag::default())).await;
+        let a = PairingService::new(
+            &tmp.path().join("ida"),
+            a_mgr.clone(),
+            broker.clone(),
+            dummy.clone(),
+            Arc::new(a_ev.clone()),
+        )
+        .unwrap();
+        let b = PairingService::new(
+            &tmp.path().join("idb"),
+            manager(tmp.path(), "rb", Arc::new(DoneFlag::default())).await,
+            broker.clone(),
+            dummy,
+            Arc::new(b_ev.clone()),
+        )
+        .unwrap();
+        tokio::time::sleep(Duration::from_millis(200)).await;
+
+        let b_fp = PublicKey::decode(&b.identity()).unwrap().fingerprint();
+        a.trust(&b.identity(), "b").unwrap();
+        b.trust(&a.identity(), "a").unwrap();
+
+        // A offers, B's prompt shows, then A cancels (what the cancel_send
+        // command does: revoke the offer, then free the send).
+        let f = write_file(tmp.path(), "r.bin", &vec![3u8; 80_000]);
+        a.send_to(&b_fp, vec![f.clone()]).await.unwrap();
+        wait_until(Duration::from_secs(10), || b_ev.offer_id().is_some()).await;
+        let id1 = b_ev.offer_id().unwrap();
+        a.cancel_outgoing();
+        a_mgr.cancel(crate::transport::Kind::Send);
+
+        // B's prompt is dismissed, and accepting the revoked offer fails.
+        wait_until(Duration::from_secs(10), || {
+            b_ev.tags().iter().any(|t| t == &format!("revoked:{id1}"))
+        })
+        .await;
+        assert!(b.accept(&id1).await.is_err(), "accept after revoke must fail");
+
+        // A never hears an answer for the cancelled offer.
+        tokio::time::sleep(Duration::from_millis(300)).await;
+        assert!(
+            !a_ev.tags().iter().any(|t| t == "accepted" || t.starts_with("declined")),
+            "no response events for a cancelled offer: {:?}",
+            a_ev.tags()
+        );
+
+        // A fresh offer right after the cancel is surfaced, not busy-declined
+        // by the ghost prompt.
+        a.send_to(&b_fp, vec![f]).await.unwrap();
+        wait_until(Duration::from_secs(10), || {
+            b_ev.last_offer_id().is_some_and(|id| id != id1)
+        })
+        .await;
+        assert!(
+            !a_ev.tags().iter().any(|t| t == "declined:true"),
+            "the re-offer must not be auto-declined busy: {:?}",
+            a_ev.tags()
+        );
+    }
+
+    /// The incoming loop's negative paths, fed directly: a response nobody is
+    /// waiting on emits nothing, a forged revocation is dropped, a valid one
+    /// dismisses exactly once, and a repeat (or post-accept) revocation is a
+    /// no-op.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn incoming_loop_ignores_stale_and_unmatched_signals() {
+        let tmp = tempfile::tempdir().unwrap();
+        let broker_url = mock_fp_broker().await;
+        let my = Arc::new(Identity::load_or_create(&tmp.path().join("me")).unwrap());
+        let peer = Identity::load_or_create(&tmp.path().join("peer")).unwrap();
+        let stranger = Identity::load_or_create(&tmp.path().join("stranger")).unwrap();
+        let trust = Arc::new(TrustStore::in_memory());
+        trust.add(peer.public(), "peer").unwrap();
+
+        let mgr = manager(tmp.path(), "il", Arc::new(DoneFlag::default())).await;
+        let (fp_client, _fp_in) = connect(broker_url, &my);
+        let ev = PairCollector::default();
+        let pending: Arc<Mutex<HashMap<String, Offer>>> = Arc::new(Mutex::new(HashMap::new()));
+        let outgoing: Arc<Mutex<Option<Outgoing>>> = Arc::new(Mutex::new(None));
+        let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+        tokio::spawn(incoming_loop(Loop {
+            incoming: rx,
+            identity: my,
+            trust,
+            manager: mgr,
+            broker: fp_client,
+            emit: Arc::new(ev.clone()),
+            pending: pending.clone(),
+            outgoing,
+        }));
+
+        // A response for a transfer we are not waiting on: no event.
+        tx.send(Incoming::Signal(Signal::Response(peer.sign_response("s1", true, None))))
+            .unwrap();
+
+        // Seed a pending prompt, then a forged revocation for it: still pending.
+        let offer = peer.sign_offer("x1", 1, 1, 10, "ticket", "peer");
+        pending.lock().unwrap().insert("x1".into(), offer);
+        tx.send(Incoming::Signal(Signal::Revoked(stranger.sign_revocation("x1")))).unwrap();
+        tokio::time::sleep(Duration::from_millis(200)).await;
+        assert!(pending.lock().unwrap().contains_key("x1"), "forged revoke must not dismiss");
+        assert!(ev.tags().is_empty(), "nothing to report yet: {:?}", ev.tags());
+
+        // The real revocation dismisses it, exactly once.
+        tx.send(Incoming::Signal(Signal::Revoked(peer.sign_revocation("x1")))).unwrap();
+        wait_until(Duration::from_secs(5), || {
+            ev.tags().iter().any(|t| t == "revoked:x1")
+        })
+        .await;
+        assert!(pending.lock().unwrap().is_empty());
+
+        // A repeat (the post-accept / already-dismissed shape) emits nothing new.
+        tx.send(Incoming::Signal(Signal::Revoked(peer.sign_revocation("x1")))).unwrap();
+        tokio::time::sleep(Duration::from_millis(200)).await;
+        let revokes = ev.tags().iter().filter(|t| *t == "revoked:x1").count();
+        assert_eq!(revokes, 1, "a revocation dismisses at most once");
     }
 
     async fn wait_until<F: Fn() -> bool>(timeout: Duration, cond: F) {
