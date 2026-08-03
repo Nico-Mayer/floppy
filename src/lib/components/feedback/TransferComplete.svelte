@@ -5,19 +5,19 @@
 	import { fade } from 'svelte/transition'
 
 	// The one completion screen (`feedback`): both transfer panels end here,
-	// differing only in copy. `mono` is for a filesystem path, which truncates
-	// and keeps the full text in the tooltip.
+	// differing only in copy. The description is a plain-language line — who the
+	// files went to, or came from. There is deliberately no path variant: where
+	// received files landed is answered by the open-folder action and by Settings,
+	// not by an absolute path on the screen that ends the flow.
 	//
 	// Entrance-only fade: the outgoing state is removed at once, so no two
 	// states share the card and the layout cannot jump.
 	let {
 		title,
-		description = '',
-		mono = false
+		description = ''
 	}: {
 		title: string
 		description?: string
-		mono?: boolean
 	} = $props()
 </script>
 
@@ -29,13 +29,7 @@
 			</Empty.Media>
 			<Empty.Title>{title}</Empty.Title>
 			{#if description}
-				{#if mono}
-					<Empty.Description class="w-full truncate font-mono text-xs" title={description}>
-						{description}
-					</Empty.Description>
-				{:else}
-					<Empty.Description>{description}</Empty.Description>
-				{/if}
+				<Empty.Description>{description}</Empty.Description>
 			{/if}
 		</Empty.Header>
 	</Empty.Root>

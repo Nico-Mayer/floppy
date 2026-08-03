@@ -9,7 +9,7 @@
 	import SendIcon from '@lucide/svelte/icons/send'
 	import XIcon from '@lucide/svelte/icons/x'
 	import { fade } from 'svelte/transition'
-	import { currentFile } from '../format'
+	import { currentFile, fileLabel } from '../format'
 	import TransferCard from '../TransferCard.svelte'
 	import TransferProgress from '../TransferProgress.svelte'
 	import AddFilesSheet from './AddFilesSheet.svelte'
@@ -40,7 +40,11 @@
 			: `Send to ${pairing.devices.find((d) => d.fingerprint === selection)?.name ?? 'your device'}`
 	)
 
-	const summary = $derived(send.files.length === 1 ? send.files[0].name : `${send.files.length} files`)
+	// Through fileLabel for the same reason the progress line is: this stands in for the
+	// filename before any progress has been reported, and again in the completion title.
+	const summary = $derived(
+		send.files.length === 1 ? fileLabel(send.files[0].name) : `${send.files.length} files`
+	)
 
 	function dispatchSend() {
 		if (selection === 'code') {

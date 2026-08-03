@@ -39,10 +39,11 @@
 			label={currentFile(receive.stats) || 'Getting your files…'}
 		/>
 	{:else if receive.status === 'done'}
+		<!-- No path here (`feedback`): the destination is a folder name nobody typed and
+		     the screen that ends the flow should not be an absolute path. Where the files
+		     are is answered by Open folder below on desktop, and by Settings anywhere. -->
 		<TransferComplete
 			title={receive.target.kind === 'device' ? `Got them from ${receive.target.name}` : 'All done'}
-			description={receive.savedTo}
-			mono
 		/>
 	{:else}
 		<ReceiveIdle />
@@ -57,8 +58,8 @@
 			     files land in the system-visible location (Android public Downloads,
 			     iOS Files → On My iPhone → Floppy), reachable from the OS file apps;
 			     there is no reliable in-app intent to jump there, so the button is
-			     hidden and "Get more files" carries the flow. The path is still
-			     shown by the completion screen. -->
+			     hidden and "Get more files" carries the flow. The save location is
+			     readable in Settings on every platform. -->
 			{#if !isPhoneChrome}
 				<Button onclick={() => OpenPath(receive.savedTo)}>
 					<FolderOpenIcon />

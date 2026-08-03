@@ -13,8 +13,30 @@ export function formatBytes(bytes: number): string {
 	return `${value.toFixed(value < 10 ? 1 : 0)} ${units[unit]}`
 }
 
-export function formatRate(bytesPerSecond: number): string {
-	return `${formatBytes(bytesPerSecond)}/s`
+/** How many characters of a filename a status line shows before it is cut. */
+const NAME_LIMIT = 24
+/** How much of the end survives the cut, so the extension is always readable. */
+const NAME_TAIL = 8
+
+/**
+ * A file's own name, cut to a length the layout can always hold.
+ *
+ * Two defences in one, because a name reaches the screen from four pickers on
+ * three platforms:
+ *
+ * - Anything up to the last separator is dropped. Every path the core sends is
+ *   already a bare name (it takes `file_name()` on the way in), but a platform
+ *   that hands back a URI-shaped display name would otherwise put a path on the
+ *   status line, and that is not worth trusting the whole chain for.
+ * - Past `NAME_LIMIT` the middle is elided rather than the end, so "the long one"
+ *   and "the long one, final cut" stay tellable apart and `.mp4` survives. A
+ *   character cap, not just CSS truncation: it holds whatever the container
+ *   does, and the line cannot be the thing that decides the layout's width.
+ */
+export function fileLabel(name: string): string {
+	const base = name.slice(Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\')) + 1)
+	if (base.length <= NAME_LIMIT) return base
+	return `${base.slice(0, NAME_LIMIT - NAME_TAIL - 1)}…${base.slice(-NAME_TAIL)}`
 }
 
 /**
@@ -24,15 +46,7 @@ export function formatRate(bytesPerSecond: number): string {
  */
 export function currentFile(stats: ProgressEvent | null): string {
 	if (!stats?.file) return ''
-	if (stats.fileCount < 2) return stats.file
-	return `${stats.file} · ${stats.fileIndex} of ${stats.fileCount}`
-}
-
-/** Coarse duration for an ETA — seconds below a minute, then rounded. */
-export function formatDuration(seconds: number): string {
-	if (seconds < 60) return `${Math.max(seconds, 0)}s`
-	const minutes = Math.round(seconds / 60)
-	if (minutes < 60) return `${minutes}m`
-	const hours = Math.floor(minutes / 60)
-	return `${hours}h ${minutes % 60}m`
+	const name = fileLabel(stats.file)
+	if (stats.fileCount < 2) return name
+	return `${name} · ${stats.fileIndex} of ${stats.fileCount}`
 }

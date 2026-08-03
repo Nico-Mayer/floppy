@@ -7,9 +7,7 @@ from, one arbitration order for horizontal gestures, the swipe and pull gestures
 it, the two non-visual feedback channels at the moments that carry meaning (haptics on a
 touch device, and sound on every device), and which motion survives a reduced-motion
 preference.
-
 ## Requirements
-
 ### Requirement: Every interactive control meets a 44px minimum hit area on coarse pointers
 
 On coarse-pointer devices, every interactive control anywhere in the app SHALL have a hit
@@ -382,18 +380,27 @@ so the app is foreground by construction.
 ### Requirement: Progress motion follows the rate without overshooting
 
 Transfer progress SHALL be interpolated so that a fluctuating byte rate reads as smooth
-movement rather than mechanical stepping. The displayed percentage SHALL never exceed 100
-and SHALL never move backwards, whatever the interpolation does internally.
+movement rather than mechanical stepping. The interpolation SHALL live in one place — the
+progress gauge's own transition between the values it is handed — rather than being applied
+twice by a smoothing layer feeding an already-animating component. The displayed percentage
+SHALL never exceed 100, and SHALL never appear to move backwards as a side effect of the
+interpolation.
 
 #### Scenario: Fluctuating rate reads smoothly
 
 - **WHEN** a transfer's rate rises and falls during a transfer
-- **THEN** the progress bar and percentage move smoothly rather than jumping between values
+- **THEN** the gauge's arc and its percentage move smoothly rather than jumping between values
 
 #### Scenario: Progress never reads over 100
 
-- **WHEN** progress reaches completion and the interpolation overshoots
-- **THEN** the displayed percentage is clamped at 100 and the bar does not extend past full
+- **WHEN** a transfer reaches completion
+- **THEN** the displayed percentage is clamped at 100 and the arc does not extend past full
+
+#### Scenario: Smoothing is applied once
+
+- **WHEN** the progress display is handed a new percentage
+- **THEN** exactly one mechanism animates the change, and the value the gauge is given is the
+  reported percentage rather than a separately smoothed one
 
 #### Scenario: Progress is information, not decoration
 

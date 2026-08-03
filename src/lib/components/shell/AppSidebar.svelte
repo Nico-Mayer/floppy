@@ -1,8 +1,7 @@
 <script lang="ts">
-	import { asset, resolve } from '$app/paths'
+	import { resolve } from '$app/paths'
 	import { page } from '$app/state'
 	import StubMark from '$lib/components/shell/StubMark.svelte'
-	import * as Avatar from '$lib/components/ui/avatar'
 	import * as Sidebar from '$lib/components/ui/sidebar'
 	import { platformNavItems as items, type NavItem } from '$lib/nav-items'
 	import { pairing } from '$lib/pairing-app.svelte'
@@ -14,18 +13,17 @@
 	// is a single source of truth.
 	//
 	// Structure follows the shadcn-svelte sidebar contract so the icon rail renders
-	// correctly: brand and account rows are `size="lg"` menu buttons (they collapse
-	// to a centered size-8 tile), and each nav row is `<a><icon/><span>label</span></a>`
-	// — one span, so the component's own `group-data-[collapsible=icon]` rules hide
-	// the label and centre the icon. No custom heights fight that.
+	// correctly: brand and account rows are `size="lg"` menu buttons, and each nav
+	// row is `<a><icon/><span>label</span></a>` — one span, so the component's own
+	// `group-data-[collapsible=icon]` rules hide the label and centre the icon. No
+	// custom heights fight that.
 	//
-	// `size="lg"` on those two rows is load-bearing, not a look. In the rail every
-	// menu button is forced to `group-data-[collapsible=icon]:size-8!`; the base
-	// variant also forces `p-2!`, leaving a 16px content box, while `lg` overrides
-	// it to `p-0!` and leaves the full 32px. A nav row survives `default` only
-	// because the base carries `[&_svg]:size-4`, which shrinks its Lucide icon to
-	// fit — that selector does not match an `<img>` or an Avatar, so demoting the
-	// brand or account row to `default` would silently clip the mark.
+	// The rail geometry all lives in the component (a `size-12` tile, contents after
+	// the leading glyph hidden, that glyph centred), so `size="lg"` here is only the
+	// taller expanded row for a two-line label plus a size-10 mark. It is no longer
+	// load-bearing for the rail: a row may carry a 16px icon or a 40px avatar and
+	// still centre. Only the leading child survives the collapse, which is why the
+	// two label lines are wrapped in one div and the preview badge trails them.
 
 	// Exact match — every route is a leaf, so no prefix ambiguity to resolve.
 	const pathname = $derived(page.url.pathname)
@@ -39,35 +37,6 @@
 <!-- Fixed below the titlebar and collapsible to an icon rail. The offset keeps it
      clear of the header, which is sticky above it at every desktop size. -->
 <Sidebar.Root collapsible="icon" class="top-(--header-height)! h-[calc(100svh-var(--header-height))]!">
-	<Sidebar.Header>
-		<Sidebar.Menu>
-			<Sidebar.MenuItem>
-				<!-- The brand carries no destination and performs no action, so it is not a
-				     control: the `child` snippet renders a plain div, which keeps the rail
-				     geometry coming from the component instead of being re-derived here,
-				     and leaves the row out of the tab order. The hover and active fills are
-				     cancelled rather than left to imply it is pressable — not with
-				     `pointer-events-none`, which would also kill text selection. No
-				     tooltipContent either: a rail tooltip explaining a logo is noise.
-				     alt="" because the adjacent span already says the name. -->
-				<Sidebar.MenuButton
-					size="lg"
-					class="cursor-default hover:bg-transparent hover:text-sidebar-foreground active:bg-transparent active:text-sidebar-foreground"
-				>
-					{#snippet child({ props })}
-						<div {...props}>
-							<img src={asset('/logo.png')} alt="" class="size-8 shrink-0 rounded-lg" />
-							<div class="flex min-w-0 flex-col leading-tight">
-								<span class="truncate font-medium">Floppy</span>
-								<span class="truncate text-xs text-muted-foreground">Peer-to-peer transfer</span>
-							</div>
-						</div>
-					{/snippet}
-				</Sidebar.MenuButton>
-			</Sidebar.MenuItem>
-		</Sidebar.Menu>
-	</Sidebar.Header>
-
 	<Sidebar.Content>
 		<Sidebar.Group>
 			<Sidebar.GroupLabel>Menu</Sidebar.GroupLabel>
@@ -76,7 +45,7 @@
 					{#each items as item (item.href)}
 						{@const active = pathname === item.href}
 						<Sidebar.MenuItem>
-							<Sidebar.MenuButton isActive={active} tooltipContent={item.label}>
+							<Sidebar.MenuButton isActive={active}>
 								{#snippet child({ props })}
 									<!-- A preview destination says so in its accessible name rather than
 									     via an extra element: the row must stay
@@ -96,10 +65,9 @@
 							     it rather than stacking on the same corner. No row has both today
 							     (Devices is not a preview), but the structure allows it.
 							     The badge is pinned by a fixed top offset per row size — `top-1.5` for
-							     a default row — which centres a 20px badge on no row we have: it is
-							     2px high on the 36px desktop row and 6px high on the 44px touch one.
-							     Centring properly is height-agnostic, so it holds for both and for
-							     the icon rail. `!` because the component's offset is a variant rule,
+							     a default row — which centres a 20px badge on no row we have: it sits
+							     8px high on the 48px desktop row. Centring properly is height-agnostic,
+							     so it survives the row scale changing and the icon rail. `!` because the component's offset is a variant rule,
 							     which an unprefixed `top-1/2` both loses to on specificity and fails
 							     to displace in the class merge. -->
 							{#if showCount(item) || item.stub}
@@ -120,8 +88,9 @@
 	</Sidebar.Content>
 
 	<!-- Marks the account row as its own region rather than one more destination
-	     that happens to sit last. `mx-2` comes from the component; the rail is
-	     narrower, so the margin narrows with it or the rule is a stub.
+	     that happens to sit last. The component's `mx-2` is kept at both widths: it
+	     is the same 8px the header, group, and footer pad by, so the rule ends
+	     exactly where a rail tile does and where an expanded row does.
 	     The width override is the load-bearing part. sidebar-separator.svelte
 	     already asks for `w-auto`, but it never lands: separator.svelte sets
 	     `data-[orientation=horizontal]:w-full`, and tailwind-merge treats a
@@ -132,7 +101,7 @@
 	     and `w-auto` in this flex column then stretches to the width minus the
 	     margins. Fixed here rather than in the vendored component: this is its
 	     only consumer, and sidebar.svelte is already patch site enough. -->
-	<Sidebar.Separator class="group-data-[collapsible=icon]:mx-1 data-[orientation=horizontal]:w-auto" />
+	<Sidebar.Separator class="data-[orientation=horizontal]:w-auto" />
 
 	<!-- Clear the gesture rail on a desktop OS that reports one (0 almost always).
 	     Additive, and it has to be: a bare `pb-(--safe-bottom)` outranks the
@@ -163,9 +132,8 @@
 							     empty account, and fetching one from a third party is at odds
 							     with the app's peer-to-peer, no-cloud promise, so there is no
 							     `src` to fetch: the icon fallback is the whole avatar. -->
-							<Avatar.Root class="size-8 rounded-lg">
-								<Avatar.Fallback class="rounded-lg"><UserIcon class="size-4" /></Avatar.Fallback>
-							</Avatar.Root>
+							<UserIcon class="size-5" />
+
 							<div class="flex min-w-0 flex-col leading-tight">
 								<span class="truncate font-medium">Not signed in</span>
 								<span class="truncate text-xs text-muted-foreground">Sync your devices</span>
