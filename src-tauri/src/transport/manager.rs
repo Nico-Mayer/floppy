@@ -20,9 +20,9 @@ use std::sync::{Arc, Mutex, Weak};
 use std::time::{Duration, Instant};
 
 use iroh::endpoint::presets;
-use iroh::endpoint::Connection;
+use iroh::endpoint::{Connection, RelayStatus};
 use iroh::protocol::Router;
-use iroh::{Endpoint, RelayMode};
+use iroh::{Endpoint, RelayMode, Watcher as _};
 use iroh_blobs::api::blobs::{AddPathOptions, ExportMode, ExportOptions, ImportMode};
 use iroh_blobs::api::{Store, TempTag};
 use iroh_blobs::format::collection::Collection;
@@ -297,6 +297,24 @@ impl Manager {
     #[allow(dead_code)]
     pub fn endpoint_addr(&self) -> iroh::EndpointAddr {
         self.inner.endpoint.addr()
+    }
+
+    /// Whether any home relay is connected, as a stream: the current answer
+    /// first, then one item per change, for as long as the endpoint lives. This
+    /// is iroh's own view of its relay connection (`Endpoint::home_relay_status`)
+    /// rather than a probe of ours, which is why it costs nothing to watch.
+    ///
+    /// Caller beware: a `RelayConfig::DisableRelay` endpoint has no relay to
+    /// connect to, so it reports `false` forever. That config exists only in
+    /// tests — a production endpoint always has relays configured — so a
+    /// permanent `false` here means the network is blocking them, not that the
+    /// app asked for none.
+    pub fn relay_connected(&self) -> impl n0_future::Stream<Item = bool> + use<> {
+        self.inner
+            .endpoint
+            .home_relay_status()
+            .stream()
+            .map(|relays| relays.iter().any(RelayStatus::is_connected))
     }
 
     /// Import `paths` as a collection, claim the send slot, and start serving.
@@ -1319,6 +1337,23 @@ mod tests {
             tokio::time::sleep(Duration::from_millis(25)).await;
         }
         panic!("condition not met; events: {:?}", c.events());
+    }
+
+    /// The relay-status accessor is readable with no network at all, and answers
+    /// straight away rather than waiting for a change. `DisableRelay` gives the
+    /// endpoint no relay to connect to, which is exactly the shape of the state a
+    /// blocked network produces.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn relay_status_is_readable_offline() {
+        let tmp = tempfile::tempdir().unwrap();
+        let m = manager(tmp.path(), "relay", Arc::new(Collector::default())).await;
+
+        let mut relays = Box::pin(m.relay_connected());
+        let first = tokio::time::timeout(Duration::from_secs(1), relays.next())
+            .await
+            .expect("the current answer should not have to be waited for")
+            .expect("the stream yields while the endpoint lives");
+        assert!(!first, "a relay-less endpoint reports no connected relay");
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

@@ -10,6 +10,7 @@
 	import BottomNav from '$lib/components/shell/BottomNav.svelte'
 	import * as Sidebar from '$lib/components/ui/sidebar'
 	import { Toaster } from '$lib/components/ui/sonner'
+	import { health } from '$lib/health.svelte'
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte'
 	import { fast, shift } from '$lib/motion'
 	import { platformNavItems } from '$lib/nav-items'
@@ -111,6 +112,12 @@
 		let stopPairing: (() => void) | undefined
 		pairing.init().then((stop) => (stopPairing = stop))
 
+		// Connection health, for the warning the transfer screens' top bars show.
+		// Here rather than on those screens: the links change whatever route is
+		// open, and both screens read one copy of the answer.
+		let stopHealth: (() => void) | undefined
+		health.init().then((stop) => (stopHealth = stop))
+
 		// Android hands the real window insets to the page; iOS and desktop get
 		// them from env() and this is a no-op there.
 		const stopSafeArea = watchSafeArea()
@@ -174,6 +181,7 @@
 		return () => {
 			stopTransfer()
 			stopPairing?.()
+			stopHealth?.()
 			stopDrag?.()
 			stopSafeArea()
 			stopFocusScroll()

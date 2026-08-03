@@ -38,6 +38,10 @@ export const DownloadRoot = () => ok(commands.downloadRoot())
 /** Reap the sandbox copies made for a mobile send queue (a no-op on desktop). */
 export const ClearInputCache = () => ok(commands.clearInputCache())
 
+// Connectivity
+/** The state of both links right now, for a screen that opens mid-session. */
+export const HealthNow = () => ok(commands.health())
+
 // Pairing
 export const Identity = () => ok(commands.identity())
 export const TrustedDevices = () => ok(commands.trustedDevices())

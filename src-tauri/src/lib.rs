@@ -7,6 +7,7 @@
 mod error;
 mod events;
 mod fileinput;
+mod health;
 mod pairing;
 mod preview;
 mod rendezvous;
@@ -20,10 +21,12 @@ use std::sync::Arc;
 
 use error::CommandError;
 use events::{
-    CodeEvent, DeepLink, DeepLinkKind, DoneEvent, ErrorEvent, PairingAccepted, PairingDeclined,
-    PairingError, PairingOfferEvent, PairingPaired, PairingRequest, PairingRevoked, ProgressEvent,
-    TransferKind,
+    CodeEvent, DeepLink, DeepLinkKind, DoneEvent, ErrorEvent, HealthEvent, PairingAccepted,
+    PairingDeclined, PairingError, PairingOfferEvent, PairingPaired, PairingRequest,
+    PairingRevoked, ProgressEvent, TransferKind,
 };
+use health::Health;
+use n0_future::StreamExt as _;
 use pairing::{PairCode, PairingEmitter, PairingEvent, PairingService};
 use specta_typescript::Number;
 use tauri::{AppHandle, Manager as _, State};
@@ -60,6 +63,10 @@ struct TauriPairingEmitter {
     /// transfer emitter; a plain flag so a pairing task can read it without
     /// blocking on the UI event loop the way `is_focused()` does.
     foreground: Arc<AtomicBool>,
+    /// Where the broker's connection state lands. The pairing service reports it
+    /// on the same stream as its signals; this is where that stops being a
+    /// pairing event and becomes connectivity health.
+    health: Health,
 }
 
 impl PairingEmitter for TauriPairingEmitter {
@@ -81,6 +88,12 @@ impl PairingEmitter for TauriPairingEmitter {
             P::Revoked { transfer_id } => PairingRevoked { transfer_id }.emit(app),
             P::Paired { name } => PairingPaired { name }.emit(app),
             P::Error { message } => PairingError { message }.emit(app),
+            // Never reaches the webview as a pairing event: the broker link is
+            // connectivity health, and health has its own event.
+            P::Link { registered } => {
+                self.health.set_broker(registered);
+                Ok(())
+            }
         };
     }
 }
@@ -386,6 +399,15 @@ async fn download_root(app: AppHandle) -> Result<String, CommandError> {
     Ok(resolve_dest_root(&app, &fallback).display().to_string())
 }
 
+/// The current state of the two links a transfer depends on. Same shape the
+/// health event carries, so a screen that opens mid-session starts from the truth
+/// instead of waiting for the next change.
+#[tauri::command]
+#[specta::specta]
+async fn health(health: State<'_, Health>) -> Result<HealthEvent, CommandError> {
+    Ok(health.snapshot().into())
+}
+
 // ---- pairing commands (device-pairing) ----
 
 #[tauri::command]
@@ -534,6 +556,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
             clear_input_cache,
             open_path,
             download_root,
+            health,
             identity,
             self_name,
             set_self_name,
@@ -553,6 +576,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
             ProgressEvent,
             DoneEvent,
             ErrorEvent,
+            HealthEvent,
             PairingOfferEvent,
             PairingAccepted,
             PairingDeclined,
@@ -849,6 +873,16 @@ pub fn run() {
                 });
             }
 
+            // Connectivity health: one copy of the two links' state, fed by the
+            // relay watcher below and by the pairing emitter, read by the `health`
+            // command and pushed as `HealthEvent` on every change.
+            let health = {
+                let app = handle.clone();
+                Health::new(Arc::new(move |snapshot: health::Snapshot| {
+                    let _ = HealthEvent::from(snapshot).emit(&app);
+                }))
+            };
+
             let emitter = Arc::new(TauriEmitter {
                 app: handle.clone(),
                 last: std::sync::Mutex::new(LastProgress::default()),
@@ -864,6 +898,29 @@ pub fn run() {
                 config, emitter, publish,
             ))?;
 
+            // Relay health: iroh's own home-relay status, mapped straight onto the
+            // link. The stream ends when the endpoint's last clone drops, which
+            // takes the task with it. The timer beside it closes the launch grace
+            // window: the watcher only fires on a change, so a relay that never
+            // connects would otherwise never be re-observed and would stay unknown
+            // for the whole session.
+            {
+                let health = health.clone();
+                let mut relays = Box::pin(manager.relay_connected());
+                tauri::async_runtime::spawn(async move {
+                    while let Some(connected) = relays.next().await {
+                        health.set_relay(connected);
+                    }
+                });
+            }
+            {
+                let health = health.clone();
+                tauri::async_runtime::spawn(async move {
+                    tokio::time::sleep(health::RELAY_GRACE).await;
+                    health.settle_relay();
+                });
+            }
+
             // Trusted-device pairing: identity + trust store under app data, and
             // the fingerprint-routing broker (the mailbox URL's `/ws` → `/fp`).
             let fp_broker_url = broker_url
@@ -872,6 +929,7 @@ pub fn run() {
             let pairing_emitter = Arc::new(TauriPairingEmitter {
                 app: handle.clone(),
                 foreground: foreground.clone(),
+                health: health.clone(),
             });
             let pairing = tauri::async_runtime::block_on(async {
                 PairingService::new(
@@ -885,6 +943,7 @@ pub fn run() {
 
             app.manage(manager);
             app.manage(pairing);
+            app.manage(health);
 
             // Deep links: `floppy://receive?code=…` prefills the receive code;
             // `floppy://pair/…` completes a one-sided pairing. Registered after

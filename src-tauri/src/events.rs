@@ -11,6 +11,7 @@ use specta::Type;
 use specta_typescript::Number;
 use tauri_specta::Event;
 
+use crate::health::{Link, Snapshot};
 use crate::transport::error::TransferErrorCode;
 
 // `u64`/`i64` are BigInt-forbidden by specta's TS exporter; `#[specta(type =
@@ -77,6 +78,24 @@ pub struct ErrorEvent {
     pub kind: TransferKind,
     pub code: TransferErrorCode,
     pub message: String,
+}
+
+/// Connectivity health changed: the state of the two links a transfer depends on.
+/// Not a transfer event — it belongs to no transfer, so it carries no `id` and no
+/// `kind`. The payload is always both links rather than the one that moved, so a
+/// dropped event cannot leave the frontend holding a mixture of old and new. The
+/// `health` command returns this same shape for a screen that opens mid-session.
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Default, Type, Event)]
+#[serde(rename_all = "camelCase")]
+pub struct HealthEvent {
+    pub relay: Link,
+    pub broker: Link,
+}
+
+impl From<Snapshot> for HealthEvent {
+    fn from(s: Snapshot) -> Self {
+        HealthEvent { relay: s.relay, broker: s.broker }
+    }
 }
 
 /// A verified incoming trusted-device offer awaiting accept/decline.

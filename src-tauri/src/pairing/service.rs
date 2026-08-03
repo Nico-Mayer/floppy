@@ -116,6 +116,12 @@ pub enum PairingEvent {
     Paired { name: String },
     /// A pairing/signalling error to surface (e.g. device offline).
     Error { message: String },
+    /// This device's own broker connection changed. Not a pairing event in the UI
+    /// sense: it rides this stream because the fingerprint socket *is* the pairing
+    /// transport, and the alternative was threading a second sink through two
+    /// constructors to carry one bool. The emitter decides where it goes, which is
+    /// connectivity health and never the webview.
+    Link { registered: bool },
 }
 
 pub trait PairingEmitter: Send + Sync + 'static {
@@ -618,6 +624,9 @@ async fn incoming_loop(mut l: Loop) {
                 }
                 l.emit.emit(PairingEvent::Error { message: "The device is offline.".into() });
             }
+            Incoming::Link { registered } => {
+                l.emit.emit(PairingEvent::Link { registered });
+            }
         }
     }
 }
@@ -714,6 +723,7 @@ mod tests {
                 PairingEvent::Request { fingerprint, .. } => format!("request:{fingerprint}"),
                 PairingEvent::Paired { name } => format!("paired:{name}"),
                 PairingEvent::Error { message } => format!("error:{message}"),
+                PairingEvent::Link { registered } => format!("link:{registered}"),
             };
             self.0.lock().unwrap().push(tag);
         }

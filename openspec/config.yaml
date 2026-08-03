@@ -13,17 +13,19 @@ context: |
   - Transfer: iroh + iroh-blobs (QUIC, hole-punching, relay fallback, BLAKE3
     content addressing)
 
-  Capabilities (`openspec/specs/`), 11 of them:
+  Capabilities (`openspec/specs/`), 14 of them:
   - Core — `file-transfer` (iroh transport + transfer lifecycle),
     `download-destination` (where received files land),
     `device-pairing` (identity, trust store, signed offers, SAS),
-    `code-phrase-share` (quick share by code), `rendezvous-broker` (the Go broker).
+    `code-phrase-share` (quick share by code), `rendezvous-broker` (the Go broker),
+    `connectivity-health` (relay + broker reachability, reported never enforced).
   - Platform — `app-platform` (Tauri 2 runtime, generated IPC, plugins, previews,
     mobile targets).
   - Frontend — `app-shell` (responsive shell, sidebar + bottom bar, safe areas,
     page container), `transfer-panel-layout` (Send/Receive screens),
-    `device-management` (Devices screen), `interaction` (hit areas, gestures,
-    haptics, motion), `preview-markers` (unfinished-surface honesty).
+    `device-management` (Devices screen), `account-view` (the Account screen),
+    `interaction` (hit areas, gestures, haptics, motion), `feedback` (pending,
+    failure, and success reporting), `preview-markers` (unfinished-surface honesty).
 
   Layout:
   - `src-tauri/src/lib.rs` — Tauri app wiring: commands, plugins, the `thumb://`

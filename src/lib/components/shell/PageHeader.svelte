@@ -36,10 +36,15 @@
 		 */
 		status?: string
 		/**
-		 * One control on the title's row, at the trailing edge. The heading owns
-		 * where it sits and how far it is from the words; a route only says what it
-		 * is. Kept to one, and kept here, so a page that wants a control in its
-		 * heading does not grow a heading of its own.
+		 * The title row's trailing edge. The heading owns where it sits and how far
+		 * it is from the words; a route only says what goes there, so a page that
+		 * wants a control in its heading does not grow a heading of its own.
+		 *
+		 * Usually one control. A route with more than one thing to show renders them
+		 * as one group, most urgent first, and keeps them icon-sized and quiet (the
+		 * transfer screens do this: a connection warning beside a transfer one).
+		 * Never two rows, and never one hidden to make room for another — the row's
+		 * height is reserved below and must not change with what is in here.
 		 */
 		action?: Snippet
 	} = $props()
@@ -53,7 +58,9 @@
 	     The row's floor is the height an icon action takes (size-9, 44px on a
 	     coarse pointer), reserved whether or not one is passed: the bar is on
 	     every destination, and a page with a control must not stand taller than
-	     one without. -->
+	     one without. That floor is also what lets a route's trailing group appear
+	     and disappear (a connection warning coming and going) without the bar
+	     resizing or anything below it moving. -->
 	<div class="flex min-h-9 items-center justify-between gap-3 pointer-coarse:min-h-11">
 		<div class="flex min-w-0 items-center gap-2">
 			{#if accent}

@@ -227,6 +227,19 @@ pub async fn mock_mailbox_broker_with_control() -> (String, MailboxControl) {
 /// register by the fingerprint derived from the encoded key, then relay signal
 /// blobs to the target fingerprint. Returns the `ws://…/fp` URL.
 pub async fn mock_fp_broker() -> String {
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    serve_fp(listener);
+    format!("ws://{addr}/fp")
+}
+
+/// The same mock, on an address the caller already knows. For a test that needs a
+/// broker to *become* reachable at a URL a client is already dialling.
+pub async fn mock_fp_broker_at(addr: std::net::SocketAddr) {
+    serve_fp(tokio::net::TcpListener::bind(addr).await.unwrap());
+}
+
+fn serve_fp(listener: tokio::net::TcpListener) {
     use crate::pairing::identity::PublicKey;
     use futures_util::{SinkExt, StreamExt as _};
     use std::collections::HashMap;
@@ -243,8 +256,6 @@ pub async fn mock_fp_broker() -> String {
         blob: Option<String>,
     }
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-    let addr = listener.local_addr().unwrap();
     let peers: Arc<AsyncMutex<HashMap<String, mpsc::UnboundedSender<Message>>>> =
         Arc::new(AsyncMutex::new(HashMap::new()));
 
@@ -303,5 +314,4 @@ pub async fn mock_fp_broker() -> String {
             });
         }
     });
-    format!("ws://{addr}/fp")
 }

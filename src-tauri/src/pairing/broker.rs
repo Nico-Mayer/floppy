@@ -23,6 +23,11 @@ pub enum Incoming {
     Signal(Signal),
     /// The peer with this fingerprint was offline when we tried to reach it.
     Unreachable(String),
+    /// This device's own connection to the broker changed: `true` once the broker
+    /// has acknowledged our registration, `false` when the connection failed or
+    /// closed and a retry is still pending. Rides this stream so the app has one
+    /// thing to read; it says nothing about any peer.
+    Link { registered: bool },
 }
 
 /// A queued outbound signal: (target fingerprint, opaque blob).
@@ -87,6 +92,10 @@ async fn run(
         if in_tx.is_closed() {
             return;
         }
+        // A retry is pending, so the link is down rather than finished. Reported
+        // here and not in `serve_once` because this is the only place that knows
+        // the difference between a failure we will retry and a clean stop.
+        let _ = in_tx.send(Incoming::Link { registered: false });
         tokio::time::sleep(backoff).await;
         backoff = (backoff * 2).min(Duration::from_secs(30));
     }
@@ -121,6 +130,9 @@ async fn serve_once(
         other => return Err(format!("no register ack: {other:?}")),
     }
     tracing::info!("pairing broker: registered");
+    if in_tx.send(Incoming::Link { registered: true }).is_err() {
+        return Ok(()); // consumer gone
+    }
 
     loop {
         tokio::select! {
@@ -160,4 +172,70 @@ async fn serve_once(
 
 fn json(m: &Wire) -> Message {
     Message::text(serde_json::to_string(m).expect("serialize fp wire"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::testsupport::mock_fp_broker;
+
+    /// The first thing off the stream, or a panic — a link report must not need a
+    /// signal to arrive first.
+    async fn first_link(rx: &mut mpsc::UnboundedReceiver<Incoming>) -> bool {
+        let msg = tokio::time::timeout(Duration::from_secs(5), rx.recv())
+            .await
+            .expect("no link report arrived")
+            .expect("the client stopped instead of reporting");
+        match msg {
+            Incoming::Link { registered } => registered,
+            _ => panic!("expected a link report first"),
+        }
+    }
+
+    /// Registering against the broker reports the link up, before any peer has
+    /// signalled anything.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn registering_reports_the_link_up() {
+        let tmp = tempfile::tempdir().unwrap();
+        let identity = Identity::load_or_create(tmp.path()).unwrap();
+        let url = mock_fp_broker().await;
+
+        let (_client, mut rx) = connect(url, &identity);
+        assert!(first_link(&mut rx).await, "a registered client reports its link up");
+    }
+
+    /// A broker that cannot be reached reports the link down on the first failed
+    /// attempt, and keeps retrying rather than giving up.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn an_unreachable_broker_reports_the_link_down() {
+        let tmp = tempfile::tempdir().unwrap();
+        let identity = Identity::load_or_create(tmp.path()).unwrap();
+
+        // Port 1 refuses at once, so this is the connect-failure path and not a
+        // timeout.
+        let (_client, mut rx) = connect("ws://127.0.0.1:1/fp".to_string(), &identity);
+        assert!(!first_link(&mut rx).await, "an unreachable broker reports its link down");
+    }
+
+    /// A broker that comes back is reported up again, so a recovered link needs no
+    /// restart. The client starts against a dead address, then retries into a live
+    /// mock listening on the very port it has been dialling.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn a_recovered_link_is_reported_up_again() {
+        let tmp = tempfile::tempdir().unwrap();
+        let identity = Identity::load_or_create(tmp.path()).unwrap();
+
+        // Claim a port, learn it, then drop the listener so the first dial fails.
+        let probe = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = probe.local_addr().unwrap();
+        drop(probe);
+
+        let (_client, mut rx) = connect(format!("ws://{addr}/fp"), &identity);
+        assert!(!first_link(&mut rx).await, "the first dial should fail");
+
+        // Serve the same port for a later retry. The client's backoff is seconds,
+        // so `first_link`'s window is what has to cover it.
+        crate::testsupport::mock_fp_broker_at(addr).await;
+        assert!(first_link(&mut rx).await, "a recovered link is reported up again");
+    }
 }

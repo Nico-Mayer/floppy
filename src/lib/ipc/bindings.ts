@@ -30,6 +30,12 @@ export const commands = {
 	 *  read: nothing is created — a receive makes the folder when it needs it.
 	 */
 	downloadRoot: () => typedError<string, CommandError>(__TAURI_INVOKE("download_root")),
+	/**
+	 *  The current state of the two links a transfer depends on. Same shape the
+	 *  health event carries, so a screen that opens mid-session starts from the truth
+	 *  instead of waiting for the next change.
+	 */
+	health: () => typedError<HealthEvent, CommandError>(__TAURI_INVOKE("health")),
 	identity: () => typedError<string, CommandError>(__TAURI_INVOKE("identity")),
 	/**  This device's own name, shown to peers during pairing and on transfers. */
 	selfName: () => typedError<string, CommandError>(__TAURI_INVOKE("self_name")),
@@ -72,6 +78,7 @@ export const events = {
 	deepLink: makeEvent<DeepLink>("deep-link"),
 	doneEvent: makeEvent<DoneEvent>("done-event"),
 	errorEvent: makeEvent<ErrorEvent>("error-event"),
+	healthEvent: makeEvent<HealthEvent>("health-event"),
 	pairingAccepted: makeEvent<PairingAccepted>("pairing-accepted"),
 	pairingDeclined: makeEvent<PairingDeclined>("pairing-declined"),
 	pairingError: makeEvent<PairingError>("pairing-error"),
@@ -148,6 +155,25 @@ export type FileEntry = {
 	size: number,
 	isDir: boolean,
 };
+
+/**
+ *  Connectivity health changed: the state of the two links a transfer depends on.
+ *  Not a transfer event — it belongs to no transfer, so it carries no `id` and no
+ *  `kind`. The payload is always both links rather than the one that moved, so a
+ *  dropped event cannot leave the frontend holding a mixture of old and new. The
+ *  `health` command returns this same shape for a screen that opens mid-session.
+ */
+export type HealthEvent = {
+	relay: Link,
+	broker: Link,
+};
+
+/**
+ *  One link's state. `Unknown` is the launch value and means we have not earned
+ *  an answer yet — it is neither good nor bad news, and the UI shows nothing for
+ *  it.
+ */
+export type Link = "unknown" | "up" | "down";
 
 /**
  *  A pairing code and how long it lasts, so the UI can count it down instead of
