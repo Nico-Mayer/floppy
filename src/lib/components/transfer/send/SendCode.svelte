@@ -4,6 +4,7 @@
 	import BorderBeam from '$lib/components/magic/border-beam/border-beam.svelte'
 	import { QRCode } from '$lib/components/spell/qrcode'
 	import * as InputGroup from '$lib/components/ui/input-group'
+	import { receiveLink } from '$lib/code-link'
 	import { motionOK, normal } from '$lib/motion'
 	import { fade } from 'svelte/transition'
 
@@ -23,10 +24,14 @@
 
 	<!-- Scanning is a phone-held-up gesture, so compact cards lead with a large
 	     QR; in a regular-width card it recedes beside the phrase. Container
-	     variants, not viewport: the card is the layout unit. -->
+	     variants, not viewport: the card is the layout unit.
+	     The QR carries a link, not the bare code: both of the app's codes look
+	     alike, so the link is what tells a scan it is a share code and not a
+	     pairing one (see code-link.ts). The phrase beside it stays bare — that is
+	     the thing a person reads out or types. -->
 	<div class="flex w-full max-w-md flex-col items-center gap-5 @md:max-w-lg @md:flex-row @md:gap-6">
 		<div class="relative shrink-0 rounded-2xl border p-4 @md:p-3">
-			<QRCode bgColor="var(--background)" value={code} class="size-44 @md:size-32" />
+			<QRCode bgColor="var(--background)" value={receiveLink(code)} class="size-44 @md:size-32" />
 			{#if motionOK()}
 				<BorderBeam size={70} duration={5} colorFrom="var(--tint)" colorTo="var(--tint-fg)" />
 			{/if}

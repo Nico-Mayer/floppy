@@ -203,7 +203,16 @@ it SHALL say the camera is off, SHALL offer the way to the platform's own settin
 NOT leave the user without a way to finish what they were doing.
 
 The plugin's API SHALL be wrapped in one module. No feature component SHALL import it directly,
-for the same reason no component calls `invoke` directly.
+for the same reason no component calls `invoke` directly. That module SHALL NOT be tied to one
+flow: what the camera surface says, and what a decoded code is handed to, SHALL be supplied by
+the caller, so more than one screen can point the same camera at a code.
+
+Deep links SHALL be routed by shape and reported to the frontend as one event carrying which
+shape arrived along with the code it carries, matching how transfer events carry their
+direction. The router SHALL accept a receive link and a pairing link, and SHALL ignore any
+other `floppy://` URL rather than guessing at it. Routing a link SHALL surface it for the user
+to act on and SHALL NOT act on it: a receive link prefills the code and never starts a
+transfer, and a pairing link fills the code field and never redeems it.
 
 File picking SHALL go through the dialog plugin from the frontend and drag-drop through
 native webview events; neither SHALL be an app command or event.
@@ -223,6 +232,17 @@ native webview events; neither SHALL be an app command or event.
 
 - **WHEN** the app is opened via a registered deep link carrying a transfer code
 - **THEN** the deep-link plugin delivers it to the core and the code is surfaced for a receive
+
+#### Scenario: Deep link fills a pairing code
+
+- **WHEN** the app is opened via a `floppy://` pairing link
+- **THEN** the event says it is a pairing link, the Devices code field opens with the code
+  filled in, and nothing is redeemed
+
+#### Scenario: An unrecognised floppy link is ignored
+
+- **WHEN** a `floppy://` URL arrives that is neither a receive nor a pairing link
+- **THEN** no event is emitted and no screen changes
 
 #### Scenario: A core log line is visible on the platform
 
@@ -277,6 +297,12 @@ native webview events; neither SHALL be an app command or event.
 
 - **WHEN** the same control is used in a desktop build
 - **THEN** no scanner call is made and no camera permission is requested
+
+#### Scenario: One scanner module serves every flow
+
+- **WHEN** two different screens open the camera
+- **THEN** both go through the one wrapper module, neither imports the plugin, and each supplies
+  its own copy and its own meaning for a decoded code
 
 ### Requirement: Image previews served by the core
 

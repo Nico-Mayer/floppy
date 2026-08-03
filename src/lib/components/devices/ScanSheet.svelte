@@ -26,7 +26,14 @@
 	// window itself, so there is one element and no four-rects-around-a-hole.
 	//
 	// Lives in the layout rather than on the Devices page: the page is inside the
-	// shell this hides, so a sheet rendered there would be hidden with it.
+	// shell this hides, so a sheet rendered there would be hidden with it. It is also
+	// why one instance serves every flow that scans — the sheet is already above all
+	// of them.
+	//
+	// The words come from whoever opened the camera (`scanner.copy`), because adding a
+	// device and taking a transfer are pointing the same camera at two different
+	// things. Only the refusal is written here: "that code didn't work" is the same
+	// sentence either way, and the reason under it is the error's own.
 
 	const phase = $derived(scanner.phase)
 	/**
@@ -67,21 +74,20 @@
 		delete document.documentElement.dataset.scanning
 	}
 
+	const copy = $derived(scanner.copy)
 	const headline = $derived(
 		{
-			aiming: 'Point at the code on your other device',
-			caught: 'Got that. Asking them to link…',
-			added: 'Added',
+			aiming: copy.aim.headline,
+			caught: copy.caught.headline,
+			added: copy.done.headline,
 			retry: "That code didn't work"
 		}[phase]
 	)
 	const hint = $derived(
 		{
-			aiming: 'Open Devices there and press the code button to show it.',
-			caught: scanner.slow
-				? 'Still waiting. Someone has to say yes on that device.'
-				: 'They just have to say yes.',
-			added: 'You can send to it without a code from now on.',
+			aiming: copy.aim.hint,
+			caught: (scanner.slow && copy.caught.slow) || copy.caught.hint,
+			added: copy.done.hint,
 			retry: scanner.problem
 		}[phase]
 	)

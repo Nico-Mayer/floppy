@@ -4,6 +4,7 @@
 	import { QRCode } from '$lib/components/spell/qrcode'
 	import * as ResponsiveDialog from '$lib/components/ui/responsive-dialog'
 	import { Spinner } from '$lib/components/ui/spinner'
+	import { pairLink } from '$lib/code-link'
 	import { type PairCode } from '$lib/ipc'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw'
@@ -133,7 +134,11 @@
 					<div class="flex w-full flex-col items-center">
 						<div class="rounded-2xl border p-3">
 							{#if code}
-								<QRCode value={code.code} class="size-36" />
+								<!-- A link, not the bare code: a share code and a pairing code look
+								     exactly alike, so this is what tells a scan which one it read
+								     (see code-link.ts). What is shown and copied below stays bare —
+								     the UI never offers a URL to a person. -->
+								<QRCode value={pairLink(code.code)} class="size-36" />
 							{:else}
 								<div class="flex size-36 items-center justify-center">
 									{#if making}

@@ -13,12 +13,19 @@
 //
 // This owns the whole attempt, not just the read, because a decoded code is the
 // middle of the story rather than the end: the sheet has to say it caught
-// something, then that it is asking the other device, then either it is done or
-// what went wrong and that you can aim again. Closing the camera the instant a
+// something, then that the thing it started is under way, then either it is done
+// or what went wrong and that you can aim again. Closing the camera the instant a
 // code decoded left all of that invisible.
 //
-// Mobile only. The plugin exists for Android and iOS; on desktop adding a device
-// is the code field, so nothing here is called and no camera is requested.
+// It is not tied to one flow. Adding a device and taking a transfer both point a
+// camera at a code, so the caller supplies what a decoded code means (`handle`),
+// what the surface says while it happens (`copy`), and whether the thing it
+// started is worth waiting on (`wait`). Everything else — the permission, the
+// warm-up, the beats, the single ending — is the same both times.
+//
+// Mobile only. The plugin exists for Android and iOS; on desktop every flow that
+// would open this has the code field instead, so nothing here is called and no
+// camera is requested.
 
 import {
 	Format,
@@ -35,7 +42,7 @@ import { isPhoneChrome } from './platform'
 
 export type ScanOutcome =
 	/** A code was read and handled. Nothing is left for the caller to do. */
-	| { kind: 'paired' }
+	| { kind: 'done' }
 	/** The user went back to the app without scanning. Nothing else should open. */
 	| { kind: 'cancelled' }
 	/** The user asked to type the code instead. */
@@ -53,6 +60,48 @@ export type ScanOutcome =
  * work, with the camera live again underneath it.
  */
 export type ScanPhase = 'aiming' | 'caught' | 'added' | 'retry'
+
+/** A headline and the line under it. */
+type Line = { headline: string; hint: string }
+
+/**
+ * What the surface says, supplied by whoever opened the camera. The `retry`
+ * phase is not here: "that code didn't work" is the same sentence in every flow
+ * and the reason under it is the error's own (see `problem`).
+ */
+export type ScanCopy = {
+	/** Live camera: what to point at, and where the other device shows it. */
+	aim: Line
+	/** A code was read and what it started is under way. `slow` needs a `wait`. */
+	caught: Line & { slow?: string }
+	/** It worked, held on screen just long enough to read. */
+	done: Line
+}
+
+/**
+ * How long to let the thing a code started run before saying so, and before
+ * giving up on it.
+ *
+ * Only for a caller whose `handle` waits on something outside this device — a
+ * pairing waits on a person looking at another phone. A `handle` that resolves as
+ * soon as it has started something local passes nothing, and then there is no
+ * bound to inherit on a thing that takes milliseconds.
+ */
+export type ScanWait = {
+	/** Say the wait is long, in ms. */
+	slow: number
+	/** Give up, in ms. */
+	limit: number
+	/** What to say on giving up. */
+	gaveUp: string
+}
+
+/** What one attempt is: the meaning of a code, the words, and any wait. */
+export type ScanIntent = {
+	handle: (content: string) => Promise<void>
+	copy: ScanCopy
+	wait?: ScanWait
+}
 
 /** How long "added" stays up before the camera closes. Long enough to read. */
 const ADDED_HOLD = 900
@@ -84,19 +133,14 @@ const CAMERA_WARM = 350
 const chromeIn = () => Math.max(normal(), 50)
 
 /**
- * How long to wait for the other device before saying so, and before giving up.
- *
- * Redeeming resolves when the other device's user says yes, so the wait is however
- * long someone takes to look at their phone. The core bounds it at two minutes;
- * that is the right bound for a pairing and the wrong one for a person holding a
- * camera up, so this gives up sooner and hands them the code field instead.
- *
- * Giving up here does not cancel the redemption in the core. If the other device
- * says yes afterwards, the pairing still completes and the list still gains the
- * row — the `pairing:paired` event does not care who is looking.
+ * Stand-in copy, never read: `run` sets the caller's words before `active` goes
+ * true, and the sheet only renders while it is.
  */
-const WAIT_SLOW = 12_000
-const WAIT_LIMIT = 45_000
+const NO_COPY: ScanCopy = {
+	aim: { headline: '', hint: '' },
+	caught: { headline: '', hint: '' },
+	done: { headline: '', hint: '' }
+}
 
 /** Whether this build can scan at all. Form factor, not pointer type or width. */
 export function canScan(): boolean {
@@ -118,20 +162,23 @@ class Scanner {
 	slow = $state(false)
 	/** The camera has been asked for but is probably not showing anything yet. */
 	warming = $state(false)
+	/** What this attempt's surface says. The sheet reads it; the caller wrote it. */
+	copy = $state<ScanCopy>(NO_COPY)
 
 	#settle: ((outcome: ScanOutcome) => void) | null = null
 	#timers: ReturnType<typeof setTimeout>[] = []
 
 	/**
-	 * Ask for the camera and keep it up until something ends the attempt. `handle`
-	 * is what to do with a decoded code — it resolves when the pairing is agreed and
-	 * throws when it is refused. Never throws itself: every way this can end is one
-	 * of the outcomes, because the caller has somewhere to go in all of them.
+	 * Ask for the camera and keep it up until something ends the attempt.
+	 * `intent.handle` is what to do with a decoded code — it resolves when the thing
+	 * it started is agreed and throws when the code is refused. Never throws itself:
+	 * every way this can end is one of the outcomes, because the caller has somewhere
+	 * to go in all of them.
 	 *
 	 * The permission is settled before the chrome appears, so a refusal never
 	 * flashes a viewfinder that was never going to work.
 	 */
-	async run(handle: (content: string) => Promise<void>): Promise<ScanOutcome> {
+	async run(intent: ScanIntent): Promise<ScanOutcome> {
 		if (!canScan()) return { kind: 'denied' }
 		if (this.active) return { kind: 'cancelled' }
 
@@ -143,6 +190,7 @@ class Scanner {
 			return { kind: 'failed', message: describe(error) }
 		}
 
+		this.copy = intent.copy
 		this.active = true
 		this.phase = 'aiming'
 		this.problem = ''
@@ -158,7 +206,7 @@ class Scanner {
 
 		return new Promise<ScanOutcome>((settle) => {
 			this.#settle = settle
-			this.#timers.push(setTimeout(() => void this.#read(handle), chromeIn()))
+			this.#timers.push(setTimeout(() => void this.#read(intent), chromeIn()))
 		})
 	}
 
@@ -181,7 +229,7 @@ class Scanner {
 	 * refused loops straight back here with the reason on screen, because the fix is
 	 * to point at a different code and the camera is already in your hand.
 	 */
-	async #read(handle: (content: string) => Promise<void>) {
+	async #read(intent: ScanIntent) {
 		// The hole opens a beat after the camera is asked for, not a beat after the
 		// attempt started: on a retry the chrome is already up, and what matters both
 		// times is how long this camera takes to have something to show.
@@ -196,7 +244,7 @@ class Scanner {
 			// A dismissed scanner comes back as an error rather than an empty result,
 			// so telling the two apart is a string match on the plugin's own wording.
 			// It is the one place in the app that matches on a message, and it is
-			// contained here: guessing wrong costs a toast, never a wrong pairing.
+			// contained here: guessing wrong costs a toast, never a wrong code redeemed.
 			if (looksCancelled(error)) this.#end({ kind: 'cancelled' })
 			else this.#end({ kind: 'failed', message: describe(error) })
 			return
@@ -212,31 +260,31 @@ class Scanner {
 		void haptics.scanned()
 
 		// The wait has a floor of "say something" and a ceiling of "stop waiting".
-		// Without the ceiling this sits on the core's two-minute bound with a spinner
-		// and no way out, which is the one state a camera surface must never have.
-		this.#timers.push(
-			setTimeout(() => (this.slow = true), WAIT_SLOW),
-			setTimeout(
-				() =>
-					this.#end({
-						kind: 'failed',
-						message: "That device hasn't answered. Try again, or type the code."
-					}),
-				WAIT_LIMIT
+		// Without the ceiling a wait on another person sits on the core's own bound
+		// with a spinner and no way out, which is the one state a camera surface must
+		// never have. Only armed for a caller that waits: a handle which returns as
+		// soon as it has started something here is done before either timer would fire,
+		// and arming them anyway would put a give-up bound on nothing.
+		const { wait } = intent
+		if (wait) {
+			this.#timers.push(
+				setTimeout(() => (this.slow = true), wait.slow),
+				setTimeout(() => this.#end({ kind: 'failed', message: wait.gaveUp }), wait.limit)
 			)
-		)
+		}
 
 		try {
-			await handle(content)
+			await intent.handle(content)
 		} catch (error) {
-			// The code was readable and wrong: spent, or this device's own. Worth
-			// staying for, since the next code is one aim away.
+			// The code was readable and wrong: spent, this device's own, or a code for
+			// the app's other flow. Worth staying for, since the next code is one aim
+			// away.
 			if (!this.#settle) return
 			this.#clearTimers()
 			this.phase = 'retry'
 			this.slow = false
 			this.problem = errorText(error)
-			void this.#read(handle)
+			void this.#read(intent)
 			return
 		}
 
@@ -244,12 +292,12 @@ class Scanner {
 		this.#clearTimers()
 		this.phase = 'added'
 		this.slow = false
-		this.#timers.push(setTimeout(() => this.#end({ kind: 'paired' }), ADDED_HOLD))
+		this.#timers.push(setTimeout(() => this.#end({ kind: 'done' }), ADDED_HOLD))
 	}
 
 	/**
 	 * Settle the attempt once, whichever of the ways got here first: the plugin
-	 * returned, the plugin threw, the user pressed something, or a pairing landed.
+	 * returned, the plugin threw, the user pressed something, or the handle finished.
 	 * `cancel()` makes a running `scan()` reject, so a stop would otherwise settle a
 	 * second time with a cancel the caller has already been told about.
 	 */

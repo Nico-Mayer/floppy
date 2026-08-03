@@ -20,8 +20,9 @@ use std::sync::Arc;
 
 use error::CommandError;
 use events::{
-    CodeEvent, DeepLink, DoneEvent, ErrorEvent, PairingAccepted, PairingDeclined, PairingError,
-    PairingOfferEvent, PairingPaired, PairingRequest, PairingRevoked, ProgressEvent, TransferKind,
+    CodeEvent, DeepLink, DeepLinkKind, DoneEvent, ErrorEvent, PairingAccepted, PairingDeclined,
+    PairingError, PairingOfferEvent, PairingPaired, PairingRequest, PairingRevoked, ProgressEvent,
+    TransferKind,
 };
 use pairing::{PairCode, PairingEmitter, PairingEvent, PairingService};
 use specta_typescript::Number;
@@ -226,19 +227,33 @@ impl TauriEmitter {
     }
 }
 
-/// Route an incoming `floppy://` deep link. `receive?code=…` prefills the code
-/// (never auto-starts — drive-by download risk); `pair/…` opens a pairing link.
+/// The two link shapes, and the code each one carries. Split from the emit so it
+/// can be tested without an AppHandle. `src/lib/code-link.ts` builds and parses
+/// the same two shapes for the scanner, which decodes locally with no IPC in the
+/// loop — the same arrangement as `code.ts` and `code::normalize`.
+///
+/// Anything else under the scheme is ignored rather than guessed at.
+fn parse_deep_link(url: &str) -> Option<(DeepLinkKind, String)> {
+    let rest = url.trim().strip_prefix("floppy://")?;
+    let (kind, path) = if let Some(rest) = rest.strip_prefix("receive") {
+        (DeepLinkKind::Receive, rest)
+    } else {
+        (DeepLinkKind::Pair, rest.strip_prefix("pair")?)
+    };
+    let query = path.strip_prefix('?').or_else(|| path.strip_prefix("/?"))?;
+    let code = query.split('&').find_map(|p| p.strip_prefix("code="))?.replace('+', " ");
+    Some((kind, code))
+}
+
+/// Route an incoming `floppy://` deep link. Neither kind is acted on by
+/// arriving: `receive?code=…` prefills the code (never auto-starts — drive-by
+/// download risk) and `pair?code=…` fills the Devices code field, which a person
+/// then presses. A link is not proof two devices are in the same room, so it is
+/// redeemed as a typed code and keeps the SAS compare a scan is allowed to skip.
 fn route_deep_link(app: &AppHandle, url: &str) {
-    let Some(rest) = url.trim().strip_prefix("floppy://") else { return };
-    if let Some(query) = rest.strip_prefix("receive?").or_else(|| rest.strip_prefix("receive/?")) {
-        if let Some(code) =
-            query.split('&').find_map(|p| p.strip_prefix("code=")).map(|c| c.replace('+', " "))
-        {
-            let _ = DeepLink { code }.emit(app);
-        }
+    if let Some((kind, code)) = parse_deep_link(url) {
+        let _ = DeepLink { kind, code }.emit(app);
     }
-    // Pairing is no longer a deep link: devices pair by scanning a QR or typing a
-    // code on the Devices page (see redeem_pair_code).
 }
 
 /// Decimal byte sizes, matching the frontend's `formatBytes` (format.ts).
@@ -897,7 +912,36 @@ pub fn run() {
 mod tests {
     use std::sync::atomic::{AtomicUsize, Ordering};
 
-    use super::log;
+    use super::{log, parse_deep_link, DeepLinkKind};
+
+    /// The link shapes the app's own QRs encode, and the ones it refuses. A link
+    /// carries a code for a flow to fill in; nothing here decides what happens to
+    /// it, which is why an unknown shape is dropped rather than guessed at.
+    #[test]
+    fn deep_links_are_routed_by_shape() {
+        let cases = [
+            ("floppy://receive?code=1234-red-fox-moon", Some((DeepLinkKind::Receive, "1234-red-fox-moon"))),
+            ("floppy://receive/?code=1234-red-fox-moon", Some((DeepLinkKind::Receive, "1234-red-fox-moon"))),
+            ("floppy://pair?code=1234-red-fox-moon", Some((DeepLinkKind::Pair, "1234-red-fox-moon"))),
+            ("floppy://pair/?code=1234-red-fox-moon", Some((DeepLinkKind::Pair, "1234-red-fox-moon"))),
+            // A code that travelled as a form-encoded query keeps its spaces.
+            ("floppy://receive?code=1234+red+fox+moon", Some((DeepLinkKind::Receive, "1234 red fox moon"))),
+            // Extra parameters are tolerated, in any order.
+            ("floppy://pair?from=qr&code=1234-red-fox-moon", Some((DeepLinkKind::Pair, "1234-red-fox-moon"))),
+            // Everything the router has nothing to say about.
+            ("floppy://frobnicate?code=1234-red-fox-moon", None),
+            ("floppy://receiver?code=1234-red-fox-moon", None),
+            ("floppy://receive", None),
+            ("floppy://pair?other=x", None),
+            ("https://example.com/receive?code=1234-red-fox-moon", None),
+            ("", None),
+        ];
+        for (url, want) in cases {
+            let got = parse_deep_link(url);
+            let want = want.map(|(kind, code)| (kind, code.to_string()));
+            assert_eq!(got, want, "{url}");
+        }
+    }
 
     /// The whole logging setup rests on one thing: `tracing` macros fall back to
     /// emitting `log` records, which is what the log plugin's sinks consume. That

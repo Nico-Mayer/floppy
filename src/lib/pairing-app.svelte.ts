@@ -55,6 +55,16 @@ class PairingApp {
 	 * placeholder rows rather than the empty state.
 	 */
 	loaded = $state(false)
+	/**
+	 * A code from a `floppy://pair` link, waiting to be put in the code field.
+	 *
+	 * The link is never redeemed by arriving: it fills the field and a person
+	 * presses, and it is then redeemed as a typed code so the SAS compare still
+	 * happens. A link can be forwarded or pasted anywhere, so it is not the proof of
+	 * being in the same room that lets a scan skip that compare. The Devices page
+	 * takes it and clears it (see DeviceList).
+	 */
+	pendingCode = $state('')
 
 	/**
 	 * Device actions currently in flight, keyed `action:fingerprint` (`confirm`
@@ -142,6 +152,15 @@ class PairingApp {
 			events.pairingRequest.listen((e) => {
 				this.request = e.payload
 				void haptics.arrived()
+				void goto(resolve('/devices'))
+			}),
+			// A floppy://pair?code=… link opened the app: bring up Devices with the code
+			// in the field, and redeem nothing. The transfer app listens to this same
+			// event for the receive kind; the kinds are exclusive, so each side takes
+			// its own and ignores the other.
+			events.deepLink.listen((e) => {
+				if (e.payload.kind !== 'pair') return
+				this.pendingCode = e.payload.code
 				void goto(resolve('/devices'))
 			}),
 			// A pairing completed on this device (either side): show it on the

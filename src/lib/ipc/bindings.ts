@@ -103,10 +103,21 @@ export type CommandError =
 /**  Anything without its own variant; `message` is already user-facing. */
 { kind: "other"; message: string };
 
-/**  A `floppy://receive?code=…` deep link opened the app; prefill the code. */
+/**
+ *  A `floppy://` deep link opened the app, carrying a code for one of the two
+ *  flows that use one. Neither kind is acted on by arriving: the code is filled
+ *  in and a person presses.
+ */
 export type DeepLink = {
+	kind: DeepLinkKind,
 	code: string,
 };
+
+/**
+ *  Which flow a `floppy://` link carries a code for. Serializes as
+ *  "receive"/"pair".
+ */
+export type DeepLinkKind = "receive" | "pair";
 
 export type DeviceInfo = {
 	fingerprint: string,

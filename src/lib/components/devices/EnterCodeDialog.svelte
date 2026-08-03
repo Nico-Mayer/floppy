@@ -19,7 +19,16 @@
 	// of adding a device. Either way it offers the way back to the camera, so neither
 	// direction is a one-way door.
 
-	let { open = $bindable(false), onscan }: { open?: boolean; onscan?: () => void } = $props()
+	let {
+		open = $bindable(false),
+		/**
+		 * A code to start with, from a `floppy://pair` link. Filled in, never sent: the
+		 * press below is the consent, and it redeems as a typed code so the SAS compare
+		 * still happens. A link is not proof of being in the same room.
+		 */
+		prefill = '',
+		onscan
+	}: { open?: boolean; prefill?: string; onscan?: () => void } = $props()
 
 	let typed = $state('')
 	let connecting = $state(false)
@@ -31,6 +40,13 @@
 			typed = ''
 			error = ''
 		}
+	})
+
+	// A code that arrived with the opening goes in the field. It depends on the code
+	// alone, so editing or clearing the field afterwards does not put it back, and a
+	// second link arriving still does.
+	$effect(() => {
+		if (prefill) typed = prefill
 	})
 
 	// A completed pairing is the reason this surface existed, and the new device is

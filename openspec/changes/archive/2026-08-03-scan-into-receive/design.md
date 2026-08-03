@@ -112,6 +112,14 @@ handler keeps the existing rule (prefill, never auto-start — the drive-by-down
 `transfer-app.svelte.ts`). The two are different levels of intent and get different
 answers.
 
+Amended while building: `receive.start()` cannot be awaited by the camera. It awaits the
+`receive` command, which awaits the whole transfer, and it records its failure on the panel
+rather than throwing — so awaiting it would hold the camera up for the length of the
+download and still never see an error. The handler therefore starts it and watches the
+panel for 400ms: a refusal that lands at once (a busy device, nothing at the other end)
+is taken off the panel and thrown, so it lands on the live camera with another aim
+available, and anything slower stays on the panel, which is where a typed code reports too.
+
 ### 6. The pair link routes to a prefilled field, and redeems as *typed*
 
 `floppy://pair?code=…` navigates to Devices and opens the code field with the code in it,
@@ -136,8 +144,13 @@ in-room privilege, and re-opens a path that was removed on purpose).
 
 `DeepLink { kind: "receive" | "pair", code: String }`. Transfer and pairing events in this
 app are already discriminated by a `kind` field on one payload (`ProgressEvent`,
-`DoneEvent`), and one listener that branches beats two listeners that must agree about
-which one owns navigation. Bindings regenerate; `events.deepLink` keeps its name.
+`DoneEvent`). Bindings regenerate; `events.deepLink` keeps its name.
+
+Amended while building: the branch is two listeners on the one event, not one listener that
+branches. `pairing-app` imports `transfer-app` and not the reverse, so a single listener
+would have had to reach across that line in the direction the modules do not depend. Each
+module takes its own kind and returns on the other, which is mechanically exclusive — there
+is no question of which one owns the navigation, because the kind decides.
 
 ### 8. The scanner takes an intent, not a callback
 

@@ -261,6 +261,11 @@ pairing secret as a URL to copy. Adding a device SHALL be done by scanning a QR 
 entering a code. User-visible copy SHALL use "code", "your devices", "paired", and
 "Remove", and SHALL NOT use "pair link", "key", or "trusted".
 
+A QR MAY encode a `floppy://` link carrying the code: a QR is a thing a camera reads, not a
+field a person pastes into, and what the UI shows beside it is still the bare code. A
+pairing link the user opens SHALL fill the code field and SHALL NOT redeem anything on
+arrival, so opening a link is never by itself a way to pair.
+
 #### Scenario: No paste-a-link affordance
 
 - **WHEN** the user is adding a device
@@ -270,6 +275,52 @@ entering a code. User-visible copy SHALL use "code", "your devices", "paired", a
 
 - **WHEN** any pairing-related string is shown
 - **THEN** it uses the device/code/paired vocabulary and avoids link/key/trusted wording
+
+#### Scenario: A link is never a redemption on its own
+
+- **WHEN** a pairing link is opened on this device
+- **THEN** the code field is filled in and the pairing waits for the user to press
+
+### Requirement: The pairing code's QR carries a link to that code
+
+The QR the code panel shows SHALL encode a `floppy://` pairing link carrying the code, not
+the bare code, for the same reason the send QR does: a reader outside the app has something
+it can act on, and a reader inside the app can tell a pairing code from a share code.
+
+The code SHALL still be shown as the bare phrase beside the QR, and any control that copies
+it SHALL copy the bare code. The link exists inside the QR's pixels only.
+
+#### Scenario: The pairing QR encodes a pairing link
+
+- **WHEN** the code panel shows a live pairing code
+- **THEN** the QR encodes a `floppy://` pairing link carrying that code
+
+#### Scenario: The shown code stays bare
+
+- **WHEN** the user reads or copies the pairing code
+- **THEN** what is shown and what is copied is the bare code, never a URL
+
+### Requirement: An arriving pairing link fills the code field and waits
+
+A `floppy://` pairing link opened on this device SHALL open the Devices page with the code
+field open and the code filled in, and SHALL NOT redeem it. Pressing the field's own control
+SHALL redeem it, recorded as a typed code, so the device that showed it does its SAS compare.
+
+A link is not proof that two devices are in the same room: it can be forwarded, pasted into a
+chat, or opened from a page. The SAS compare is exactly what a scan is allowed to skip in
+exchange for that proof, so a link SHALL never be recorded as a scan.
+
+#### Scenario: A pairing link prefills rather than pairs
+
+- **WHEN** a `floppy://` pairing link is opened on this device
+- **THEN** the Devices page opens with the code field filled in, and nothing is redeemed until
+  the user presses
+
+#### Scenario: A link pairs like a typed code
+
+- **WHEN** the user presses the control on a code field filled in from a link
+- **THEN** the redemption is recorded as a typed code and the other device is asked for the SAS
+  compare
 
 ### Requirement: Entry to pairing from the send flow
 
@@ -494,7 +545,11 @@ viewfinder that was never going to work.
 
 A scanned code SHALL be handed to the same redemption the typed code uses, recorded as having
 arrived by scan, so the device that showed it can decide about the SAS compare as it already does.
-The app SHALL NOT require the scanned content to be anything but the code: no link, no wrapper.
+The app SHALL accept either shape a code can arrive in: the `floppy://` pairing link the app
+renders in its QR, or the bare code. It SHALL NOT require a link — a code read from a sticky note
+or from an older build still works — and it SHALL NOT require any other wrapper. Content that is
+neither SHALL be refused as not being a Floppy code, and a share code read here SHALL be refused
+with one line naming the screen it belongs to, both of them with the camera still live.
 
 Reading a code SHALL be acknowledged before anything slower happens: the camera surface SHALL say
 that something was read, and on a device with a vibrator that SHALL be felt too. Redeeming it takes
@@ -537,6 +592,10 @@ The code field SHALL offer the way back to the camera, so neither direction is a
 Stopping the camera SHALL settle the attempt once, however it ended. The plugin failing a running
 scan because the app cancelled it SHALL NOT be reported as a second, different outcome.
 
+Nothing in this surface SHALL be specific to pairing. The camera, its window, its beats and its
+endings SHALL be one surface the app can point at more than one kind of code, with what it says and
+what a decoded code means supplied by the flow that opened it.
+
 #### Scenario: A phone goes straight to the camera
 
 - **WHEN** the user presses the add-a-device control on a phone build
@@ -546,6 +605,23 @@ scan because the app cancelled it SHALL NOT be reported as a second, different o
 
 - **WHEN** the camera decodes the code another device is showing
 - **THEN** pairing proceeds, recorded as having arrived by scan
+
+#### Scenario: A pairing link in a QR pairs the same way
+
+- **WHEN** the camera decodes a QR carrying a `floppy://` pairing link
+- **THEN** the code inside it is redeemed exactly as a bare code would be, recorded as having
+  arrived by scan
+
+#### Scenario: A bare code is still enough
+
+- **WHEN** the camera decodes a bare `1234-word-word-word` code while adding a device
+- **THEN** pairing proceeds and no link or wrapper is required
+
+#### Scenario: A share code read here says where it belongs
+
+- **WHEN** the camera on the add-a-device flow reads a QR carrying a share code
+- **THEN** one line says it is a code for sending files and names the Receive screen, and the
+  camera stays live
 
 #### Scenario: Reading a code is acknowledged at once
 
@@ -642,6 +718,12 @@ scan because the app cancelled it SHALL NOT be reported as a second, different o
 
 - **WHEN** the code field is open on a phone build
 - **THEN** it offers a way back to the camera
+
+#### Scenario: The camera surface serves more than one flow
+
+- **WHEN** the camera is opened from the Receive panel rather than from adding a device
+- **THEN** the same surface runs, saying what that flow gave it to say, and a decoded code means
+  what that flow says it means
 
 ### Requirement: Device actions show they are working
 

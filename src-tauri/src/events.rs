@@ -137,8 +137,20 @@ pub struct PairingError {
     pub message: String,
 }
 
-/// A `floppy://receive?code=…` deep link opened the app; prefill the code.
+/// Which flow a `floppy://` link carries a code for. Serializes as
+/// "receive"/"pair".
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "lowercase")]
+pub enum DeepLinkKind {
+    Receive,
+    Pair,
+}
+
+/// A `floppy://` deep link opened the app, carrying a code for one of the two
+/// flows that use one. Neither kind is acted on by arriving: the code is filled
+/// in and a person presses.
 #[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
 pub struct DeepLink {
+    pub kind: DeepLinkKind,
     pub code: String,
 }

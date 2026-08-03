@@ -419,6 +419,12 @@ class TransferApp {
 				// navigation is the whole point — the link can arrive on any route,
 				// and prefilling a screen the user is not looking at arms a panel
 				// silently.
+				//
+				// The pairing kind is pairing's business and is picked up there, on its
+				// own listener over this same event: the kinds are exclusive, so neither
+				// side has to know what the other does with it, and this module stays
+				// free of a dependency on the pairing one (which depends on this).
+				if (e.payload.kind !== 'receive') return
 				this.receive.code = e.payload.code
 				void goto(resolve('/receive'))
 			}),
