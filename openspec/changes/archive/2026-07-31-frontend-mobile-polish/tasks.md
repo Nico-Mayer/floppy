@@ -74,7 +74,7 @@ Nothing here is covered by an automated gate — the Vite preview at :1420 canno
   desktop density choice (32px), and deleting it would grow the desktop menu button to 36px,
   breaking "fine pointer keeps desktop density". The coarse `min-w/h-11` still wins on touch, so
   the same button is 32px with a mouse and 44px with a finger.
-  The two reset buttons (`Send something else`, `Get more files`) got `touch="grow"` explicitly:
+  The two reset buttons (`Send more files`, `Get more files`) got `touch="grow"` explicitly:
   they are each the only way forward from the done state, so they are their surface's primary
   action, which the size alone cannot express.
 - [x] 3.5 Make the incoming-offer and incoming-pair actions large and stacked on narrow widths.

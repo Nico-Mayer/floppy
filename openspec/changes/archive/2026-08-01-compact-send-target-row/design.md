@@ -12,7 +12,7 @@ Two forces on the design already exist in the repo and constrain the fix:
 - `TransferCard` anchors an actions zone at the bottom of the card and every panel
   state renders into it (`transfer-panel-layout`, "All states share a stable two-zone
   structure"). The Send button's position must not move relative to Cancel and
-  "Send something else".
+  "Send more files".
 - `device-management` requires the send flow to offer a way into Add-a-device. The
   current picker satisfies that with the shield-plus icon button in the label row and,
   when nothing is paired, with a standalone link that replaces the whole picker.

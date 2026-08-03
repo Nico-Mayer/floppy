@@ -1,11 +1,14 @@
 // The Send screen's one "add files" entry point, and the state of the sheet it
 // opens on a phone.
 //
-// Three surfaces ask for files while the queue is editable — the empty state,
-// the dashed tile at the end of the grid, and the floating button — and on a
-// phone all three have to offer the same two choices. They route through this
-// module so that is structural rather than a convention: one `open` flag, one
-// `start()`, and no way for a fourth caller to grow a drawer of its own.
+// Two surfaces ask for files while the queue is editable — the empty state and
+// the floating button — and on a phone both have to offer the same two choices.
+// They route through this module so that is structural rather than a convention:
+// one `open` flag, one `start()`, and no way for a third caller to grow a drawer
+// of its own.
+//
+// There were three: the queue grid's dashed add tile was the other, and it was
+// removed because its position depended on how full the queue was.
 //
 // The platform branch lives here too, and it is `isPhoneChrome` rather than
 // `isTouch()`: the sheet exists because the OS has a photo library and no
@@ -24,7 +27,7 @@ class AddFiles {
 
 	/** Ask for files: the sheet on a phone, the file picker everywhere else. */
 	start() {
-		// One guard for all three surfaces, here rather than repeated on each of
+		// One guard for both surfaces, here rather than repeated on each of
 		// them, for the same reason the branch below lives here. It cannot live in
 		// transfer-app instead: its own re-entry check refuses a second *pick*, and
 		// on a phone this opens the drawer, which that check never sees.

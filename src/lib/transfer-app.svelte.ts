@@ -1,6 +1,5 @@
 import { goto } from '$app/navigation'
 import { resolve } from '$app/paths'
-import { open, type OpenDialogOptions } from '@tauri-apps/plugin-dialog'
 import {
 	CancelReceive,
 	CancelSend,
@@ -12,10 +11,11 @@ import {
 	type FileEntry,
 	type ProgressEvent
 } from '$lib/ipc'
+import { open, type OpenDialogOptions } from '@tauri-apps/plugin-dialog'
+import type { ReceiveStatus, ReceiveTarget, SendStatus, SendTarget } from './components/transfer/types'
 import { describeError, describeTransferError, type AppError } from './errors'
 import { haptics } from './haptics'
 import { sounds } from './sounds'
-import type { ReceiveStatus, ReceiveTarget, SendStatus, SendTarget } from './components/transfer/types'
 
 /**
  * Which side of a transfer something belongs to. The transfer *kind*, carried by
@@ -231,7 +231,7 @@ class SendTransfer {
 	 * reference, so the blob store points at these sandbox copies rather than
 	 * holding its own — deleting them under a live passive send would leave the
 	 * receiver fetching a file that is no longer there. One caller: the done
-	 * screen's "send something else". A send that failed uses stop() instead.
+	 * screen's "Send more files". A send that failed uses stop() instead.
 	 */
 	reset() {
 		this.#clearTransfer()

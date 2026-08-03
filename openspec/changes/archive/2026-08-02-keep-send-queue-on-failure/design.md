@@ -7,7 +7,7 @@
   the same files again by hand is the tedious part."
 - `reset()` — `#clearTransfer()` plus emptying `files` and calling `ClearInputCache()`, which
   deletes the sandbox copies a mobile pick made. Destructive on purpose: it is the done screen's
-  "Send something else".
+  "Send more files".
 
 Three trusted-send failure paths in `src/lib/pairing-app.svelte.ts` call the destructive one:
 

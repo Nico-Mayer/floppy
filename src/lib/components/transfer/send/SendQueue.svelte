@@ -5,8 +5,6 @@
 	import { fast } from '$lib/motion'
 	import { isPhoneChrome } from '$lib/platform'
 	import { app } from '$lib/transfer-app.svelte'
-	import { cn } from '$lib/utils'
-	import PlusIcon from '@lucide/svelte/icons/plus'
 	import { flip } from 'svelte/animate'
 	import { fade } from 'svelte/transition'
 	import FileCard from '../FileCard.svelte'
@@ -19,10 +17,15 @@
 	// nothing, because an initial render is calm (`interaction`).
 	const initialPaths = new Set(send.files.map((file) => file.path))
 
-	// Both idle surfaces go through addFiles.start() rather than pickFiles(): on a
-	// phone that is the sheet offering files or the photo library, and everywhere
-	// else it is the picker, opened directly as before. Neither surface knows
-	// which — see add-files.svelte.ts for why the branch lives there.
+	// The empty state goes through addFiles.start() rather than pickFiles(): on a
+	// phone that is the sheet offering files or photos, and everywhere else it is
+	// the picker, opened directly. It does not know which — see add-files.svelte.ts
+	// for why the branch lives there.
+	//
+	// It is the only add surface in this file. The grid used to end in a dashed add
+	// tile; the floating button (AddFilesButton) replaced it on every platform,
+	// because the tile was the grid's last item and a long queue scrolled it out of
+	// reach exactly when it was wanted.
 </script>
 
 <!-- The idle screen, in its two shapes: nothing picked yet, or a queue to
@@ -59,7 +62,7 @@
 				     follows the platform and not the width, so a desktop window dragged
 				     narrow keeps the drag copy, because it can still take a drop. -->
 				<div transition:fade={{ duration: fast() }} class="flex min-w-0 flex-col items-center gap-2">
-					<Empty.Title>{isPhoneChrome ? 'Add files to send' : 'Drop your files here'}</Empty.Title>
+					<Empty.Title>{isPhoneChrome ? 'Add files' : 'Drop your files here'}</Empty.Title>
 					<Empty.Description>
 						{#if isPhoneChrome}
 							photos or files, your pick
@@ -84,18 +87,18 @@
 	     2 up on a phone (≈315px of card → 153px tiles), 3 from 32rem, 4 from 42rem,
 	     5 from 48rem, 6 on a full-width desktop card (≈1250px → 200px tiles).
 	     Bumping earlier — 3 up at 24rem — would drop tiles to ~125px. -->
-	<!-- pb-20 on a phone: the floating add button hangs over this corner, and
-	     without the padding the last row can never be scrolled clear of it. It is
-	     the button's height plus its inset, rounded up. -->
+	<!-- pb-20, on every platform: the floating add button hangs over this corner
+	     everywhere now, and without the padding the last row can never be scrolled
+	     clear of it. It is the button's height plus its inset, rounded up.
+	     Unconditional rather than `isPhoneChrome &&` because the button is no longer
+	     phone-only — the grid used to end in a dashed add tile that desktop reached
+	     instead, and the tile is gone. -->
 	<!-- The bottom edge fades rather than cutting: the send pill sits right under
 	     this, and a hard row of tile corners stopping dead against it reads as two
 	     surfaces colliding. A short mask (one gap's worth) softens the meeting
 	     point and doubles as the "there is more below" tell while scrolling. -->
 	<div
-		class={cn(
-			'grid min-h-0 flex-1 auto-rows-min grid-cols-2 gap-2 overflow-y-auto mask-b-from-[calc(100%-0.5rem)] @lg:grid-cols-3 @2xl:grid-cols-4 @3xl:grid-cols-5 @5xl:grid-cols-6',
-			isPhoneChrome && 'pb-20'
-		)}
+		class="grid min-h-0 flex-1 auto-rows-min grid-cols-2 gap-2 overflow-y-auto mask-b-from-[calc(100%-0.5rem)] pb-20 @lg:grid-cols-3 @2xl:grid-cols-4 @3xl:grid-cols-5 @5xl:grid-cols-6"
 	>
 		<!-- flip is the queue's only motion: tiles slide between cells when one is
 		     removed. The tiles themselves have no enter/exit transition on purpose —
@@ -105,40 +108,5 @@
 				<FileCard {file} arrived={!initialPaths.has(file.path)} onremove={() => send.removeFile(file.path)} />
 			</div>
 		{/each}
-
-		<!-- Add lives in the grid as the next empty slot, which is where the eye
-		     already is after scanning the queue — and it keeps the anchored actions
-		     zone down to the one primary action. Dashed, so it reads as a placeholder
-		     rather than a file.
-		     Wrapped in the same h-full div FileCard uses so the tile is the same grid
-		     item shape as its neighbours: an aspect-ratio box alone in the last row
-		     otherwise sizes from its min-content width (auto-rows-min) and collapses
-		     shorter than the file tiles, whose h-full wrapper chain pins the height. -->
-		<div class="h-full">
-			<button
-				type="button"
-				class="group/add flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-dashed text-muted-foreground transition-colors hover:border-send/40 hover:bg-muted/40 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-				onclick={() => addFiles.start()}
-			>
-				<!-- Same two-part skeleton as FileCard — aspect-ratio preview box over a
-				     text footer — so the tile matches its neighbours' height exactly at
-				     every column count, including when it sits alone in the last row. -->
-				<div class="flex aspect-4/3 items-center justify-center">
-					<span
-						class="flex size-11 items-center justify-center rounded-xl border border-dashed transition-colors group-hover/add:border-send/40"
-					>
-						<PlusIcon class="size-5" />
-					</span>
-				</div>
-				<div class="border-t border-dashed px-2.5 py-2 text-left">
-					<p class="truncate text-xs font-medium">Add files</p>
-					<!-- Same platform branch as the empty state: nothing gets dropped on a
-					     phone, so the line says what is actually on offer instead. -->
-					<p class="font-mono text-[10px] text-muted-foreground">
-						{isPhoneChrome ? 'photos or files' : 'or drop them'}
-					</p>
-				</div>
-			</button>
-		</div>
 	</div>
 {/if}

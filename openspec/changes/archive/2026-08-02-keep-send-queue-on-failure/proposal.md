@@ -19,7 +19,7 @@ every file over from scratch.
   as part of emptying the queue; keeping the queue without keeping its bytes would leave entries
   pointing at files that are gone, so the reap moves to only the two places that genuinely finish
   with the queue: emptying it, and a completed send.
-- Emptying the queue by hand ("Send something else" on the done screen) is unchanged: it still
+- Emptying the queue by hand ("Send more files" on the done screen) is unchanged: it still
   clears the files and reaps the copies behind them.
 
 ## Capabilities

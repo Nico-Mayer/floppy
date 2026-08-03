@@ -31,7 +31,7 @@
 - [x] 3.5 Phone build (iOS or Android): pick photos so the queue holds sandbox copies, send to an
       offline device, then retry once it is back. The retry sends the same files, proving the
       copies were not reaped.
-- [x] 3.6 Regression: "Send something else" on the done screen still empties the queue, and a
+- [x] 3.6 Regression: "Send more files" on the done screen still empties the queue, and a
       cancelled send still keeps it.
 
 ## 4. Specs

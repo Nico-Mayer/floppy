@@ -34,7 +34,7 @@ The target control SHALL truncate a long label rather than growing the row or pu
 the Send button out of the pill.
 
 The row SHALL NOT change the anchored position of the action zone: Send sits where
-Cancel and "Send something else" sit in the other states.
+Cancel and "Send more files" sit in the other states.
 
 #### Scenario: Target and Send share one line
 

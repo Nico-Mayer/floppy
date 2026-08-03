@@ -332,7 +332,7 @@ are". The mode switcher is deleted by decision 9 and the app bar by decision 12,
 so that justification is mostly gone.
 
 The hidden element is the state line (`sendHeadline(status, target, count)` —
-"Getting things ready…", "Waiting for them…"), not a restatement of the mode. With
+"Preparing your files", "Waiting for them…"), not a restatement of the mode. With
 112px reclaimed and one row to spend, `max-sm:hidden` comes off.
 
 *Alternative considered:* leave it hidden and let the badge carry state. Rejected —

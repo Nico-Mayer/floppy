@@ -11,7 +11,7 @@ This SHALL hold for every way a send can end that way and for either target:
 - the send fails to start at all.
 
 Only two things SHALL empty the queue: the user emptying it (removing every file, or leaving the
-done screen with "Send something else"), and a send that finished.
+done screen with "Send more files"), and a send that finished.
 
 After any of those endings the Send panel SHALL return to its idle screen with the queue still
 listed, the chosen target still chosen, and the failure, if there was one, reported inline above

@@ -12,7 +12,7 @@
 	import { currentFile, fileLabel } from '../format'
 	import TransferCard from '../TransferCard.svelte'
 	import TransferProgress from '../TransferProgress.svelte'
-	import AddFilesSheet from './AddFilesSheet.svelte'
+	import AddFilesButton from './AddFilesButton.svelte'
 	import SendCode from './SendCode.svelte'
 	import SendDevice from './SendDevice.svelte'
 	import SendQueue from './SendQueue.svelte'
@@ -71,10 +71,10 @@
 		     of on top of Send, and it sits outside the queue's own scrolling
 		     element so the button does not scroll away with the tiles.
 		     Idle only: every other state has an uneditable queue and nothing to add
-		     to. AddFilesSheet renders nothing at all off a phone build. -->
+		     to. -->
 		<div class="relative flex min-h-0 flex-1 flex-col">
 			<SendQueue />
-			<AddFilesSheet />
+			<AddFilesButton />
 		</div>
 	{:else if send.status === 'cancelling'}
 		<TransferProgress label="Stopping…" />
@@ -82,7 +82,7 @@
 		{#if send.target.kind === 'device'}
 			<SendDevice name={send.target.name} accepted={false} />
 		{:else}
-			<TransferProgress label="Getting things ready…" />
+			<TransferProgress label="Preparing your files" />
 		{/if}
 	{:else if send.status === 'waiting'}
 		{#if send.target.kind === 'device'}
@@ -183,9 +183,7 @@
 		{:else if send.status === 'done'}
 			<!-- touch="grow": this is the only way forward from the done state, so it is
 			     the surface's primary action, which the size alone cannot tell us. -->
-			<Button variant="outline" size="sm" touch="grow" onclick={() => send.reset()}>
-				Send something else
-			</Button>
+			<Button variant="outline" size="sm" touch="grow" onclick={() => send.reset()}>Send more files</Button>
 		{/if}
 	{/snippet}
 </TransferCard>

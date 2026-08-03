@@ -314,7 +314,7 @@ The target control SHALL truncate a long label rather than growing the row or pu
 the Send button out of the pill.
 
 The row SHALL NOT change the anchored position of the action zone: Send sits where
-Cancel and "Send something else" sit in the other states.
+Cancel and "Send more files" sit in the other states.
 
 #### Scenario: Target and Send share one line
 
@@ -453,12 +453,11 @@ removed after being chosen can never be the thing Send points at.
 - **WHEN** the chosen device is removed from the trust store
 - **THEN** the selection falls back to the code target and Send does not point at the removed device
 
-### Requirement: Send idle copy does not name drag-and-drop on phone builds
+### Requirement: The Send empty state does not name drag-and-drop on phone builds
 
-On a phone build the Send panel's idle surfaces SHALL NOT invite the user to drag or drop
-files, because the platform has no drag-and-drop and the webview never reports one. This
-covers both idle shapes: the empty state and the dashed add tile in the queue grid. Each
-SHALL instead describe the tap that actually works.
+On a phone build the Send panel's empty idle state SHALL NOT invite the user to drag or drop
+files, because the platform has no drag-and-drop and the webview never reports one. It SHALL
+instead describe the tap that actually works.
 
 The gate SHALL be the platform form factor, not the pointer type and not the viewport
 width, because the absence of drag-and-drop is a property of the operating system. A
@@ -474,66 +473,85 @@ platform for no gain.
 - **THEN** its copy describes adding files by tapping, and contains no mention of dragging
   or dropping
 
-#### Scenario: Phone add tile describes tapping
-
-- **WHEN** the Send queue grid renders its dashed add tile on an Android or iOS build
-- **THEN** the tile's supporting line does not mention dropping
-
 #### Scenario: Desktop keeps the drag wording
 
 - **WHEN** the Send panel renders its idle state on a desktop build, at any window width
   and with any pointer type
-- **THEN** the empty state and the add tile keep their existing drag-and-drop wording, and
-  dragging files onto the card still works
+- **THEN** the empty state keeps its existing drag-and-drop wording, and dragging files onto
+  the card still works
 
-### Requirement: A floating add button is the Send screen's thumb-reachable entry point on phone builds
+### Requirement: A floating add button is the Send screen's one add affordance on every platform
 
-On a phone build, while the Send panel is idle, a floating add button SHALL be present on
-the Send screen in both idle shapes: the empty state and the populated queue grid. It SHALL
-NOT be present on desktop builds, and SHALL NOT be present in any non-idle send state, where
-the queue is no longer editable.
+While the Send panel is idle, a floating add button SHALL be present on the Send screen in both
+idle shapes — the empty state and the populated queue grid — on every platform, phone and
+desktop alike. It SHALL NOT be present in any non-idle send state, where the queue is no longer
+editable.
+
+It SHALL be the only add affordance the queue grid offers. The grid SHALL hold queued file tiles
+and nothing else, because an affordance that is the grid's last item is off-screen on a long
+queue, which is exactly when the user reaches for it.
 
 The button SHALL be anchored to the trailing bottom corner of the panel's status zone, above
 the anchored action zone, so it never covers the send target picker or the Send button. It
 SHALL float above the scrolling queue rather than scroll with it, so it stays reachable
-however long the queue is.
+however long the queue is. Because it floats over the grid on every platform, the queue's
+scroll container SHALL carry bottom padding on every platform, so the last row of tiles can
+always be scrolled clear of the button.
 
 The button SHALL meet the coarse-pointer hit-area minimum by growing, as the primary way to
-add files on that platform.
+add files.
+
+On the empty shape the mascot card is itself a click target for the same action, so that shape
+carries two ways to do one thing. This doubling is accepted deliberately: the button SHALL stay
+in the same corner across both idle shapes rather than appearing when the first file is queued,
+because a floating control is findable only if its position does not depend on state.
 
 #### Scenario: The button is present in both idle shapes
 
-- **WHEN** the Send screen is idle on a phone build, with no files queued and then with
-  several queued
+- **WHEN** the Send screen is idle, with no files queued and then with several queued
 - **THEN** the floating add button is visible in the trailing bottom corner in both cases
+
+#### Scenario: Every platform shows the button
+
+- **WHEN** the Send screen renders its idle state on a desktop build, at any window width, and
+  again on a phone build
+- **THEN** the floating add button is present in the same corner in both, and it is the only
+  add control the queue grid offers
+
+#### Scenario: The queue grid holds tiles only
+
+- **WHEN** the Send queue grid renders with files queued, on any platform
+- **THEN** every cell in the grid is a queued file tile, and no cell is an add affordance
 
 #### Scenario: The button does not cover the action zone
 
-- **WHEN** the Send screen is idle on a phone build with files queued, so the action zone
-  shows the target picker and the Send button
+- **WHEN** the Send screen is idle with files queued, so the action zone shows the target
+  picker and the Send button
 - **THEN** the floating add button sits clear of both, and every one of the three controls
-  can be tapped
+  can be activated
 
 #### Scenario: The button stays put while the queue scrolls
 
 - **WHEN** the queue holds more files than fit and the user scrolls it
 - **THEN** the floating add button stays in the same place on screen
 
+#### Scenario: The last row can be scrolled clear of the button
+
+- **WHEN** the queue is scrolled to its end on any platform
+- **THEN** the final row of tiles sits above the floating add button rather than beneath it
+
 #### Scenario: The button is absent once a send starts
 
 - **WHEN** the Send panel leaves the idle state
 - **THEN** the floating add button is gone
 
-#### Scenario: Desktop shows no floating button
-
-- **WHEN** the Send screen renders on a desktop build, at any window width
-- **THEN** no floating add button is shown, and the add tile and empty state remain the way
-  to add files
-
 ### Requirement: The floating add button opens one sheet offering files and photos
 
-Activating the floating add button SHALL open a bottom sheet offering exactly two choices:
-one for files and one for photos. Choosing files SHALL open the platform's native file picker,
+On a phone build, activating the floating add button SHALL open a bottom sheet offering exactly
+two choices: one for files and one for photos. On a desktop build there is no sheet and the
+button opens the file picker directly.
+
+Choosing files SHALL open the platform's native file picker,
 the same one the app already uses, and any files chosen SHALL be appended to the queue.
 Choosing photos SHALL open the platform's own photo picker, offering both photos and videos,
 and anything chosen SHALL be appended to the same queue in the same way. Neither choice SHALL
@@ -551,9 +569,13 @@ try to undo the conversion.
 The sheet SHALL dismiss itself before the native picker is presented, so the two surfaces are
 never stacked.
 
+The sheet SHALL carry an accessible name, so a screen reader announces what the surface is
+rather than an unnamed dialog. It SHALL NOT carry a description beside it: the two rows say what
+the choices are more precisely than a sentence about them would.
+
 #### Scenario: The sheet offers both choices
 
-- **WHEN** the user taps the floating add button
+- **WHEN** the user taps the floating add button on a phone build
 - **THEN** a bottom sheet opens showing a files choice and a photos choice, neither carrying a
   preview marker
 
@@ -603,43 +625,40 @@ never stacked.
 - **WHEN** the user opens either picker from the sheet and cancels it without choosing
 - **THEN** the queue is unchanged and no error is shown
 
-### Requirement: Every idle add affordance on a phone opens the same sheet
+#### Scenario: The sheet is named for assistive technology
 
-On a phone build, all of the Send panel's idle add affordances SHALL route through the one
-sheet: the floating add button, tapping the empty state, and tapping the dashed add tile in
-the queue grid. None of them SHALL jump straight to the native file picker, so the two
-choices are offered wherever the user reaches for "add".
+- **WHEN** the sheet opens on a phone build
+- **THEN** assistive technology announces it by name rather than as an unnamed dialog
 
-On desktop builds those surfaces SHALL keep opening the file picker directly, with no
-intermediate sheet.
+### Requirement: Both idle add affordances reach files the same way
+
+Both of the Send panel's idle add affordances — the floating add button and tapping the empty
+state — SHALL route through one entry point, so what happens is decided by the platform and not
+by which surface was touched.
+
+On a phone build that entry point SHALL open the files-and-photos sheet from either surface.
+Neither SHALL jump straight to the native file picker, so the two choices are offered wherever
+the user reaches for "add".
+
+On desktop builds both SHALL open the file picker directly, with no intermediate sheet.
 
 #### Scenario: The empty state opens the sheet on a phone
 
 - **WHEN** the user taps the Send empty state on a phone build
-- **THEN** the same sheet opens, rather than the native file picker
-
-#### Scenario: The add tile opens the sheet on a phone
-
-- **WHEN** the user taps the dashed add tile in the queue grid on a phone build
-- **THEN** the same sheet opens, rather than the native file picker
+- **THEN** the same sheet opens as from the floating add button, rather than the native file
+  picker
 
 #### Scenario: Desktop keeps the direct picker
 
-- **WHEN** the user clicks the Send empty state or the add tile on a desktop build
+- **WHEN** the user clicks the Send empty state or the floating add button on a desktop build
 - **THEN** the native file picker opens immediately, with no sheet in between
 
-#### Scenario: The add tile is not removed on a phone
-
-- **WHEN** the Send queue grid renders on a phone build with files queued
-- **THEN** the dashed add tile is still the last tile in the grid, alongside the floating
-  add button
-
-### Requirement: The Send panel reports a picker call that is still in flight
+### Requirement: The Send panel reports a pick that is still in flight
 
 From the moment the app asks the platform for a picker until the picker's result has been
 resolved into queue entries, the Send panel SHALL report that it is working, whichever way the
-pick was started — the empty state, the dashed add tile, or the floating add button — and for
-either picker, files or photos.
+pick was started — the empty state or the floating add button — and for either picker, files or
+photos.
 
 Where the report goes follows which idle shape is on screen, because the two shapes have
 different problems:
@@ -668,13 +687,13 @@ cutting, and neither SHALL displace the other during the swap: the two occupy on
 transition costs no layout and nothing around them moves. The motion is decorative and SHALL
 collapse under a reduced-motion preference, leaving the swap instant.
 
-While a pick is in flight the Send screen SHALL refuse to start a second one: the empty state,
-the dashed add tile, and the floating add button each SHALL do nothing when activated. The
-refusal itself SHALL be silent — no surface SHALL change size or grow an indicator of its own
-because it was tapped, since the report is already on screen saying why nothing happened, and a
-surface that resizes under a finger that has just tapped it is worse than one that waits. On the
-empty shape the copy swap described above is the report, not a reaction to being tapped, and
-happens whether the pick was started from that surface or another.
+While a pick is in flight the Send screen SHALL refuse to start a second one: the empty state
+and the floating add button each SHALL do nothing when activated. The refusal itself SHALL be
+silent — no surface SHALL change size or grow an indicator of its own because it was activated,
+since the report is already on screen saying why nothing happened, and a surface that resizes
+under a finger that has just tapped it is worse than one that waits. On the empty shape the copy
+swap described above is the report, not a reaction to being tapped, and happens whether the pick
+was started from that surface or another.
 
 A pick that ends without adding anything — the user cancelled, or the platform handed back
 nothing — SHALL clear the report and restore the idle surface unchanged, with no error and no
@@ -718,12 +737,11 @@ stay visible and stay scrollable while the new pick resolves.
 - **THEN** the report remains visible, because the action zone is anchored and does not scroll
   with the queue
 
-#### Scenario: The add tile and the add button do not change shape while picking
+#### Scenario: The add button does not change shape while picking
 
 - **WHEN** a pick is in flight over a queue that already holds files
-- **THEN** the dashed add tile and the floating add button keep their usual appearance and size,
-  and neither shows an indicator of its own — the add tile in particular can be scrolled out of
-  view, which is why the report is not on it
+- **THEN** the floating add button keeps its usual appearance and size and shows no indicator of
+  its own
 
 #### Scenario: The report claims no count and no progress
 
@@ -738,8 +756,7 @@ stay visible and stay scrollable while the new pick resolves.
 
 #### Scenario: A second pick cannot be started while one is in flight
 
-- **WHEN** a pick is in flight and the user activates the empty state, the dashed add tile, or
-  the floating add button
+- **WHEN** a pick is in flight and the user activates the empty state or the floating add button
 - **THEN** nothing is started, no sheet or picker opens, and the surface's appearance is
   unchanged
 
@@ -766,7 +783,7 @@ This SHALL hold for every way a send can end that way and for either target:
 - the send fails to start at all.
 
 Only two things SHALL empty the queue: the user emptying it (removing every file, or leaving the
-done screen with "Send something else"), and a send that finished.
+done screen with "Send more files"), and a send that finished.
 
 After any of those endings the Send panel SHALL return to its idle screen with the queue still
 listed, the chosen target still chosen, and the failure, if there was one, reported inline above

@@ -26,9 +26,9 @@ of the system.
 - On **coarse-pointer devices the target picker renders as a native `<select>`**
   (shadcn-svelte `native-select`), so the choice is made in the OS picker. Fine-pointer
   devices keep the styled `Select` with its icons and grouping. Both carry the same
-  values, the same grouping ("Anyone with a code" / "Your devices"), and the same
+  values, the same grouping ("QR Code for instant sharing" / "Your devices"), and the same
   binding.
-- Copy stays as it is: `Anyone with a code`, device names verbatim, `Send`,
+- Copy stays as it is: `QR Code for instant sharing`, device names verbatim, `Send`,
   `Add a device and skip the code`.
 
 No transfer behaviour changes: the same `send.start()` / `pairing.sendTo()` dispatch,

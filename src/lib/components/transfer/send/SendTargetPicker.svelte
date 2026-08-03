@@ -1,11 +1,11 @@
 <script lang="ts">
+	import { resolve } from '$app/paths'
 	import { buttonVariants } from '$lib/components/ui/button'
 	import * as NativeSelect from '$lib/components/ui/native-select'
 	import * as Select from '$lib/components/ui/select'
 	import { pairing } from '$lib/pairing-app.svelte'
 	import { isTouch } from '$lib/platform'
 	import { cn } from '$lib/utils'
-	import { resolve } from '$app/paths'
 	import GlobeIcon from '@lucide/svelte/icons/globe'
 	import LaptopIcon from '@lucide/svelte/icons/laptop'
 	import ShieldPlusIcon from '@lucide/svelte/icons/shield-plus'
@@ -13,7 +13,7 @@
 	/** 'code' for the classic phrase send, otherwise a trusted device's fingerprint. */
 	let { value = $bindable() }: { value: string } = $props()
 
-	const CODE_LABEL = 'Anyone with a code'
+	const CODE_LABEL = 'QR Code for instant sharing'
 	const DEVICES_LABEL = 'Your devices'
 	const label = $derived(
 		value === 'code' ? CODE_LABEL : (pairing.devices.find((d) => d.fingerprint === value)?.name ?? CODE_LABEL)

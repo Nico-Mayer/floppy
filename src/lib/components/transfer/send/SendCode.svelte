@@ -1,10 +1,10 @@
 <script lang="ts">
+	import { receiveLink } from '$lib/code-link'
 	import CopyButton from '$lib/components/feedback/CopyButton.svelte'
 	import PendingHint from '$lib/components/feedback/PendingHint.svelte'
 	import BorderBeam from '$lib/components/magic/border-beam/border-beam.svelte'
 	import { QRCode } from '$lib/components/spell/qrcode'
 	import * as InputGroup from '$lib/components/ui/input-group'
-	import { receiveLink } from '$lib/code-link'
 	import { motionOK, normal } from '$lib/motion'
 	import { fade } from 'svelte/transition'
 
@@ -43,9 +43,7 @@
 					<CopyButton text={code} variant="icon" />
 				</InputGroup.Addon>
 			</InputGroup.Root>
-			<p class="text-center text-xs text-muted-foreground @md:text-left">Works until you close Floppy.</p>
+			<PendingHint label="Valid until you close Floppy" />
 		</div>
 	</div>
-
-	<PendingHint label="waiting for them" />
 </div>

@@ -34,7 +34,7 @@ Constraints this design has to respect:
 **Non-Goals:**
 
 - Floating the pill over the file grid. It stays docked in the anchored action zone where Cancel
-  and "Send something else" sit; a floating bar would collide with the phone add-FAB and need
+  and "Send more files" sit; a floating bar would collide with the phone add-FAB and need
   grid padding of its own.
 - Touching the non-idle states (starting / waiting / sending / done keep their plain buttons).
 - Changing what a send does, which target it picks, or how the picker sources its options.
