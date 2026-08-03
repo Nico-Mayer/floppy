@@ -17,6 +17,7 @@
 	import { isPhoneChrome } from '$lib/platform'
 	import { keepFocusVisible } from '$lib/keyboard'
 	import { watchSafeArea } from '$lib/safe-area'
+	import { initSoundFeedback } from '$lib/sounds'
 	import { app } from '$lib/transfer-app.svelte'
 	import { onBackButtonPress } from '@tauri-apps/api/app'
 	import type { PluginListener } from '@tauri-apps/api/core'
@@ -118,6 +119,12 @@
 		// keeping a focused field above it is ours to do. No-op off a phone build.
 		const stopFocusScroll = keepFocusVisible()
 
+		// Tracks window focus and arms audio on the first tap or keypress. Here
+		// rather than in a page because the events that play a tone can land on any
+		// route, and because the unlock has to be registered before the first one
+		// does.
+		const stopSound = initSoundFeedback()
+
 		// Android hardware back: registering a handler suppresses the default
 		// (which finishes the activity). Navigation is flat — every destination
 		// stands on its own, so there is no in-app back to offer. Back only has to
@@ -170,6 +177,7 @@
 			stopDrag?.()
 			stopSafeArea()
 			stopFocusScroll()
+			stopSound()
 			void backListener?.unregister()
 			document.removeEventListener('contextmenu', noContextMenu)
 		}

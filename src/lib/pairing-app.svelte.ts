@@ -24,6 +24,7 @@ import { SvelteSet } from 'svelte/reactivity'
 import { toast } from 'svelte-sonner'
 import { describeError, errorText } from './errors'
 import { haptics } from './haptics'
+import { sounds } from './sounds'
 import { app } from './transfer-app.svelte'
 
 /**
@@ -110,6 +111,7 @@ class PairingApp {
 				// Something arrived that waits on an answer. Fire and forget, and only
 				// in the foreground: backgrounded, the OS notification is the alert.
 				void haptics.arrived()
+				sounds.arrived()
 			}),
 			events.pairingAccepted.listen(() => {
 				// Move the send panel off "waiting for a yes" into the accepted state;
@@ -152,6 +154,7 @@ class PairingApp {
 			events.pairingRequest.listen((e) => {
 				this.request = e.payload
 				void haptics.arrived()
+				sounds.arrived()
 				void goto(resolve('/devices'))
 			}),
 			// A floppy://pair?code=… link opened the app: bring up Devices with the code
@@ -169,6 +172,10 @@ class PairingApp {
 			events.pairingPaired.listen(() => {
 				this.paired += 1
 				void haptics.paired()
+				// The same note a finished transfer plays: both say the thing you were
+				// waiting on is done, and pairing has a wait in it you may look away
+				// through.
+				sounds.paired()
 				void this.refresh()
 				void goto(resolve('/devices'))
 			})

@@ -14,6 +14,7 @@ import {
 } from '$lib/ipc'
 import { describeError, describeTransferError, type AppError } from './errors'
 import { haptics } from './haptics'
+import { sounds } from './sounds'
 import type { ReceiveStatus, ReceiveTarget, SendStatus, SendTarget } from './components/transfer/types'
 
 /**
@@ -412,6 +413,9 @@ class TransferApp {
 				// One success note, whichever direction finished. Fire and forget: a
 				// buzz must never hold up or fail a transfer's completion.
 				void haptics.transferDone()
+				// And the same moment on the other channel, for the case the buzz
+				// cannot cover: a desktop, or a phone put down across the room.
+				sounds.transferDone()
 			}),
 			events.deepLink.listen((e) => {
 				// A floppy://receive?code=… link opened the app: go to Receive and
@@ -441,7 +445,8 @@ class TransferApp {
 					if (this.receive.status !== 'done') this.receive.stop()
 				}
 				// One failure note, whichever side broke. A local cancel emits no
-				// terminal event, so it stays silent by construction.
+				// terminal event, so it stays silent by construction. Haptic only:
+				// sound never carries bad news (see the closing note in sounds.ts).
 				void haptics.failed()
 			})
 		]
