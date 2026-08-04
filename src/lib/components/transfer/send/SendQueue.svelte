@@ -94,7 +94,7 @@
 	     take: it has to see off a 16px blur now, not just a row of tile corners. -->
 	<ScrollArea.Root
 		type="scroll"
-		class="min-h-0 flex-1 [&_.cn-scroll-area-viewport]:mask-b-from-[calc(100%-1.5rem)]"
+		class="min-h-0 flex-1 [&_.cn-scroll-area-viewport]:mask-b-from-[calc(100%-5rem)]"
 	>
 		<!-- A grid of tiles rather than a list: the queue is a set of things, not a
 		     ranking, and the tiles let a dozen files stay on screen without the card

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import BusyButton from '$lib/components/feedback/BusyButton.svelte'
 	import CopyButton from '$lib/components/feedback/CopyButton.svelte'
-	import { QRCode } from '$lib/components/spell/qrcode'
+	import QRCode from '$lib/components/QRCode.svelte'
 	import * as ResponsiveDialog from '$lib/components/ui/responsive-dialog'
 	import { Spinner } from '$lib/components/ui/spinner'
 	import { pairLink } from '$lib/code-link'
