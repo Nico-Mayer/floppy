@@ -30,11 +30,12 @@
      bottom padding, on every platform — see SendQueue.
      touch="grow" and size-14: this is the primary way to add files, so it meets the
      hit-area minimum by being big enough to see. -->
+
 <Button
-	size="icon-lg"
+	variant="secondary"
 	touch="grow"
 	aria-label="Add files"
-	class="absolute right-2 bottom-2 z-10 size-14 shadow-lg"
+	class="absolute right-4 bottom-4 z-10 size-14 cursor-pointer rounded-full text-secondary-foreground shadow-lg ring shadow-black/10 ring-border transition-all duration-300 hover:scale-105"
 	onclick={() => addFiles.start()}
 >
 	<PlusIcon class="size-6" />

@@ -2,6 +2,7 @@
 	import EmptyHero from '$lib/components/feedback/EmptyHero.svelte'
 	import PendingHint from '$lib/components/feedback/PendingHint.svelte'
 	import * as Empty from '$lib/components/ui/empty'
+	import * as ScrollArea from '$lib/components/ui/scroll-area'
 	import { fast } from '$lib/motion'
 	import { isPhoneChrome } from '$lib/platform'
 	import { app } from '$lib/transfer-app.svelte'
@@ -75,38 +76,61 @@
 		</div>
 	</EmptyHero>
 {:else}
-	<!-- A grid of tiles rather than a list: the queue is a set of things, not a
-	     ranking, and the tiles let a dozen files stay on screen without the card
-	     growing a scrollbar. Column count follows the *card's* width (@container
-	     on TransferCard's content), not the viewport, so the panel stays right
-	     wherever the shell puts it.
-	     auto-rows-min keeps the last row at tile height instead of stretching it
-	     to fill the leftover space. -->
-	<!-- Column count is chosen to keep a tile at roughly 150–200px wide at every
-	     card width, so the preview box never collapses to a thumbnail-sized square:
-	     2 up on a phone (≈315px of card → 153px tiles), 3 from 32rem, 4 from 42rem,
-	     5 from 48rem, 6 on a full-width desktop card (≈1250px → 200px tiles).
-	     Bumping earlier — 3 up at 24rem — would drop tiles to ~125px. -->
-	<!-- pb-20, on every platform: the floating add button hangs over this corner
-	     everywhere now, and without the padding the last row can never be scrolled
-	     clear of it. It is the button's height plus its inset, rounded up.
-	     Unconditional rather than `isPhoneChrome &&` because the button is no longer
-	     phone-only — the grid used to end in a dashed add tile that desktop reached
-	     instead, and the tile is gone. -->
-	<!-- The bottom edge fades rather than cutting: the send pill sits right under
-	     this, and a hard row of tile corners stopping dead against it reads as two
-	     surfaces colliding. A short mask (one gap's worth) softens the meeting
-	     point and doubles as the "there is more below" tell while scrolling. -->
-	<div
-		class="grid min-h-0 flex-1 auto-rows-min grid-cols-2 gap-2 overflow-y-auto mask-b-from-[calc(100%-0.5rem)] pb-20 @lg:grid-cols-3 @2xl:grid-cols-4 @3xl:grid-cols-5 @5xl:grid-cols-6"
+	<!-- ScrollArea rather than a plain overflow-y-auto box: the queue is the one
+	     surface in the card that scrolls, and it needs an overlay scrollbar. A native
+	     one is a gutter — it would take a slice of the card's width away from the
+	     grid, and because it is only a gutter on the desktop platforms, the same card
+	     width would lay the tiles out differently there than on a phone.
+	     type="scroll" and not the default "hover": a phone reports no hover at all, so
+	     a hover-revealed bar would be dead weight on the platform that scrolls this
+	     most. Appearing while scrolling and fading out after reads as a scroll
+	     position on both.
+	     The mask is aimed at the viewport rather than sitting on this root, and that
+	     is load-bearing: a mask makes its element a backdrop root, so masking the
+	     root would leave the blur band below sampling an empty backdrop and blurring
+	     nothing at all. On the viewport it only fades the tiles, which is all it is
+	     for — and the scrollbar, a sibling, stays crisp.
+	     The last 1.5rem, which is longer than the half-gap the plain fade used to
+	     take: it has to see off a 16px blur now, not just a row of tile corners. -->
+	<ScrollArea.Root
+		type="scroll"
+		class="min-h-0 flex-1 [&_.cn-scroll-area-viewport]:mask-b-from-[calc(100%-1.5rem)]"
 	>
-		<!-- flip is the queue's only motion: tiles slide between cells when one is
-		     removed. The tiles themselves have no enter/exit transition on purpose —
-		     see the note in FileCard. -->
-		{#each send.files as file (file.path)}
-			<div class="h-full" animate:flip={{ duration: fast() }}>
-				<FileCard {file} arrived={!initialPaths.has(file.path)} onremove={() => send.removeFile(file.path)} />
-			</div>
-		{/each}
-	</div>
+		<!-- A grid of tiles rather than a list: the queue is a set of things, not a
+		     ranking, and the tiles let a dozen files stay on screen without the card
+		     growing tall. Column count follows the *card's* width (@container on
+		     TransferCard's content), not the viewport, so the panel stays right
+		     wherever the shell puts it. The container queries still resolve in here —
+		     the ScrollArea's viewport is a descendant of that container, and a
+		     container query asks the nearest container ancestor, not the parent.
+		     auto-rows-min keeps the last row at tile height instead of stretching it
+		     to fill the leftover space. -->
+		<!-- Column count is chosen to keep a tile at roughly 150–200px wide at every
+		     card width, so the preview box never collapses to a thumbnail-sized square:
+		     2 up on a phone (≈315px of card → 153px tiles), 3 from 32rem, 4 from 42rem,
+		     5 from 48rem, 6 on a full-width desktop card (≈1250px → 200px tiles).
+		     Bumping earlier — 3 up at 24rem — would drop tiles to ~125px. -->
+		<!-- pb-20, on every platform: the floating add button hangs over this corner
+		     everywhere now, and without the padding the last row can never be scrolled
+		     clear of it. It is the button's height plus its inset, rounded up.
+		     Unconditional rather than `isPhoneChrome &&` because the button is no longer
+		     phone-only — the grid used to end in a dashed add tile that desktop reached
+		     instead, and the tile is gone. -->
+		<div
+			class="grid auto-rows-min grid-cols-2 gap-2 pb-20 @lg:grid-cols-3 @2xl:grid-cols-4 @3xl:grid-cols-5 @5xl:grid-cols-6"
+		>
+			<!-- flip is the queue's only motion: tiles slide between cells when one is
+			     removed. The tiles themselves have no enter/exit transition on purpose —
+			     see the note in FileCard. -->
+			{#each send.files as file (file.path)}
+				<div class="h-full" animate:flip={{ duration: fast() }}>
+					<FileCard
+						{file}
+						arrived={!initialPaths.has(file.path)}
+						onremove={() => send.removeFile(file.path)}
+					/>
+				</div>
+			{/each}
+		</div>
+	</ScrollArea.Root>
 {/if}
