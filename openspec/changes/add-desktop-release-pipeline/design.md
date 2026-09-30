@@ -126,6 +126,9 @@ local `mise run build` other than the same ad-hoc signature.
 - [A release job fails after the draft release exists] → re-run the failed job; the
   action finds the release by tag and uploads the missing assets. Nothing is published
   until the draft is.
+- [mise postinstall hooks run without a POSIX shell on Windows] → the rust hook is
+  `rustup default 1.98` with the version written out; `$RUSTUP_TOOLCHAIN` and mise
+  templates both reach rustup unexpanded there. Found on the first Windows job.
 - [Windows SmartScreen warning on the nsis and msi installers] → accepted; needs a
   code-signing certificate, which is out of scope.
 - [The first `commit-and-tag-version` run has no previous tag] → it reads the whole

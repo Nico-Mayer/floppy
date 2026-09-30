@@ -13,7 +13,7 @@ node = "26.5.0"
 java = { version = "temurin-21", os = ["macos", "linux"] }
 ruby = { version = "4.0.6", os = ["macos"] }
 cocoapods = { version = "1.17", os = ["macos"] }
-rust = { version = "1.98", profile = "default", postinstall = 'rustup default "$RUSTUP_TOOLCHAIN"' }
+rust = { version = "1.98", profile = "default", postinstall = 'rustup default 1.98' }
 "npm:@fission-ai/openspec" = "1.6.0"
 "npm:commit-and-tag-version" = "13.2.1"
 go = "1.26"
