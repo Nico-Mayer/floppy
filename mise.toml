@@ -15,6 +15,7 @@ ruby = { version = "4.0.6", os = ["macos"] }
 cocoapods = { version = "1.17", os = ["macos"] }
 rust = { version = "1.98", profile = "default", postinstall = 'rustup default "$RUSTUP_TOOLCHAIN"' }
 "npm:@fission-ai/openspec" = "1.6.0"
+"npm:commit-and-tag-version" = "13.2.1"
 go = "1.26"
 
 # --- dev ---
@@ -99,6 +100,21 @@ run = "npm run tauri android build"
 [tasks."build:ios"]
 description = "Build the iOS app"
 run = "npm run tauri ios build"
+
+# --- release ---
+
+[tasks.release]
+description = "Bump version from conventional commits, write CHANGELOG.md, tag, push. Flags pass through: -- --dry-run, -- --release-as minor"
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+branch="$(git branch --show-current)"
+[ "$branch" = "main" ] || { echo "release: on '$branch', switch to main first" >&2; exit 1; }
+[ -z "$(git status --porcelain)" ] || { echo "release: working tree is not clean" >&2; exit 1; }
+commit-and-tag-version "$@"
+case " $* " in *" --dry-run "*) exit 0 ;; esac
+git push --follow-tags origin main
+'''
 
 # --- check ---
 

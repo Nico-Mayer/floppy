@@ -21,3 +21,4 @@ openspec
 # Generated (tauri-specta) and vendored (shadcn-svelte)
 src/lib/ipc/bindings.ts
 src/lib/components/ui/
+CHANGELOG.md

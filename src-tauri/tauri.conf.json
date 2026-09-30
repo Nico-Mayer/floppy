@@ -53,6 +53,9 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "macOS": {
+      "signingIdentity": "-"
+    },
     "iOS": {
       "developmentTeam": "5KC9HY8QXS"
     }
