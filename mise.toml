@@ -12,10 +12,10 @@ FLOPPY_TEST_BROKER = "{{ env.FLOPPY_BROKER_URL }}"
 node = "26.5.0"
 java = { version = "temurin-21", os = ["macos", "linux"] }
 ruby = { version = "4.0.6", os = ["macos"] }
-cocoapods = { version = "latest", os = ["macos"] }
-rust = { version = "latest", profile = "default", postinstall = 'rustup default "$RUSTUP_TOOLCHAIN"' }
+cocoapods = { version = "1.17", os = ["macos"] }
+rust = { version = "1.98", profile = "default", postinstall = 'rustup default "$RUSTUP_TOOLCHAIN"' }
 "npm:@fission-ai/openspec" = "1.6.0"
-go = "latest"
+go = "1.26"
 
 # --- dev ---
 
@@ -38,16 +38,35 @@ description = "List the Android AVDs this machine has"
 run = "emulator -list-avds"
 
 [tasks."avd:start"]
-description = "Boot an AVD (default Pixel_9_Pro; append -no-window for headless)"
-run = "emulator @{{arg(name='avd', default='Pixel_9_Pro')}}"
+description = "Boot an Android AVD"
+usage = '''
+arg "[avd]" {
+  help "AVD name"
+  default "Pixel_9_Pro"
+}
+flag "--headless" help="Run without an emulator window"
+'''
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+args=()
+[ "${usage_headless:-false}" = "true" ] && args+=("-no-window")
+emulator "@${usage_avd}" "${args[@]}"
+'''
 
 [tasks."avd:stop"]
 description = "Kill the running emulator"
 run = "adb emu kill"
 
 [tasks."avd:create"]
-description = "Create the Pixel_9_Pro AVD from the installed API-37 system image"
-run = "avdmanager create avd --force -n {{arg(name='avd', default='Pixel_9_Pro')}} -d pixel_9_pro -k 'system-images;android-37.1;google_apis_playstore_ps16k;arm64-v8a'"
+description = "Create an Android AVD from the installed API-37 system image"
+usage = '''
+arg "[avd]" {
+  help "AVD name"
+  default "Pixel_9_Pro"
+}
+'''
+run = "avdmanager create avd --force -n \"$usage_avd\" -d pixel_9_pro -k 'system-images;android-37.1;google_apis_playstore_ps16k;arm64-v8a'"
 
 [tasks.broker]
 description = "Run the Go rendezvous broker locally (pair with FLOPPY_BROKER=local)"
@@ -56,7 +75,15 @@ run = "go run ."
 
 [tasks."kill-port"]
 description = "Free the Vite dev port when a dev run leaks it"
-run = "lsof -ti tcp:1420 | xargs kill -9"
+run = '''
+#!/usr/bin/env bash
+pids="$(lsof -ti tcp:1420)"
+[ -z "$pids" ] && exit 0
+kill $pids
+sleep 1
+remaining="$(lsof -ti tcp:1420)"
+[ -z "$remaining" ] || kill -9 $remaining
+'''
 run_windows = "Stop-Process -Id (Get-NetTCPConnection -LocalPort 1420 -State Listen).OwningProcess -Force"
 
 # --- build ---
@@ -77,10 +104,7 @@ run = "npm run tauri ios build"
 
 [tasks.lint]
 description = "Prettier check + ESLint + clippy"
-run = [
-  "npm run lint",
-  "cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets"
-]
+run = ["npm run lint", "cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets"]
 
 [tasks.check]
 description = "svelte-check against tsconfig"
@@ -104,8 +128,12 @@ dir = "broker"
 run = "go test -race ./..."
 
 [tasks.test]
-description = "Full offline gate: Rust + broker"
+description = "Rust + broker tests"
 depends = ["test:rust", "test:go"]
+
+[tasks.verify]
+description = "Run all offline quality gates"
+depends = ["check", "lint", "test"]
 
 [tasks."test:live"]
 description = "Live cross-language E2E against FLOPPY_TEST_BROKER"
@@ -116,5 +144,11 @@ run = "cargo test -- --ignored"
 
 [tasks.doctor]
 description = "Verify the Tauri dev toolchain for this OS"
-run = "./scripts/doctor-macos.sh"
+run = '''
+case "$(uname -s)" in
+  Darwin) ./scripts/doctor-macos.sh ;;
+  Linux) ./scripts/doctor-linux.sh ;;
+  *) echo "unsupported platform: $(uname -s)" >&2; exit 1 ;;
+esac
+'''
 run_windows = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/doctor-windows.ps1"

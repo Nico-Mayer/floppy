@@ -39,13 +39,14 @@ for t in aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios \
   fi
 done
 
-# 4. Android SDK/NDK + tools on PATH (warn only; only needed for android builds).
-[ -d "${ANDROID_HOME:-}" ] && echo "ok   ANDROID_HOME $ANDROID_HOME" || echo "warn ANDROID_HOME missing: ${ANDROID_HOME:-<unset>} (install Android Studio for android builds)"
+# 4. Android SDK/NDK + tools on PATH (warn only; only needed for Android builds).
+# SDK install locations vary by machine and must be configured outside mise.toml.
+[ -d "${ANDROID_HOME:-}" ] && echo "ok   ANDROID_HOME $ANDROID_HOME" || echo "warn ANDROID_HOME missing: ${ANDROID_HOME:-<unset>} (install the Android SDK for Android builds)"
 [ -d "${NDK_HOME:-}" ] && echo "ok   NDK_HOME $NDK_HOME" || echo "warn NDK_HOME missing: ${NDK_HOME:-<unset>}"
-# tauri/cargo-mobile2 call bare `adb`/`emulator`; mise puts the SDK CLI on PATH
-# (mise.toml [env] _.path), so these should resolve inside the repo.
-command -v adb >/dev/null 2>&1 && echo "ok   adb on PATH" || echo "warn adb not on PATH -> run inside the repo so mise's PATH applies"
-command -v emulator >/dev/null 2>&1 && echo "ok   emulator on PATH" || echo "warn emulator not on PATH -> run inside the repo so mise's PATH applies"
+# tauri/cargo-mobile2 call bare `adb`/`emulator`; their SDK directories must be
+# present on PATH before entering the project.
+command -v adb >/dev/null 2>&1 && echo "ok   adb on PATH" || echo "warn adb not on PATH -> add Android SDK platform-tools to PATH"
+command -v emulator >/dev/null 2>&1 && echo "ok   emulator on PATH" || echo "warn emulator not on PATH -> add Android SDK emulator to PATH"
 
 # ANDROID_USER_HOME must be pinned, or the SDK CLI and Android Studio disagree on
 # where AVDs live (XDG_CONFIG_HOME/.android vs ~/.android) and boot different ones.
