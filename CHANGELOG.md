@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.2](https://github.com/Nico-Mayer/project-bibor/compare/v0.1.1...v0.1.2) (2026-09-30)
+
+### Bug Fixes
+
+* actions ([cd5b69f](https://github.com/Nico-Mayer/project-bibor/commit/cd5b69fd3caf4edb42241863d5aad54a1f5862f9))
+
 ## 0.1.1 (2026-09-30)
 
 ### Features
